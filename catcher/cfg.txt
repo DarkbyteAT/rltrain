@@ -1,0 +1,16 @@
+--agent
+catcher/reinforce.json
+catcher/reinforce-sam.json
+catcher/reinforce-lamp.json
+catcher/a2c.json
+catcher/a2c-sam.json
+catcher/a2c-lamp.json
+catcher/ppo.json
+catcher/ppo-sam.json
+catcher/ppo-lamp.json
+--env
+catcher/env.json
+--dump
+results/catcher
+--num_steps
+100000

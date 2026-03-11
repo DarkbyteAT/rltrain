@@ -1,0 +1,16 @@
+--agent
+cartpole/reinforce.json
+cartpole/reinforce-sam.json
+cartpole/reinforce-lamp.json
+cartpole/a2c.json
+cartpole/a2c-sam.json
+cartpole/a2c-lamp.json
+cartpole/ppo.json
+cartpole/ppo-sam.json
+cartpole/ppo-lamp.json
+--env
+cartpole/env.json
+--dump
+results/cartpole
+--num_steps
+100000

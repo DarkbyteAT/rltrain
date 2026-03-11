@@ -1,0 +1,16 @@
+--agent
+acrobot/reinforce.json
+acrobot/reinforce-sam.json
+acrobot/reinforce-lamp.json
+acrobot/a2c.json
+acrobot/a2c-sam.json
+acrobot/a2c-lamp.json
+acrobot/ppo.json
+acrobot/ppo-sam.json
+acrobot/ppo-lamp.json
+--env
+acrobot/env.json
+--dump
+results/acrobot
+--num_steps
+100000

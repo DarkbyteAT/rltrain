@@ -1,0 +1,56 @@
+{
+    "fqn": "rltrain.agents.actor_critic.PPO",
+    "beta_critic": 0.5,
+    "gamma": 0.99,
+    "lambda_gae": 0.9,
+    "tau": 0.01,
+    "early_stop": 0.05,
+    "eps_clip": 0.2,
+    "horizon": 256,
+    "num_epochs": 8,
+    "batch_size": 128,
+    "normalise": true,
+    "robust": true,
+    "rho_sam": 1e-2,
+    "rollback_len": 0,
+	"model": {
+        "actor": [
+            {
+                "fqn": "rltrain.nn.RFF",
+                "in_features": 7,
+                "out_features": 512,
+                "bandwidth": 1
+            },
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 512,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 2
+            }
+        ],
+        "critic": [
+            {
+                "fqn": "rltrain.nn.RFF",
+                "in_features": 7,
+                "out_features": 512,
+                "bandwidth": 1
+            },
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 512,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 1
+            }
+        ]
+    },
+    "opt": {
+        "actor": {
+            "fqn": "torch.optim.Adam",
+            "lr": 1e-4
+        },
+        "critic": {
+            "fqn": "torch.optim.Adam",
+            "lr": 1e-4
+        }
+    }
+}

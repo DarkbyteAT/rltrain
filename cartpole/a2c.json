@@ -1,0 +1,37 @@
+{
+    "fqn": "rltrain.agents.actor_critic.AdvantageAC",
+    "beta_critic": 0.5,
+    "gamma": 0.995,
+    "lambda_gae": 0.9,
+    "tau": 5e-3,
+    "horizon": 128,
+    "normalise": true,
+	"model": {
+        "actor": [
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 4,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 2
+            }
+        ],
+        "critic": [
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 4,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 1
+            }
+        ]
+    },
+    "opt": {
+        "actor": {
+            "fqn": "torch.optim.Adam",
+            "lr": 3e-4
+        },
+        "critic": {
+            "fqn": "torch.optim.Adam",
+            "lr": 3e-4
+        }
+    }
+}

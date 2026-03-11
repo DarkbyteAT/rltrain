@@ -1,0 +1,12 @@
+{
+    "id": "Pixelcopter-PLE-v0",
+    "wrappers": [
+        {
+            "fqn": "gym.wrappers.time_limit.TimeLimit",
+            "max_episode_steps": 10000
+        },
+        {
+            "fqn": "gym.wrappers.normalize.NormalizeObservation"
+        }
+    ]
+}

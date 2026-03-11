@@ -1,0 +1,46 @@
+{
+    "fqn": "rltrain.agents.policy_gradient.REINFORCE",
+    "beta_critic": 0.5,
+    "gamma": 0.995,
+    "tau": 0.05,
+    "model": {
+        "actor": [
+            {
+                "fqn": "rltrain.nn.cnn",
+                "channels": [6, 16, 32],
+                "kernels": [2, 2],
+                "strides": [2, 1]
+            },
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 512,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 4
+            }
+        ],
+        "critic": [
+            {
+                "fqn": "rltrain.nn.cnn",
+                "channels": [6, 16, 32],
+                "kernels": [2, 2],
+                "strides": [2, 1]
+            },
+            {
+                "fqn": "rltrain.nn.SkipMLP",
+                "inputs": 512,
+                "hiddens": [256, 256, 256, 256],
+                "outputs": 1
+            }
+        ]
+    },
+    "opt": {
+        "actor": {
+            "fqn": "torch.optim.Adam",
+            "lr": 3e-4
+        },
+        "critic": {
+            "fqn": "torch.optim.Adam",
+            "lr": 3e-4
+        }
+    }
+}

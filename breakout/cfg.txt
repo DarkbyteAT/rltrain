@@ -1,0 +1,17 @@
+--img
+--agent
+breakout/reinforce.json
+breakout/reinforce-sam.json
+breakout/reinforce-lamp.json
+breakout/a2c.json
+breakout/a2c-sam.json
+breakout/a2c-lamp.json
+breakout/ppo.json
+breakout/ppo-sam.json
+breakout/ppo-lamp.json
+--env
+breakout/env.json
+--dump
+results/breakout
+--num_steps
+100000
