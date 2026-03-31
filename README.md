@@ -85,10 +85,10 @@ pip install -e ".[dev]"
 
 ```bash
 # Train PPO on CartPole
-python run.py --agent cartpole/ppo.json --env cartpole/env.json --dump results/ --num_steps 100000
+python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --num_steps 100000
 
 # Train multiple agents sequentially
-python run.py --agent cartpole/ppo.json cartpole/reinforce.json --env cartpole/env.json --dump results/
+python run.py --agent examples/cartpole/ppo.json examples/cartpole/reinforce.json --env examples/cartpole/env.json --dump results/
 
 # Use a config file for complex runs
 python run.py @my_config.txt
