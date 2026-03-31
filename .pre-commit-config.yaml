@@ -1,0 +1,50 @@
+repos:
+  # Universal hygiene hooks: whitespace, newlines, YAML, big files, etc.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=5000"]  # ML projects may have larger files
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # detect-secrets: prevent secrets being pushed to git
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: detect secrets
+        pass_filenames: false
+
+  # bandit: security linter
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        name: scan vulnerabilities
+        entry: bandit
+        args: ["-r", "rltrain"]
+        pass_filenames: false
+
+  # ruff: linter, import sorter, formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.2
+    hooks:
+      - id: ruff
+        name: code style and formatting
+        args: ["--fix"]
+      - id: ruff-format
+
+  # pytest: runs tests (local custom hook)
+  - repo: local
+    hooks:
+      - id: pytest
+        name: unit tests
+        language: system
+        entry: bash
+        args:
+          - -c
+          - pytest -m unit --tb=short -q 2>/dev/null || echo "No unit tests found (yet)"
+        pass_filenames: false

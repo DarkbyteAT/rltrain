@@ -1,0 +1,173 @@
+# ===============================
+# Python bytecode & interpreter files
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# ===============================
+# Distribution / packaging
+# ===============================
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# ===============================
+# Installer logs
+# ===============================
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ===============================
+# Unit test / coverage reports
+# ===============================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# ===============================
+# Virtual environments
+# ===============================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pyvenv/
+
+# ===============================
+# PEP 582
+# ===============================
+__pypackages__/
+
+# ===============================
+# Jupyter
+# ===============================
+.ipynb_checkpoints
+
+# ===============================
+# IPython
+# ===============================
+profile_default/
+ipython_config.py
+
+# ===============================
+# mypy type checker
+# ===============================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ===============================
+# Pyre type checker
+# ===============================
+.pyre/
+
+# ===============================
+# pytype static type analyzer
+# ===============================
+.pytype/
+
+# ===============================
+# Ruff (linter/cache)
+# ===============================
+.ruff_cache/
+
+# ===============================
+# IDE/editor settings
+# ===============================
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===============================
+# Cursor (AI code editor)
+# ===============================
+.cursorignore
+.cursorindexingignore
+
+# ===============================
+# Temporary and backup files
+# ===============================
+*.tmp
+*.bak
+*.old
+*.pid
+*.gz
+
+# ===============================
+# Git worktrees
+# ===============================
+.worktrees/
+
+# ===============================
+# ML / Training artifacts
+# ===============================
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Training results and outputs
+results/
+runs/
+logs/
+mlruns/
+wandb/
+
+# Large datasets
+*.hdf5
+*.h5
+*.pkl
+*.joblib
+
+# Plots generated during training (keep SVG templates, ignore generated)
+# Uncomment if you want to ignore all generated plots:
+# *.svg
+
+# ===============================
+# Experiment tracking
+# ===============================
+*.db
+*.db-journal
+*.db-wal
+
+# ===============================
+# OS files
+# ===============================
+.DS_Store
+Thumbs.db

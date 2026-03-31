@@ -1,0 +1,252 @@
+% =============================================================================
+% RLTrain — References
+% =============================================================================
+% Papers behind each algorithm, architecture, and technique in the framework.
+% Organised by topic. Each entry tagged with its relevance to the codebase.
+% =============================================================================
+
+% ---------------------------------------------------------------------------
+% Policy Gradient Methods
+% ---------------------------------------------------------------------------
+
+@article{williams1992reinforce,
+    title     = {Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning},
+    author    = {Williams, Ronald J.},
+    journal   = {Machine Learning},
+    volume    = {8},
+    number    = {3--4},
+    pages     = {229--256},
+    year      = {1992},
+    publisher = {Springer},
+    note      = {Foundation for VanillaPG and REINFORCE agents}
+}
+
+@inproceedings{sutton1999policy,
+    title     = {Policy Gradient Methods for Reinforcement Learning with Function Approximation},
+    author    = {Sutton, Richard S. and McAllester, David and Singh, Satinder and Mansour, Yishay},
+    booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+    volume    = {12},
+    year      = {1999},
+    note      = {Policy gradient theorem underpinning all PG agents}
+}
+
+% ---------------------------------------------------------------------------
+% Actor-Critic Methods
+% ---------------------------------------------------------------------------
+
+@inproceedings{konda1999actor,
+    title     = {Actor-Critic Algorithms},
+    author    = {Konda, Vijay R. and Tsitsiklis, John N.},
+    booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+    volume    = {12},
+    year      = {1999},
+    note      = {Foundation for VanillaAC agent}
+}
+
+@article{mnih2016asynchronous,
+    title   = {Asynchronous Methods for Deep Reinforcement Learning},
+    author  = {Mnih, Volodymyr and Badia, Adri{\`a} Puigdom{\`e}nech and Mirza, Mehdi and Graves, Alex and Lillicrap, Timothy P. and Harley, Tim and Silver, David and Kavukcuoglu, Koray},
+    journal = {International Conference on Machine Learning (ICML)},
+    volume  = {48},
+    pages   = {1928--1937},
+    year    = {2016},
+    note    = {A3C — basis for AdvantageAC agent's architecture}
+}
+
+% ---------------------------------------------------------------------------
+% Generalised Advantage Estimation
+% ---------------------------------------------------------------------------
+
+@article{schulman2016gae,
+    title   = {High-Dimensional Continuous Control Using Generalized Advantage Estimation},
+    author  = {Schulman, John and Moritz, Philipp and Levine, Sergey and Jordan, Michael I. and Abbeel, Pieter},
+    journal = {International Conference on Learning Representations (ICLR)},
+    year    = {2016},
+    note    = {GAE (lambda\_gae parameter) used in AdvantageAC and PPO}
+}
+
+% ---------------------------------------------------------------------------
+% Proximal Policy Optimisation
+% ---------------------------------------------------------------------------
+
+@article{schulman2017ppo,
+    title   = {Proximal Policy Optimization Algorithms},
+    author  = {Schulman, John and Wolski, Filip and Dhariwal, Prafulla and Radford, Alec and Klimov, Oleg},
+    journal = {arXiv preprint arXiv:1707.06347},
+    year    = {2017},
+    note    = {Direct basis for PPO agent — clipped surrogate, mini-batch epochs, KL early stopping}
+}
+
+% ---------------------------------------------------------------------------
+% Deep Q-Networks
+% ---------------------------------------------------------------------------
+
+@article{mnih2015dqn,
+    title     = {Human-level Control Through Deep Reinforcement Learning},
+    author    = {Mnih, Volodymyr and Kavukcuoglu, Koray and Silver, David and Rusu, Andrei A. and Veness, Joel and Bellemare, Marc G. and Graves, Alex and Riedmiller, Martin and Fidjeland, Andreas K. and Ostrovski, Georg and others},
+    journal   = {Nature},
+    volume    = {518},
+    number    = {7540},
+    pages     = {529--533},
+    year      = {2015},
+    publisher = {Nature Publishing Group},
+    note      = {Foundation for VanillaDQN — replay buffer, target network}
+}
+
+@article{lillicrap2016ddpg,
+    title   = {Continuous Control with Deep Reinforcement Learning},
+    author  = {Lillicrap, Timothy P. and Hunt, Jonathan J. and Pritzel, Alexander and Heess, Nicolas and Erez, Tom and Tassa, Yuval and Silver, David and Wierstra, Daan},
+    journal = {International Conference on Learning Representations (ICLR)},
+    year    = {2016},
+    note    = {Soft target network updates (Polyak averaging) used in VanillaDQN.descend()}
+}
+
+% ---------------------------------------------------------------------------
+% Entropy Regularisation
+% ---------------------------------------------------------------------------
+
+@inproceedings{williams1991entropy,
+    title     = {Function Optimization Using Connectionist Reinforcement Learning Algorithms},
+    author    = {Williams, Ronald J. and Peng, Jing},
+    journal   = {Connection Science},
+    volume    = {3},
+    number    = {3},
+    pages     = {241--268},
+    year      = {1991},
+    note      = {Entropy bonus (tau parameter) for exploration in policy gradient agents}
+}
+
+@article{haarnoja2018sac,
+    title   = {Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor},
+    author  = {Haarnoja, Tuomas and Zhou, Aurick and Abbeel, Pieter and Levine, Sergey},
+    journal = {International Conference on Machine Learning (ICML)},
+    volume  = {80},
+    pages   = {1861--1870},
+    year    = {2018},
+    note    = {Maximum entropy RL framework — related to entropy regularisation in all PG agents}
+}
+
+% ---------------------------------------------------------------------------
+% Robust Optimisation — SAM and LAMP
+% ---------------------------------------------------------------------------
+
+@inproceedings{foret2021sam,
+    title     = {Sharpness-Aware Minimization for Efficiently Improving Generalization},
+    author    = {Foret, Pierre and Kleiner, Ariel and Mobahi, Hossein and Neyshabur, Behnam},
+    booktitle = {International Conference on Learning Representations (ICLR)},
+    year      = {2021},
+    note      = {SAM — adversarial weight perturbation for flatter minima. Implemented in Agent.learn() when robust=true, rollback\_len=0}
+}
+
+@article{tsuzuku2020normalized,
+    title   = {Normalized Flat Minima: Exploring Scale Invariant Definition of Flat Minima with First Order Methods},
+    author  = {Tsuzuku, Yusuke and Sato, Issei and Sugiyama, Masashi},
+    journal = {arXiv preprint arXiv:2007.09838},
+    year    = {2020},
+    note    = {Related to normalised gradient direction used in SAM perturbation step}
+}
+
+% ---------------------------------------------------------------------------
+% Neural Network Architectures
+% ---------------------------------------------------------------------------
+
+@article{saxe2014orthogonal,
+    title   = {Exact Solutions to the Nonlinear Dynamics of Learning in Deep Linear Neural Networks},
+    author  = {Saxe, Andrew M. and McClelland, James L. and Ganguli, Surya},
+    journal = {International Conference on Learning Representations (ICLR)},
+    year    = {2014},
+    note    = {Orthogonal weight initialisation — used in all network modules (mlp, cnn, SkipMLP)}
+}
+
+@article{sinha2020d2rl,
+    title   = {{D2RL}: Deep Dense Architectures in Reinforcement Learning},
+    author  = {Sinha, Samarth and Song, Jiaming and Garg, Animesh and Ermon, Stefano},
+    journal = {arXiv preprint arXiv:2010.09163},
+    year    = {2020},
+    note    = {Skip connections from input to every hidden layer — basis for SkipMLP (d2rl.py)}
+}
+
+@article{rahimi2007rff,
+    title   = {Random Features for Large-Scale Kernel Machines},
+    author  = {Rahimi, Ali and Recht, Benjamin},
+    journal = {Advances in Neural Information Processing Systems (NeurIPS)},
+    volume  = {20},
+    year    = {2007},
+    note    = {Random Fourier Features — basis for RFF layer (rff.py)}
+}
+
+% ---------------------------------------------------------------------------
+% Environments
+% ---------------------------------------------------------------------------
+
+@inproceedings{young2019minatar,
+    title     = {{MinAtar}: An Atari-Inspired Testbed for Thorough and Reproducible Reinforcement Learning Experiments},
+    author    = {Young, Kenny and Tian, Tian},
+    booktitle = {arXiv preprint arXiv:1903.03176},
+    year      = {2019},
+    note      = {MinAtar environments used for visual RL experiments (Breakout, SpaceInvaders)}
+}
+
+@article{tasfi2016ple,
+    title   = {{PyGame Learning Environment}},
+    author  = {Tasfi, Norman},
+    journal = {GitHub repository},
+    year    = {2016},
+    url     = {https://github.com/ntasfi/PyGame-Learning-Environment},
+    note    = {PLE environments (Catcher, Pixelcopter)}
+}
+
+@article{brockman2016gym,
+    title   = {{OpenAI Gym}},
+    author  = {Brockman, Greg and Cheung, Vicki and Pettersson, Ludwig and Schneider, Jonas and Schulman, John and Tang, Jie and Zaremba, Wojciech},
+    journal = {arXiv preprint arXiv:1606.01540},
+    year    = {2016},
+    note    = {Gym environment interface — MDP wrapper built on gym.vector.SyncVectorEnv}
+}
+
+% ---------------------------------------------------------------------------
+% General RL Theory
+% ---------------------------------------------------------------------------
+
+@book{sutton2018rl,
+    title     = {Reinforcement Learning: An Introduction},
+    author    = {Sutton, Richard S. and Barto, Andrew G.},
+    edition   = {2nd},
+    year      = {2018},
+    publisher = {MIT Press},
+    note      = {Foundational reference for discounted returns, TD learning, policy gradient theorem}
+}
+
+@article{kingma2015adam,
+    title   = {Adam: A Method for Stochastic Optimization},
+    author  = {Kingma, Diederik P. and Ba, Jimmy},
+    journal = {International Conference on Learning Representations (ICLR)},
+    year    = {2015},
+    note    = {Adam optimiser — default optimiser in all agent configurations}
+}
+
+% ---------------------------------------------------------------------------
+% Techniques Used in Implementation
+% ---------------------------------------------------------------------------
+
+@article{polyak1992averaging,
+    title     = {Acceleration of Stochastic Approximation by Averaging},
+    author    = {Polyak, Boris T. and Juditsky, Anatoli B.},
+    journal   = {SIAM Journal on Control and Optimization},
+    volume    = {30},
+    number    = {4},
+    pages     = {838--855},
+    year      = {1992},
+    publisher = {SIAM},
+    note      = {Polyak averaging — used for DQN target network soft updates via lerp()}
+}
+
+@article{elfwing2018silu,
+    title   = {Sigmoid-Weighted Linear Units for Neural Network Function Approximation in Reinforcement Learning},
+    author  = {Elfwing, Stefan and Uchibe, Eiji and Doya, Kenji},
+    journal = {Neural Networks},
+    volume  = {107},
+    pages   = {3--11},
+    year    = {2018},
+    note    = {SiLU (Swish) activation — default in CNN and SkipMLP modules}
+}
