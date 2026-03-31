@@ -1,0 +1,22 @@
+[project]
+name = "rltrain"
+version = "1.0.0"
+description = "PyTorch deep reinforcement learning framework"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0",
+    "numpy",
+    "matplotlib",
+    "gymnasium",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "pre-commit",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

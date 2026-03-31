@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch as T
 import torch.nn as nn
 
@@ -32,7 +34,7 @@ def agent(fqn: str,
     # Iterates over all optimisers defined to create builder functions
     for name, _kwargs in opt.items():
         opt_type = load(_kwargs["fqn"])
-        _opt[name] = lambda params: opt_type(params=params, **{k : v for k, v in _kwargs.items()
-                                                                if k != "fqn"})
+        opt_kwargs = {k: v for k, v in _kwargs.items() if k != "fqn"}
+        _opt[name] = partial(opt_type, **opt_kwargs)
     
     return agent_type(model=_model, opt=_opt, device=device, **kwargs)
