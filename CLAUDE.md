@@ -57,7 +57,7 @@ Networks are built by composing modules listed in JSON. Each model entry becomes
 ## Known Technical Debt
 
 - Uses **gymnasium** — 5-tuple `step()` returns with `terminated | truncated` combined into `done` at the MDP level
-- **No packaging** — no `pyproject.toml`, no installable package
+- **Packaging** — `pyproject.toml` exists with hatchling backend; install via `pip install -e ".[dev]"` or `uv sync --group dev`
 - **Hardcoded imports** in `run.py` (`import minatar`, `import ple`) for environment registration
 - **Single-env vectorisation** — wraps 1 env in `SyncVectorEnv` (no true parallelism)
 - **No experiment tracking** integration (WandB, TensorBoard)
