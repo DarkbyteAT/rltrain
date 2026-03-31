@@ -9,7 +9,7 @@ RLTrain is a PyTorch deep RL framework originally built for a 2022 dissertation 
 ## Architecture at a Glance
 
 - **Agent hierarchy**: `Agent` (ABC) → `VanillaPG` → `REINFORCE` → `VanillaAC` → `AdvantageAC` → `PPO`, plus `VanillaDQN`. Each subclass adds exactly one concept. Template method pattern: `learn()` orchestrates, subclasses override `loss()` and `descend()`.
-- **Environment**: `MDP` wraps `gym.vector.SyncVectorEnv` with auto-reset, metric tracking, and optional channel preprocessing.
+- **Environment**: `MDP` wraps `gymnasium.vector.SyncVectorEnv` with auto-reset, metric tracking, and optional channel preprocessing.
 - **Configuration**: JSON files with `fqn` fields for dynamic class resolution. Agents, networks, optimisers, and wrappers are all specified declaratively.
 - **Neural networks**: `mlp`, `cnn`, `SkipMLP` (D2RL), `RFF` — all use orthogonal init.
 - **Robust optimisation**: SAM and LAMP baked into `Agent.learn()`, toggled via config.
@@ -56,7 +56,7 @@ Networks are built by composing modules listed in JSON. Each model entry becomes
 
 ## Known Technical Debt
 
-- Uses **old gym API** (pre-Gymnasium) — `env.seed()`, 4-tuple `step()` returns, `gym.vector`
+- Uses **gymnasium** — 5-tuple `step()` returns with `terminated | truncated` combined into `done` at the MDP level
 - **No packaging** — no `pyproject.toml`, no installable package
 - **Hardcoded imports** in `run.py` (`import minatar`, `import ple`) for environment registration
 - **Single-env vectorisation** — wraps 1 env in `SyncVectorEnv` (no true parallelism)

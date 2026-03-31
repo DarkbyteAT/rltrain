@@ -1,5 +1,5 @@
-import gym
-import gym.vector as vgym
+import gymnasium as gym
+import gymnasium.vector as vgym
 
 from rltrain.utils.builders import load
 from typing import Callable

@@ -1,4 +1,4 @@
-import gym.vector as vgym
+import gymnasium.vector as vgym
 import logging
 import numpy as np
 
@@ -7,7 +7,7 @@ from rltrain.utils import lerp
 from typing import Callable
 
 class MDP:
-    """Simple wrapper around the OpenAI ``gym`` framework that automatically resets environments, as
+    """Simple wrapper around the ``gymnasium`` framework that automatically resets environments, as
     well as tracking several statistics, and handling (minimal) input-preprocessing."""
     
     target_reward: float
@@ -33,14 +33,14 @@ class MDP:
         self.swap_channels = swap_channels
     
     def setup(self, seed: int):
-        self.env.seed(seed)
+        self.seed = seed
         self.target_reward = self.env.envs[0].spec.reward_threshold
         self.log.info(f"{self.env.envs[0].observation_space.shape=}")
         self.log.info(f"{self.env.envs[0].action_space=}")
-        
+
         if self.target_reward is not None:
             self.log.info(f"{self.target_reward=:.3f}")
-        
+
         self.total_steps = 0
         self.episode_steps = 0
         self.episode_count = 0
@@ -48,11 +48,11 @@ class MDP:
         self.length_history = []
         self.return_history = []
         self.run_history = []
-        
-        self.reset()
+
+        self.reset(seed=seed)
     
-    def reset(self):
-        self.state = self.env.reset()
+    def reset(self, seed: int | None = None):
+        self.state, _ = self.env.reset(seed=seed)
         self.done = False
         self.length = 0
         self.reward_sum = 0.0
@@ -84,7 +84,8 @@ class MDP:
         
         state = self.state
         action = policy(state)
-        next_state, reward, done, _ = self.env.step(action)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+        done = terminated | truncated
         
         # Adjusts next observation to put channels axis first if input is an image
         if self.swap_channels:
