@@ -21,7 +21,10 @@ dependencies = [
     "torch>=2.0",
     "numpy",
     "matplotlib",
+    "pandas",
+    "seaborn",
     "gymnasium",
+    "typed-argument-parser",
 ]
 
 [project.urls]

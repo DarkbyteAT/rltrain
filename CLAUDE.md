@@ -13,20 +13,23 @@ RLTrain is a PyTorch deep RL framework originally built for a 2022 dissertation 
 - **Configuration**: JSON files with `fqn` fields for dynamic class resolution. Agents, networks, optimisers, and wrappers are all specified declaratively.
 - **Neural networks**: `mlp`, `cnn`, `SkipMLP` (D2RL), `RFF` — all use orthogonal init.
 - **Robust optimisation**: SAM and LAMP baked into `Agent.learn()`, toggled via config.
-- **Entry point**: `run.py` with TAP argument parser. Trains agents sequentially, saves metrics/plots/models.
+- **Trainer + Callbacks**: `Trainer` owns the training loop and orchestrates `Callback` hooks (on_train_start, on_step, on_episode_end, on_checkpoint, on_train_end). Built-in callbacks handle CSV logging, SVG plots, and model checkpoints. Custom callbacks implement the `Callback` protocol.
+- **Entry point**: `run.py` is a thin CLI wrapper — parses args, builds objects, delegates to `Trainer.fit()`.
 
 ## Directory Structure
 
 ```
 rltrain/              # Framework package
 ├── agents/           # Agent implementations (policy_gradient/, actor_critic/, q_learning/)
+├── callbacks/        # Callback protocol + built-in callbacks (checkpoint, csv_logger, plot)
 ├── env/              # MDP wrapper + Trajectory dataclass
 ├── nn/               # Network modules (mlp, cnn, d2rl, rff)
+├── trainer.py        # Trainer class — training loop + callback orchestration
 └── utils/            # Builders (FQN loader), discount, center, grad, lerp
 
 {cartpole,acrobot,breakout,invaders,pixelcopter,catcher}/
                       # Experiment configs (env.json + agent variants)
-run.py                # Training entry point
+run.py                # Thin CLI wrapper — arg parsing, object creation, calls Trainer.fit()
 ```
 
 ## Code Conventions
@@ -51,6 +54,9 @@ The `load(fqn)` function in `utils/builders/` dynamically imports any class by f
 - `loss(*batch)` → scalar loss
 - `descend()` — optimizer step + gradient clipping
 
+### Callback Protocol
+`rltrain.callbacks.Callback` is a `@runtime_checkable` Protocol with five hook methods, all defaulting to no-op (`...`). Built-in callbacks: `CheckpointCallback`, `CSVLoggerCallback`, `PlotCallback`. The `Trainer` accepts a `callbacks` list — if None, it uses the three built-ins. Custom callbacks implement any subset of the protocol methods.
+
 ### Config-Driven Composition
 Networks are built by composing modules listed in JSON. Each model entry becomes a layer in `nn.Sequential`. Optimisers are stored as factory lambdas until `setup()` binds them to parameters.
 
@@ -58,7 +64,6 @@ Networks are built by composing modules listed in JSON. Each model entry becomes
 
 - Uses **gymnasium** — 5-tuple `step()` returns with `terminated | truncated` combined into `done` at the MDP level
 - **Packaging** — `pyproject.toml` exists with hatchling backend; install via `pip install -e ".[dev]"` or `uv sync --group dev`
-- **Hardcoded imports** in `run.py` (`import minatar`, `import ple`) for environment registration
 - **Single-env vectorisation** — wraps 1 env in `SyncVectorEnv` (no true parallelism)
 - **No experiment tracking** integration (WandB, TensorBoard)
 - **No CI/CD** pipeline

@@ -2,5 +2,7 @@
 
 
 def main() -> None:
-    """CLI entry point for rltrain."""
-    from rltrain import run  # noqa: F401 — module-level side effects trigger training
+    """CLI entry point — delegates to run.train()."""
+    from run import args, train
+
+    train(args)

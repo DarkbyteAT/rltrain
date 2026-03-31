@@ -14,8 +14,10 @@ graph LR
     end
 
     subgraph Framework
-        B --> A["Agent"]
-        B --> E["MDP Environment"]
+        B --> TR["Trainer"]
+        TR --> A["Agent"]
+        TR --> E["MDP Environment"]
+        TR -->|"hooks"| CB["Callbacks"]
         A -->|"act(states)"| P["Policy π(a|s)"]
         P -->|"action"| E
         E -->|"Trajectory (s,a,r,s',done)"| A
@@ -79,6 +81,8 @@ pip install -e ".[dev]"
 
 ### Training an Agent
 
+**CLI** (thin wrapper around the Trainer API):
+
 ```bash
 # Train PPO on CartPole
 python run.py --agent cartpole/ppo.json --env cartpole/env.json --dump results/ --num_steps 100000
@@ -88,6 +92,30 @@ python run.py --agent cartpole/ppo.json cartpole/reinforce.json --env cartpole/e
 
 # Use a config file for complex runs
 python run.py @my_config.txt
+```
+
+**Trainer API** (programmatic use):
+
+```python
+from rltrain.trainer import Trainer
+from rltrain.callbacks.checkpoint import CheckpointCallback
+from rltrain.callbacks.csv_logger import CSVLoggerCallback
+from rltrain.callbacks.plot import PlotCallback
+
+trainer = Trainer(
+    agent,
+    env,
+    num_steps=100_000,
+    checkpoint_steps=2500,
+    run_dir=Path("results/ppo/run_1"),
+    callbacks=[
+        CSVLoggerCallback(),
+        PlotCallback(num_steps=100_000),
+        CheckpointCallback(save_all=True),
+    ],
+    seed=42,
+)
+trainer.fit()
 ```
 
 ### CLI Arguments
@@ -176,6 +204,56 @@ Add SAM (Sharpness-Aware Minimization) or LAMP (Local Averaging over Multiple Pe
 
 Set `rollback_len > 0` to use LAMP instead of SAM. LAMP adds parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter loss regions.
 
+## Callbacks
+
+The training loop is extensible via the `Callback` protocol. Built-in callbacks handle checkpointing, CSV metrics, and SVG plots. Write a custom callback by implementing any subset of the hook methods:
+
+```python
+from pathlib import Path
+from rltrain.agents.agent import Agent
+from rltrain.callbacks import Callback
+from rltrain.env import MDP
+
+
+class WandbCallback:
+    """Example custom callback that logs to Weights & Biases."""
+
+    def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        import wandb
+        wandb.init(project="rltrain", name=agent.name)
+
+    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        import wandb
+        wandb.log({"return": env.return_history[-1], "episode": episode})
+
+    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        import wandb
+        wandb.finish()
+```
+
+Pass custom callbacks to the `Trainer`:
+
+```python
+trainer = Trainer(
+    agent, env,
+    num_steps=100_000,
+    checkpoint_steps=2500,
+    run_dir=run_dir,
+    callbacks=[CSVLoggerCallback(), CheckpointCallback(), WandbCallback()],
+    seed=42,
+)
+```
+
+### Hook Methods
+
+| Method | Called | Arguments |
+|--------|--------|-----------|
+| `on_train_start` | Once, before the loop begins | agent, env, run_dir |
+| `on_step` | After every `agent.step()` call | agent, env, step |
+| `on_episode_end` | When an episode completes | agent, env, episode |
+| `on_checkpoint` | At checkpoint intervals | agent, env, run_dir |
+| `on_train_end` | Once, after the loop exits | agent, env, run_dir |
+
 ## Output
 
 Training produces the following in `<dump>/<agent_name>/<timestamp>/`:
@@ -208,6 +286,11 @@ rltrain/
 │   │   └── ppo.py              # PPO — clipped surrogate, mini-batch, KL early stop
 │   └── q_learning/
 │       └── vanilla.py          # VanillaDQN — replay buffer, target network, epsilon decay
+├── callbacks/
+│   ├── __init__.py             # Callback protocol (runtime_checkable)
+│   ├── checkpoint.py           # CheckpointCallback — model state_dict saves
+│   ├── csv_logger.py           # CSVLoggerCallback — episode metrics to CSV
+│   └── plot.py                 # PlotCallback — per-episode and per-sample SVG plots
 ├── env/
 │   ├── mdp.py                  # MDP wrapper — auto-reset, metric tracking, preprocessing
 │   └── trajectory.py           # Trajectory dataclass — (s, a, r, s', done)
@@ -216,6 +299,7 @@ rltrain/
 │   ├── cnn.py                  # CNN with flatten output
 │   ├── d2rl.py                 # SkipMLP — D2RL skip connections
 │   └── rff.py                  # Random Fourier Features layer
+├── trainer.py                  # Trainer — training loop + callback orchestration
 └── utils/
     ├── builders/               # Factory functions — dynamic FQN class loading
     ├── discount.py             # Discounted return / GAE computation
