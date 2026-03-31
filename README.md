@@ -68,7 +68,7 @@ Each level adds one concept — baselines, TD bootstrapping, GAE, clipping — m
 ```bash
 git clone https://github.com/your-username/rltrain.git
 cd rltrain
-pip install torch numpy gym matplotlib seaborn pandas typed-argument-parser
+pip install torch numpy gymnasium matplotlib seaborn pandas typed-argument-parser
 ```
 
 ### Training an Agent
@@ -149,12 +149,12 @@ Networks are composed sequentially — each entry in the model list becomes a la
 {
     "id": "CartPole-v1",
     "wrappers": [
-        {"fqn": "gym.wrappers.normalize.NormalizeObservation"}
+        {"fqn": "gymnasium.wrappers.NormalizeObservation"}
     ]
 }
 ```
 
-Wrappers are applied in order. Any `gym.Wrapper` subclass works, including custom wrappers.
+Wrappers are applied in order. Any `gymnasium.Wrapper` subclass works, including custom wrappers.
 
 ### Robust Optimisation
 
