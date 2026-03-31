@@ -2,13 +2,34 @@
 name = "rltrain"
 version = "1.0.0"
 description = "PyTorch deep reinforcement learning framework"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.10"
+authors = [{ name = "Ammar Tarajia" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "torch>=2.0",
     "numpy",
     "matplotlib",
     "gymnasium",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DarkbyteAT/rltrain"
+Repository = "https://github.com/DarkbyteAT/rltrain"
+
+[project.scripts]
+rltrain = "rltrain.cli:main"
 
 [dependency-groups]
 dev = [

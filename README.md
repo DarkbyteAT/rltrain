@@ -66,10 +66,16 @@ Each level adds one concept — baselines, TD bootstrapping, GAE, clipping — m
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/rltrain.git
+git clone https://github.com/DarkbyteAT/rltrain.git
 cd rltrain
-pip install torch numpy gymnasium matplotlib seaborn pandas typed-argument-parser
+
+# Install with uv (recommended)
+uv sync --group dev
+
+# Or with pip
+pip install -e ".[dev]"
 ```
+
 
 ### Training an Agent
 
