@@ -17,7 +17,6 @@ RLTrain is a PyTorch deep RL framework originally built for a 2022 dissertation 
 ## Known Technical Debt
 
 - **Single-env vectorisation** — wraps 1 env in `SyncVectorEnv` (no true parallelism)
-- **No experiment tracking** integration (WandB, TensorBoard) — Callback Protocol enables this
 - **No CI/CD** pipeline
 
 ## Maintaining Documentation
