@@ -37,7 +37,7 @@ run.py                # Thin CLI wrapper — arg parsing, object creation, calls
 - **PyTorch** — `T` alias for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
 - **NumPy-style docstrings** with backtick-wrapped parameter names
 - **Orthogonal weight init** on all linear and conv layers
-- **No tests exist yet** — when adding tests, use plain `async def test_*` functions with pytest, no classes
+- **Tests** — plain `def test_*` functions with pytest, no classes. Run with `uv run pytest tests/ -v`
 
 ## Key Patterns
 
