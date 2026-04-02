@@ -124,7 +124,7 @@ class VideoRecorderCallback:
         spec = env.env.envs[0].spec
         if spec is None:
             raise RuntimeError("Cannot auto-detect env — provide env_fn to VideoRecorderCallback")
-        return gym.make(spec.id, render_mode="rgb_array")
+        return gym.make(spec, render_mode="rgb_array")
 
     def _run_eval_rollouts(self, agent: Agent) -> None:
         """Run num_episodes evaluation episodes on the recording env."""
@@ -134,6 +134,6 @@ class VideoRecorderCallback:
             obs, _ = self._eval_env.reset()
             terminated, truncated = False, False
             while not (terminated or truncated):
-                processed = self._preprocess_obs(obs[np.newaxis, ...])[0]
-                action = agent(processed[np.newaxis, ...])[0]
+                processed = self._preprocess_obs(obs[np.newaxis, ...])
+                action = agent(processed)[0]
                 obs, _, terminated, truncated, _ = self._eval_env.step(action)
