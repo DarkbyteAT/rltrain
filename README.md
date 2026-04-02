@@ -401,54 +401,6 @@ videos/                 # Evaluation videos (if VideoRecorderCallback enabled)
     ...
 ```
 
-## Architecture
-
-```
-rltrain/
-├── agents/
-│   ├── agent.py                # Abstract base — setup, act, step, load, loss, learn, descend
-│   ├── policy_gradient/
-│   │   ├── vanilla.py          # VanillaPG — entropy-regularised policy gradient
-│   │   └── baseline.py         # REINFORCE — adds learned value baseline
-│   ├── actor_critic/
-│   │   ├── vanilla.py          # VanillaAC — TD error advantage, optional shared features
-│   │   ├── a2c.py              # AdvantageAC — GAE, horizon-based collection
-│   │   └── ppo.py              # PPO — clipped surrogate, mini-batch, KL early stop
-│   └── q_learning/
-│       └── vanilla.py          # VanillaDQN — replay buffer, target network, epsilon decay
-├── callbacks/
-│   ├── __init__.py             # Callback protocol (runtime_checkable)
-│   ├── checkpoint.py           # CheckpointCallback — model state_dict saves
-│   ├── csv_logger.py           # CSVLoggerCallback — episode metrics to CSV
-│   ├── plot.py                 # PlotCallback — per-episode and per-sample SVG plots
-│   └── video_recorder.py      # VideoRecorderCallback — eval episode video recording
-├── env/
-│   ├── mdp.py                  # MDP wrapper — auto-reset, metric tracking, preprocessing
-│   └── trajectory.py           # Trajectory dataclass — (s, a, r, s', done)
-├── nn/
-│   ├── mlp.py                  # MLP with orthogonal init
-│   ├── cnn.py                  # CNN with flatten output
-│   ├── d2rl.py                 # SkipMLP — D2RL skip connections
-│   └── rff.py                  # Random Fourier Features layer
-├── tracking/
-│   ├── __init__.py             # Re-exports MetricsLogger, TrackingCallback
-│   ├── logger.py               # MetricsLogger protocol (runtime_checkable)
-│   ├── callback.py             # TrackingCallback — Callback → Logger adapter
-│   └── backends/
-│       ├── stream.py           # StreamLogger — zero-dependency console output
-│       ├── fs.py               # FSLogger — JSONL to any fsspec filesystem
-│       ├── tensorboard.py      # TensorBoardLogger — SummaryWriter wrapper
-│       ├── wandb.py            # WandbLogger — Weights & Biases wrapper
-│       └── xptrack.py          # XptrackLogger — xptrack client (stub)
-├── trainer.py                  # Trainer — training loop + callback orchestration
-└── utils/
-    ├── builders/               # Factory functions — dynamic FQN class loading
-    ├── discount.py             # Discounted return / GAE computation
-    ├── center.py               # Standardisation (zero mean, unit variance)
-    ├── grad.py                 # Gradient vector get/set utilities
-    └── lerp.py                 # Linear interpolation (for target network soft updates)
-```
-
 ## Experiments
 
 The repository includes pre-configured experiments from the original dissertation research, comparing REINFORCE, A2C, and PPO (each with baseline, SAM, and LAMP variants) across six environments:
