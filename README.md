@@ -84,14 +84,15 @@ pip install -e ".[dev]"
 **CLI** (thin wrapper around the Trainer API):
 
 ```bash
-# Train PPO on CartPole
-python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --num_steps 100000
+# Train PPO on CartPole (auto-detects best device: CUDA → MPS → CPU)
+python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/
+
+# Explicitly select a device backend
+python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device mps
+python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device cuda
 
 # Train multiple agents sequentially
-python run.py --agent examples/cartpole/ppo.json examples/cartpole/reinforce.json --env examples/cartpole/env.json --dump results/
-
-# Use a config file for complex runs
-python run.py @my_config.txt
+python run.py --agents examples/cartpole/ppo.json examples/cartpole/reinforce.json --env examples/cartpole/env.json --dump results/
 ```
 
 **Trainer API** (programmatic use):
@@ -101,6 +102,9 @@ from rltrain.trainer import Trainer
 from rltrain.callbacks.checkpoint import CheckpointCallback
 from rltrain.callbacks.csv_logger import CSVLoggerCallback
 from rltrain.callbacks.plot import PlotCallback
+from rltrain.utils.device import resolve_device
+
+device = resolve_device("auto")  # CUDA → MPS → CPU
 
 trainer = Trainer(
     agent,
@@ -128,7 +132,7 @@ trainer.fit()
 | `--num_steps` | 100,000 | Total training environment steps |
 | `--checkpoint_steps` | 2,500 | Steps between saving metrics and plots |
 | `--reward_run_rate` | 0.1 | EMA beta for running average return |
-| `--gpu` | false | Use CUDA if available |
+| `--device` | auto | Device backend: `cpu`, `cuda`, `mps`, or `auto` (CUDA → MPS → CPU) |
 | `--workers` | 12 | PyTorch inter/intra-op thread count |
 | `--seed` | current time | RNG seed for reproducibility |
 | `--img` | false | Channel-first preprocessing for image observations |
@@ -321,12 +325,9 @@ The repository includes pre-configured experiments from the original dissertatio
 | Breakout-MinAtar-v1 | MinAtar arcade | 10x10x4 image | 3 |
 | SpaceInvaders-MinAtar-v1 | MinAtar arcade | 10x10x6 image | 4 |
 
-## Key Design Decisions
+## Contributing
 
-- **JSON + FQN configuration** — Separates experiment definition from code. New algorithms and architectures are usable without modifying the training loop.
-- **Inheritance hierarchy as tutorial** — Each agent subclass adds exactly one concept. Reading the chain from `VanillaPG` to `PPO` teaches the progression of policy optimisation ideas.
-- **Template method pattern** — `Agent.learn()` orchestrates the optimisation loop; subclasses override `loss()` and `descend()`. Robust optimisation (SAM/LAMP) is injected transparently.
-- **Orthogonal weight initialisation** — All networks use orthogonal init, standard practice in deep RL for training stability.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code conventions, architecture rules, and key patterns.
 
 ## References
 
