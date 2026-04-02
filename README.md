@@ -276,7 +276,7 @@ VideoRecorderCallback(
 )
 
 # Record every 50th training episode instead of at checkpoints:
-VideoRecorderCallback(episode_trigger=lambda ep: ep % 50 == 0)
+VideoRecorderCallback(eval_trigger=lambda ep: ep % 50 == 0)
 ```
 
 Videos are saved to `run_dir/videos/`. Requires `render_mode="rgb_array"` support — if unavailable, the callback disables itself with a warning. Install the video extra: `pip install rltrain[video]`.
