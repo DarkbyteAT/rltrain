@@ -11,7 +11,7 @@ import torch as T
 
 import rltrain.utils.builders as mk
 from rltrain.utils.builders.checkpoint import load_agent
-from tests.conftest import CARTPOLE_AGENT_CFG
+from tests.conftest import CARTPOLE_AGENT_CFG, DQN_AGENT_CFG
 
 
 def _build_and_setup_agent():
@@ -151,3 +151,54 @@ def test_accepts_string_path(tmp_path: Path):
     # When / Then -- no TypeError
     loaded = load_agent(str(run_dir), device="cpu")
     assert not loaded.model.training
+
+
+def test_dqn_round_trip(tmp_path: Path):
+    """DQN agent round-trip: weights, target sync, eps_greedy, and act()."""
+    # Given -- a DQN agent saved to disk
+    original = mk.agent(device=T.device("cpu"), **DQN_AGENT_CFG)
+    original.setup()
+
+    run_dir = tmp_path / "run"
+    (run_dir / "config").mkdir(parents=True)
+    (run_dir / "models").mkdir(parents=True)
+
+    with open(run_dir / "config" / "agent.json", "w") as f:
+        json.dump(DQN_AGENT_CFG, f)
+
+    T.save(original.model.state_dict(), run_dir / "models" / "model_FINAL.pt")
+
+    # When -- we load it back
+    loaded = load_agent(run_dir, device="cpu")
+
+    # Then -- qnet weights match the original
+    for (name, p_orig), (_, p_load) in zip(
+        original.model["qnet"].named_parameters(),
+        loaded.model["qnet"].named_parameters(),
+        strict=True,
+    ):
+        assert T.equal(p_orig, p_load), f"qnet parameter {name!r} differs after round-trip"
+
+    # Then -- target network is synced to the loaded qnet (not stale from setup)
+    for (name, p_qnet), (_, p_target) in zip(
+        loaded.model["qnet"].named_parameters(),
+        loaded.target.named_parameters(),
+        strict=True,
+    ):
+        assert T.equal(p_qnet, p_target), f"target parameter {name!r} not synced to qnet"
+
+    # Then -- eps_greedy is 0.0 (inference mode, not random actions)
+    assert loaded.eps_greedy == 0.0, f"expected eps_greedy=0.0, got {loaded.eps_greedy}"
+
+    # Then -- act() produces valid actions
+    obs = np.random.randn(1, 4).astype(np.float32)
+    actions = loaded(obs)
+    assert isinstance(actions, np.ndarray)
+    assert actions.shape == (1,), f"expected shape (1,), got {actions.shape}"
+
+
+def test_invalid_checkpoint_name_raises():
+    """load_agent must reject checkpoint names that are not FINAL or numeric."""
+    # When / Then
+    with pytest.raises(ValueError, match="checkpoint must be 'FINAL' or a numeric step"):
+        load_agent("/nonexistent", checkpoint="../../../etc/passwd", device="cpu")

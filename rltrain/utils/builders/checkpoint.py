@@ -32,28 +32,34 @@ def load_agent(
 
     Parameters
     ----------
-    `run_dir`
+    ``run_dir``
         Path to the run directory (the one containing ``config/`` and
         ``models/`` subdirectories).
-    `checkpoint`
+    ``checkpoint``
         Which checkpoint to load. ``"FINAL"`` loads ``model_FINAL.pt``;
         an integer string like ``"2500"`` loads ``model_2500.pt``.
-    `device`
+    ``device``
         Device to place the agent on. Accepts any string recognised by
         ``resolve_device`` (``"auto"``, ``"cpu"``, ``"cuda"``, ``"mps"``)
         or a ``torch.device`` instance.
 
     Returns
     -------
-    `Agent`
+    ``Agent``
         The loaded agent in evaluation mode.
 
     Raises
     ------
-    `FileNotFoundError`
+    ``FileNotFoundError``
         If the agent config or checkpoint file does not exist.
+    ``ValueError``
+        If ``checkpoint`` is not ``"FINAL"`` or a numeric string.
     """
     run_dir = Path(run_dir)
+
+    # --- validate checkpoint name ---------------------------------------- #
+    if not (checkpoint == "FINAL" or checkpoint.isdigit()):
+        raise ValueError(f"checkpoint must be 'FINAL' or a numeric step, got {checkpoint!r}")
 
     # --- resolve device -------------------------------------------------- #
     if isinstance(device, str):
@@ -79,6 +85,12 @@ def load_agent(
     state_dict = T.load(model_path, map_location=device, weights_only=True)
     agent.model.load_state_dict(state_dict)
     agent.model.eval()
+
+    # --- DQN-specific post-load fixups ----------------------------------- #
+    if hasattr(agent, "target"):
+        agent.target.load_state_dict(agent.model["qnet"].state_dict())
+    if hasattr(agent, "eps_greedy"):
+        agent.eps_greedy = 0.0
 
     log.info("loaded agent from '%s' (checkpoint=%s, device=%s)", run_dir, checkpoint, device)
     return agent
