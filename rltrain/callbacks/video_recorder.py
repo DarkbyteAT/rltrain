@@ -102,9 +102,21 @@ class VideoRecorderCallback:
         log.info("VideoRecorderCallback: recording to '%s'", video_dir)
 
     def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None: ...
-    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None: ...
-    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None: ...
+
+    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        if self._episode_trigger is not None and self._episode_trigger(episode):
+            self._run_eval_rollouts(agent)
+
+    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        if self._episode_trigger is None:
+            self._run_eval_rollouts(agent)
+
+    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        if self._episode_trigger is None:
+            self._run_eval_rollouts(agent)
+        if self._eval_env is not None:
+            self._eval_env.close()
+            log.info("VideoRecorderCallback: eval env closed")
 
     def _make_env_from_mdp(self, env: MDP) -> gym.Env:
         """Auto-detect env ID from the training MDP and create a renderable copy."""

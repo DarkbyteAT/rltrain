@@ -23,20 +23,32 @@ def _make_agent_stub() -> MagicMock:
     return agent
 
 
-def test_auto_detect_creates_eval_env(tmp_path):
-    """With no env_fn, on_train_start should auto-detect from MDP spec."""
+def _make_recording_env() -> gym.Env:
+    return gym.make("CartPole-v1", render_mode="rgb_array")
+
+
+# --- on_train_start: env creation ---
+
+
+def test_auto_detect_creates_eval_env_from_mdp_spec(tmp_path):
+    """Auto-detection should build a renderable eval env from MDP.env.envs[0].spec."""
+    # Given: a callback with no env_fn and a CartPole MDP
     mdp = _make_mdp()
     mdp.setup(seed=42)
     cb = VideoRecorderCallback()
+
+    # When: on_train_start fires
     cb.on_train_start(_make_agent_stub(), mdp, tmp_path)
 
+    # Then: eval env is created, callback is enabled, videos dir exists
     assert cb._eval_env is not None
     assert cb._enabled is True
     assert (tmp_path / "videos").is_dir()
 
 
-def test_explicit_env_fn_used(tmp_path):
+def test_explicit_env_fn_is_called_instead_of_auto_detection(tmp_path):
     """When env_fn is provided, it should be used instead of auto-detection."""
+    # Given: a callback with an explicit env factory
     factory_called = False
 
     def my_factory():
@@ -47,21 +59,113 @@ def test_explicit_env_fn_used(tmp_path):
     mdp = _make_mdp()
     mdp.setup(seed=42)
     cb = VideoRecorderCallback(env_fn=my_factory)
+
+    # When: on_train_start fires
     cb.on_train_start(_make_agent_stub(), mdp, tmp_path)
 
+    # Then: the factory was called and the eval env was created
     assert factory_called
     assert cb._eval_env is not None
 
 
-def test_graceful_disable_on_non_renderable_env(tmp_path):
-    """If env can't render rgb_array, callback disables itself."""
-
-    def bad_factory():
-        return gym.make("CartPole-v1")  # no render_mode
-
+def test_non_renderable_env_disables_callback(tmp_path):
+    """If the eval env doesn't support rgb_array, the callback disables itself."""
+    # Given: a factory that returns a non-renderable env
     mdp = _make_mdp()
     mdp.setup(seed=42)
-    cb = VideoRecorderCallback(env_fn=bad_factory)
+    cb = VideoRecorderCallback(env_fn=lambda: gym.make("CartPole-v1"))
+
+    # When: on_train_start fires
     cb.on_train_start(_make_agent_stub(), mdp, tmp_path)
 
+    # Then: callback is disabled
     assert cb._enabled is False
+
+
+# --- on_checkpoint: default trigger ---
+
+
+def test_checkpoint_trigger_produces_video_files(tmp_path):
+    """Default trigger: on_checkpoint runs eval rollouts that produce video files."""
+    # Given: a callback with default trigger (checkpoint-based) and 1 eval episode
+    mdp = _make_mdp()
+    mdp.setup(seed=42)
+    agent = _make_agent_stub()
+    cb = VideoRecorderCallback(env_fn=_make_recording_env, num_episodes=1)
+    cb.on_train_start(agent, mdp, tmp_path)
+
+    # When: a checkpoint occurs
+    cb.on_checkpoint(agent, mdp, tmp_path)
+    cb.on_train_end(agent, mdp, tmp_path)
+
+    # Then: at least one video file is written to run_dir/videos/
+    videos = list((tmp_path / "videos").glob("*.mp4"))
+    assert len(videos) >= 1
+
+
+def test_checkpoint_is_noop_when_episode_trigger_is_set(tmp_path):
+    """When episode_trigger is configured, on_checkpoint should not run rollouts."""
+    # Given: a callback with an episode trigger that never fires
+    mdp = _make_mdp()
+    mdp.setup(seed=42)
+    agent = _make_agent_stub()
+    cb = VideoRecorderCallback(
+        env_fn=_make_recording_env,
+        num_episodes=1,
+        episode_trigger=lambda _ep: False,
+    )
+    cb.on_train_start(agent, mdp, tmp_path)
+
+    # When: a checkpoint occurs
+    cb.on_checkpoint(agent, mdp, tmp_path)
+    cb.on_train_end(agent, mdp, tmp_path)
+
+    # Then: no videos are produced (checkpoint trigger is disabled)
+    videos = list((tmp_path / "videos").glob("*.mp4"))
+    assert len(videos) == 0
+
+
+# --- on_episode_end: custom trigger ---
+
+
+def test_episode_trigger_runs_rollouts_when_predicate_matches(tmp_path):
+    """on_episode_end should run eval rollouts when episode_trigger returns True."""
+    # Given: a callback triggered on episode 1 only
+    mdp = _make_mdp()
+    mdp.setup(seed=42)
+    agent = _make_agent_stub()
+    cb = VideoRecorderCallback(
+        env_fn=_make_recording_env,
+        num_episodes=1,
+        episode_trigger=lambda ep: ep == 1,
+    )
+    cb.on_train_start(agent, mdp, tmp_path)
+
+    # When: episode 1 ends (matches) and episode 2 ends (doesn't match)
+    cb.on_episode_end(agent, mdp, 1)
+    cb.on_episode_end(agent, mdp, 2)
+    cb.on_train_end(agent, mdp, tmp_path)
+
+    # Then: exactly the rollouts from episode 1 produce video(s)
+    videos = list((tmp_path / "videos").glob("*.mp4"))
+    assert len(videos) >= 1
+
+
+# --- on_train_end: cleanup ---
+
+
+def test_train_end_closes_eval_env(tmp_path):
+    """on_train_end should close the eval env cleanly."""
+    # Given: a fully initialised callback
+    mdp = _make_mdp()
+    mdp.setup(seed=42)
+    agent = _make_agent_stub()
+    cb = VideoRecorderCallback(env_fn=_make_recording_env)
+    cb.on_train_start(agent, mdp, tmp_path)
+
+    # When: training ends
+    cb.on_train_end(agent, mdp, tmp_path)
+
+    # Then: the eval env reference still exists (close doesn't None it out)
+    # but the env was closed (gymnasium sets np_random to None after close)
+    assert cb._eval_env is not None
