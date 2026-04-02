@@ -1,18 +1,6 @@
-from functools import partial
-
 import torch.nn as nn
 
-from rltrain.utils.builders.load import load
-
-
-def _build_opt_factories(opt_config: dict[str, dict]) -> dict[str, partial]:
-    """Reproduce the optimizer factory-building logic from agent.py."""
-    factories = {}
-    for name, kwargs in opt_config.items():
-        opt_type = load(kwargs["fqn"])
-        opt_kwargs = {k: v for k, v in kwargs.items() if k != "fqn"}
-        factories[name] = partial(opt_type, **opt_kwargs)
-    return factories
+from rltrain.utils.builders.load import resolve
 
 
 def test_distinct_optimizer_configs_produce_distinct_optimizers():
@@ -22,13 +10,16 @@ def test_distinct_optimizer_configs_produce_distinct_optimizers():
     captured `_kwargs` by reference, causing all factories to silently share
     the final iteration's hyperparameters.
     """
+    # Given -- two optimizer configs with different learning rates
     opt_config = {
-        "actor": {"fqn": "torch.optim.Adam", "lr": 0.001},
-        "critic": {"fqn": "torch.optim.Adam", "lr": 0.0003},
+        "actor": {"fqn": "torch.optim.Adam", "lr": 0.001, "deferred": True},
+        "critic": {"fqn": "torch.optim.Adam", "lr": 0.0003, "deferred": True},
     }
 
-    factories = _build_opt_factories(opt_config)
+    # When -- resolve produces partial factories
+    factories = {name: resolve(cfg) for name, cfg in opt_config.items()}
 
+    # Then -- each factory uses its own learning rate
     dummy = nn.Linear(4, 2)
     actor_opt = factories["actor"](params=dummy.parameters())
     critic_opt = factories["critic"](params=dummy.parameters())
