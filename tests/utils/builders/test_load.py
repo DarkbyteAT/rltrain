@@ -1,4 +1,5 @@
 import pytest
+import torch.nn
 import torch.optim
 
 from rltrain.utils.builders.load import load
