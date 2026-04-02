@@ -10,6 +10,8 @@ import torch as T
 import torch.nn as nn
 import torch.optim as optim
 
+from rltrain.transforms import SAM, LAMPRollback
+
 
 GAMMA = 0.99
 TAU = 0.01
@@ -49,10 +51,21 @@ def _adam_factory(params):
     return optim.Adam(params, lr=1e-3)
 
 
-def make_pg_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
+def _build_transforms(sam: bool, rollback_len: int):
+    """Build a gradient transform pipeline matching the old robust/rollback_len API."""
+    transforms = []
+    if sam:
+        transforms.append(SAM(rho=1e-2))
+    if rollback_len > 0:
+        transforms.append(LAMPRollback(eps=5e-3, rollback_len=rollback_len))
+    return transforms
+
+
+def make_pg_agent(agent_cls, *, sam=False, rollback_len=0, grad_transforms=None, **extra):
     """Build a tiny policy gradient agent with known weights."""
     actor = _make_actor(0)
     model = nn.ModuleDict({"actor": actor})
+    transforms = grad_transforms if grad_transforms is not None else _build_transforms(sam, rollback_len)
     agent = agent_cls(
         model=model,
         opt={"actor": functools.partial(optim.Adam, lr=1e-3)},
@@ -61,15 +74,14 @@ def make_pg_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
         tau=TAU,
         normalise=False,
         continuous=False,
-        robust=robust,
-        rollback_len=rollback_len,
+        grad_transforms=transforms,
         **extra,
     )
     agent.setup()
     return agent
 
 
-def make_baseline_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
+def make_baseline_agent(agent_cls, *, sam=False, rollback_len=0, **extra):
     """Build a tiny REINFORCE agent (actor + critic, no shared_features param)."""
     actor = _make_actor(0)
     critic = _make_critic(1)
@@ -86,15 +98,14 @@ def make_baseline_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
         beta_critic=BETA_CRITIC,
         normalise=False,
         continuous=False,
-        robust=robust,
-        rollback_len=rollback_len,
+        grad_transforms=_build_transforms(sam, rollback_len),
         **extra,
     )
     agent.setup()
     return agent
 
 
-def make_ac_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
+def make_ac_agent(agent_cls, *, sam=False, rollback_len=0, **extra):
     """Build a tiny actor-critic agent with known weights."""
     actor = _make_actor(0)
     critic = _make_critic(1)
@@ -112,8 +123,7 @@ def make_ac_agent(agent_cls, *, robust=False, rollback_len=0, **extra):
         normalise=False,
         continuous=False,
         shared_features=False,
-        robust=robust,
-        rollback_len=rollback_len,
+        grad_transforms=_build_transforms(sam, rollback_len),
         **extra,
     )
     agent.setup()

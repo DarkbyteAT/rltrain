@@ -37,4 +37,8 @@ def agent(
 
     _opt = {name: resolve({**cfg, "deferred": True}) for name, cfg in opt.items()}
 
+    # Resolve gradient transform pipeline if present
+    if "grad_transforms" in kwargs:
+        kwargs["grad_transforms"] = resolve(kwargs["grad_transforms"])
+
     return agent_type(model=_model, opt=_opt, device=device, **kwargs)

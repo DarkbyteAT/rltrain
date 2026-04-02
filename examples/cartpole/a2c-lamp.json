@@ -6,10 +6,10 @@
     "tau": 5e-3,
     "horizon": 128,
     "normalise": true,
-    "robust": true,
-    "eps_lamp": 5e-3,
-    "rho_sam": 1e-2,
-    "rollback_len": 10,
+    "grad_transforms": [
+        {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
+        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    ],
 	"model": {
         "actor": [
             {
