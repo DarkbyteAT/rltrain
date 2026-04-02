@@ -137,6 +137,11 @@ dmypy.json
 .worktrees/
 
 # ===============================
+# MkDocs build output
+# ===============================
+site/
+
+# ===============================
 # ML / Training artifacts
 # ===============================
 # Model checkpoints

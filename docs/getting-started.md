@@ -112,7 +112,7 @@ trainer.fit()
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--agent` | required | Path(s) to agent JSON config files |
+| `--agents` | required | Path(s) to agent JSON config files |
 | `--env` | required | Path to environment JSON config file |
 | `--dump` | required | Output directory for results |
 | `--num_steps` | 100,000 | Total training environment steps |
