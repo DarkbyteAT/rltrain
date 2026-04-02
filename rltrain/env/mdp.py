@@ -10,12 +10,12 @@ class MDP:
     """Simple wrapper around the ``gymnasium`` framework that automatically resets environments, as
     well as tracking several statistics, and handling (minimal) input-preprocessing."""
     
-    target_reward: float
-    
+    target_reward: float | None
+
     total_steps: int
     episode_steps: int
     episode_count: int
-    run_reward: float
+    run_reward: float | None
     length_history: list[int]
     return_history: list[float]
     run_history: list[float]
@@ -107,7 +107,10 @@ class MDP:
             self.episode_steps += self.length
             self.episode_count += 1
             
-            if self.episode_count % self.log_freq == 0 or self.run_reward >= self.target_reward:
+            if self.episode_count % self.log_freq == 0 or (
+                self.target_reward is not None and self.run_reward is not None
+                and self.run_reward >= self.target_reward
+            ):
                 self.log.info(
                     f"episode={self.episode_count}\t"
                     f"step={self.total_steps}\t"

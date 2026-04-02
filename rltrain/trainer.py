@@ -84,7 +84,7 @@ class Trainer:
             T.manual_seed(self.seed)
 
         self.agent.setup()
-        self.env.setup(self.seed)
+        self.env.setup(self.seed if self.seed is not None else 0)
 
         for cb in self.callbacks:
             cb.on_train_start(self.agent, self.env, self.run_dir)

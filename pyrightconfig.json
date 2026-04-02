@@ -1,0 +1,11 @@
+{
+  "include": ["rltrain"],
+  "exclude": ["tests", "examples"],
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportCallIssue": "warning",
+  "reportArgumentType": "warning",
+  "reportIndexIssue": "warning",
+  "reportOperatorIssue": "warning"
+}
