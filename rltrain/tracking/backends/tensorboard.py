@@ -41,10 +41,11 @@ class TensorBoardLogger:
     def log_hyperparams(self, params: dict[str, Any]) -> None:
         if self._writer is None:
             return
-        self._writer.add_hparams(
-            {k: v for k, v in params.items() if isinstance(v, int | float | str | bool)},
-            {},
-        )
+        # TensorBoard's HParams plugin requires at least one metric for the run
+        # to appear in the UI. Use a placeholder that will be overwritten by
+        # real metrics as training progresses.
+        hparam_dict = {k: v for k, v in params.items() if isinstance(v, int | float | str | bool)}
+        self._writer.add_hparams(hparam_dict, {"hp/placeholder": 0.0})
 
     def finish(self) -> None:
         if self._writer is not None:
