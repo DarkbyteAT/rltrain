@@ -10,10 +10,10 @@
     "num_epochs": 8,
     "batch_size": 128,
     "normalise": false,
-    "robust": true,
-    "eps_lamp": 5e-3,
-    "rho_sam": 1e-2,
-    "rollback_len": 10,
+    "grad_transforms": [
+        {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
+        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    ],
 	"model": {
         "actor": [
             {

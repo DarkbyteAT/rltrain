@@ -3,9 +3,7 @@
     "beta_critic": 0.5,
     "gamma": 0.995,
     "tau": 0.05,
-    "robust": true,
-    "rho_sam": 1e-2,
-    "rollback_len": 0,
+    "grad_transforms": [{"fqn": "rltrain.transforms.SAM", "rho": 1e-2}],
     "model": {
         "actor": [
             {

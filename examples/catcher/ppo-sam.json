@@ -10,9 +10,7 @@
     "num_epochs": 8,
     "batch_size": 128,
     "normalise": false,
-    "robust": true,
-    "rho_sam": 1e-2,
-    "rollback_len": 0,
+    "grad_transforms": [{"fqn": "rltrain.transforms.SAM", "rho": 1e-2}],
 	"model": {
         "actor": [
             {

@@ -158,12 +158,15 @@ Exploration uses epsilon-greedy with a linear decay schedule.
 
 **Reference:** Mnih et al. (2015)[^mnih2015dqn].
 
-## Robust optimisation
+## Gradient transforms
 
-Any agent can optionally use Sharpness-Aware Minimization (SAM) or LAMP for flatter loss landscapes and improved generalisation:
+Any agent can optionally use composable gradient transforms for flatter loss landscapes and improved generalisation. Transforms are specified via the `grad_transforms` key in agent JSON config:
 
-- **SAM** (`robust: true, rollback_len: 0`) -- adversarial weight perturbation that seeks parameters in flat regions of the loss surface.
-- **LAMP** (`robust: true, rollback_len: N`) -- adds periodic rollback to a moving parameter average, encouraging exploration of flatter regions.
+- **SAM** (`rltrain.transforms.SAM`) -- adversarial weight perturbation that seeks parameters in flat regions of the loss surface.
+- **ASAM** (`rltrain.transforms.ASAM`) -- like SAM but perturbation is scaled by parameter magnitude, making the sharpness measure scale-invariant.
+- **LAMP** (`rltrain.transforms.LAMPRollback`) -- injects parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter regions.
+
+Transforms compose naturally -- stack SAM with LAMP by listing both in `grad_transforms`.
 
 ## Neural network modules
 

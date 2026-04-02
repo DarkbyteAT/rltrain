@@ -145,25 +145,26 @@ Convolutional network with a flatten layer at the output. Use as an embedding ne
 
 Projects inputs through a fixed random matrix with sinusoidal activations, approximating a kernel feature map. Useful for spectral encoding of low-dimensional inputs[^rff].
 
-## Robust optimisation
+## Gradient transforms
 
-Add SAM (Sharpness-Aware Minimization) or LAMP to any agent by adding three fields:
+Add composable gradient transforms to any agent via the `grad_transforms` key. Transforms run between `loss.backward()` and `optimizer.step()` inside `Agent.learn()`, and are specified as a list of FQN objects:
 
 ```json
 {
-    "robust": true,
-    "rho_sam": 0.01,
-    "rollback_len": 0
+    "grad_transforms": [
+        {"fqn": "rltrain.transforms.SAM", "rho": 0.01},
+        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    ]
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `robust` | Enable robust optimisation |
-| `rho_sam` | Perturbation radius for SAM |
-| `rollback_len` | Set to 0 for SAM, or a positive integer for LAMP (rollback interval) |
+| Transform | Class | Parameters | Description |
+|-----------|-------|------------|-------------|
+| SAM | `rltrain.transforms.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
+| ASAM | `rltrain.transforms.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
+| LAMP | `rltrain.transforms.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
 
-SAM perturbs weights adversarially before computing the gradient, encouraging convergence to flat regions of the loss surface. LAMP extends this with periodic rollback to a moving parameter average[^sam].
+Transforms compose -- list them in order. SAM/ASAM use the `apply()` hook (pre-descent) and LAMP uses the `post_step()` hook (post-descent), so they naturally complement each other[^sam].
 
 [^d2rl]: Sinha, S. et al. (2020). D2RL: Deep Dense Architectures in Reinforcement Learning. *arXiv:2010.09163*.
 [^rff]: Rahimi, A. & Recht, B. (2007). Random Features for Large-Scale Kernel Machines. *NeurIPS*, 20.

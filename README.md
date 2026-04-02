@@ -24,8 +24,8 @@ graph LR
         A -->|"loss → learn → descend"| A
     end
 
-    subgraph "Robust Optimisation"
-        A -.->|"optional"| SAM["SAM / LAMP"]
+    subgraph "Gradient Transforms"
+        A -.->|"optional"| SAM["SAM / ASAM / LAMP"]
     end
 ```
 
@@ -218,19 +218,28 @@ Networks are composed sequentially — each entry in the model list becomes a la
 
 Wrappers are applied in order. Any `gymnasium.Wrapper` subclass works, including custom wrappers.
 
-### Robust Optimisation
+### Gradient Transforms (SAM / ASAM / LAMP)
 
-Add SAM (Sharpness-Aware Minimization) or LAMP (Local Averaging over Multiple Perturbations) to any agent:
+Add composable gradient transforms to any agent via the `grad_transforms` key:
 
 ```json
 {
-    "robust": true,
-    "rho_sam": 0.01,
-    "rollback_len": 0
+    "grad_transforms": [
+        {"fqn": "rltrain.transforms.SAM", "rho": 0.01}
+    ]
 }
 ```
 
-Set `rollback_len > 0` to use LAMP instead of SAM. LAMP adds parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter loss regions.
+SAM (Sharpness-Aware Minimization) perturbs weights adversarially before recomputing the gradient, encouraging convergence to flat minima. ASAM adds parameter-magnitude scaling for scale-invariant sharpness. LAMP adds periodic rollback to a moving parameter average. Transforms compose -- stack SAM with LAMP for the full pipeline:
+
+```json
+{
+    "grad_transforms": [
+        {"fqn": "rltrain.transforms.SAM", "rho": 0.01},
+        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    ]
+}
+```
 
 ## Callbacks
 

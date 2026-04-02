@@ -77,6 +77,7 @@ rltrain/              # Framework package
 ├── env/              # MDP wrapper + Trajectory dataclass
 ├── nn/               # Network modules (mlp, cnn, d2rl, rff)
 ├── trainer.py        # Trainer class — training loop + callback orchestration
+├── transforms/       # Gradient transform pipeline (SAM, ASAM, LAMPRollback)
 └── utils/            # Builders (FQN loader), device, discount, center, grad, lerp
 
 examples/             # Experiment configs (env.json + agent variants per environment)
@@ -88,7 +89,7 @@ run.py                # Thin CLI wrapper
 
 - **Framework code in `rltrain/`**, experiment configs in `examples/`, results in `dump/`.
 - **Agent inheritance chain** is deliberate — each level adds one concept. Maintain this when adding algorithms.
-- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques (like SAM/LAMP) go here, not in subclasses.
+- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in `rltrain/transforms/`, not hardcoded in `learn()` or subclasses.
 - **All networks** must use orthogonal weight initialisation.
 - **JSON + FQN** — new agents/networks must be instantiable via the FQN builder with keyword arguments from JSON.
 - **No environment-specific dependencies** — rltrain is a general-purpose RL framework. Users plug gymnasium-compatible environments from downstream scripts.
@@ -101,7 +102,7 @@ The `load(fqn)` function in `utils/builders/` dynamically imports any class by f
 
 ### Agent Template Method
 
-`Agent.learn()` handles the full optimisation step including optional SAM/LAMP perturbation. Subclasses only need to implement:
+`Agent.learn()` handles the full optimisation step. Subclasses only need to implement:
 
 - `setup()` — initialise networks and optimisers
 - `act(states)` → Distribution
@@ -109,6 +110,34 @@ The `load(fqn)` function in `utils/builders/` dynamically imports any class by f
 - `load()` → batch tensors from memory
 - `loss(*batch)` → scalar loss
 - `descend()` — optimizer step + gradient clipping
+
+### Gradient Transform Pipeline
+
+`Agent.learn()` applies a composable pipeline of `GradientTransform` steps between `loss.backward()` and `descend()`. Each transform implements a two-phase protocol:
+
+- `apply(model, loss_fn, batch)` — **pre-descent** hook for transforms that modify gradients or temporarily perturb parameters (e.g. SAM, ASAM).
+- `post_step(model)` — **post-descent** hook for transforms that operate on updated parameters (e.g. LAMPRollback noise injection + rollback).
+
+The pipeline is configured via the `grad_transforms` key in agent JSON, using the FQN resolver:
+
+```json
+"grad_transforms": [
+    {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
+    {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+]
+```
+
+Omitting `grad_transforms` (or passing an empty list) gives vanilla gradient descent.
+
+Built-in transforms live in `rltrain/transforms/`:
+
+| Transform | Phase | Description |
+|-----------|-------|-------------|
+| `SAM` | pre-descent | Sharpness-Aware Minimisation — perturb in gradient direction, recompute loss at worst-case point |
+| `ASAM` | pre-descent | Adaptive SAM — perturbation scaled by parameter magnitude for scale invariance |
+| `LAMPRollback` | post-descent | Noise injection + moving average rollback for flat-minima exploration |
+
+To add a custom transform, implement a class with `apply()` and `post_step()` methods matching the `GradientTransform` protocol, place it anywhere importable, and reference it via FQN in the config.
 
 ### Callback Protocol
 
