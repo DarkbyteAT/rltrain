@@ -19,12 +19,16 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _identity(obs: np.ndarray) -> np.ndarray:
+    return obs
+
+
 class VideoRecorderCallback:
     """Records evaluation videos of agent behaviour during training.
 
     Uses gymnasium's ``RecordVideo`` wrapper on a separate persistent evaluation
     environment. By default, records at each checkpoint; optionally configure
-    ``episode_trigger`` to record at specific training episodes instead.
+    ``eval_trigger`` to record at specific training episodes instead.
 
     Parameters
     ----------
@@ -35,10 +39,11 @@ class VideoRecorderCallback:
         when wrappers matter for the recording.
     `num_episodes` : `int`
         Number of evaluation episodes to record at each trigger point.
-    `episode_trigger` : `Callable[[int], bool] | None`
+    `eval_trigger` : `Callable[[int], bool] | None`
         When set, controls when eval rollouts happen during training based on the
         training episode count. Rollouts trigger in ``on_episode_end`` instead of
-        the default ``on_checkpoint``.
+        the default ``on_checkpoint``. For example, ``lambda ep: ep % 50 == 0``
+        records every 50th training episode.
     `video_length` : `int`
         Fixed video length in frames. 0 means record full episodes.
     `name_prefix` : `str`
@@ -52,19 +57,20 @@ class VideoRecorderCallback:
         *,
         env_fn: Callable[[], gym.Env] | None = None,
         num_episodes: int = 3,
-        episode_trigger: Callable[[int], bool] | None = None,
+        eval_trigger: Callable[[int], bool] | None = None,
         video_length: int = 0,
         name_prefix: str = "rl-video",
         fps: int = 30,
     ) -> None:
         self._env_fn = env_fn
         self._num_episodes = num_episodes
-        self._episode_trigger = episode_trigger
+        self._eval_trigger = eval_trigger
         self._video_length = video_length
         self._name_prefix = name_prefix
         self._fps = fps
 
         self._eval_env: gym.Env | None = None
+        self._preprocess_obs: Callable[[np.ndarray], np.ndarray] = _identity
         self._enabled: bool = True
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
@@ -105,11 +111,11 @@ class VideoRecorderCallback:
     def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
 
     def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
-        if self._episode_trigger is not None and self._episode_trigger(episode):
+        if self._eval_trigger is not None and self._eval_trigger(episode):
             self._run_eval_rollouts(agent)
 
     def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        if self._episode_trigger is None:
+        if self._eval_trigger is None:
             self._run_eval_rollouts(agent)
 
     def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
@@ -118,7 +124,11 @@ class VideoRecorderCallback:
             log.info("VideoRecorderCallback: eval env closed")
 
     def _make_env_from_mdp(self, env: MDP) -> gym.Env:
-        """Auto-detect env ID from the training MDP and create a renderable copy."""
+        """Auto-detect env from the training MDP and create a renderable copy.
+
+        Passes the full ``EnvSpec`` to preserve any custom kwargs from the
+        original environment registration.
+        """
         spec = env.env.envs[0].spec
         if spec is None:
             raise RuntimeError("Cannot auto-detect env — provide env_fn to VideoRecorderCallback")

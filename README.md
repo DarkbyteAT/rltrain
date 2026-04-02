@@ -276,7 +276,7 @@ VideoRecorderCallback(
 )
 
 # Record every 50th training episode instead of at checkpoints:
-VideoRecorderCallback(episode_trigger=lambda ep: ep % 50 == 0)
+VideoRecorderCallback(eval_trigger=lambda ep: ep % 50 == 0)
 ```
 
 Videos are saved to `run_dir/videos/`. Requires `render_mode="rgb_array"` support — if unavailable, the callback disables itself with a warning. Install the video extra: `pip install rltrain[video]`.
@@ -290,6 +290,96 @@ Videos are saved to `run_dir/videos/`. Requires `render_mode="rgb_array"` suppor
 | `on_episode_end` | When an episode completes | agent, env, episode |
 | `on_checkpoint` | At checkpoint intervals | agent, env, run_dir |
 | `on_train_end` | Once, after the loop exits | agent, env, run_dir |
+
+## Experiment Tracking
+
+The `TrackingCallback` adapts the training loop's callback hooks to a pluggable `MetricsLogger` backend. It logs episode returns, lengths, and running returns automatically.
+
+### Quick Start (StreamLogger)
+
+Zero-dependency console output — useful for debugging:
+
+```python
+from rltrain.tracking import TrackingCallback
+from rltrain.tracking.backends import StreamLogger
+
+tracker = TrackingCallback(StreamLogger(), config=agent_config)
+
+trainer = Trainer(
+    agent, env,
+    num_steps=100_000,
+    checkpoint_steps=2500,
+    run_dir=run_dir,
+    callbacks=[CSVLoggerCallback(), CheckpointCallback(), tracker],
+    seed=42,
+)
+```
+
+Output:
+```
+[step 1] return=15.3 length=120 running_return=12.8
+[step 2] return=18.7 length=95 running_return=13.4
+```
+
+### TensorBoard
+
+```python
+from rltrain.tracking.backends import TensorBoardLogger
+
+tracker = TrackingCallback(TensorBoardLogger(), config=agent_config)
+```
+
+Requires `pip install tensorboard`. Event files are written to `run_dir/tb/` by default.
+
+### Weights & Biases
+
+```python
+from rltrain.tracking.backends import WandbLogger
+
+tracker = TrackingCallback(WandbLogger(project="my-rl-project"), config=agent_config)
+```
+
+Requires `pip install wandb`.
+
+### JSONL (FSLogger)
+
+Writes structured JSONL to any fsspec-compatible filesystem (local, S3, GCS):
+
+```python
+from rltrain.tracking.backends import FSLogger
+
+tracker = TrackingCallback(FSLogger("s3://bucket/metrics.jsonl"), config=agent_config)
+```
+
+Requires `pip install fsspec` (plus the relevant filesystem driver, e.g. `s3fs`).
+
+### JSON Config Integration
+
+All tracking backends work with the FQN builder system:
+
+```json
+{
+    "callbacks": [
+        {"fqn": "rltrain.callbacks.csv_logger.CSVLoggerCallback"},
+        {"fqn": "rltrain.callbacks.checkpoint.CheckpointCallback"},
+        {
+            "fqn": "rltrain.tracking.callback.TrackingCallback",
+            "logger": {"fqn": "rltrain.tracking.backends.stream.StreamLogger"},
+            "config": {}
+        }
+    ]
+}
+```
+
+### Available Backends
+
+| Backend | Class | Dependencies | Use Case |
+|---------|-------|-------------|----------|
+| Console | `StreamLogger` | None | Debugging, CI logs |
+| JSONL | `FSLogger` | `fsspec` | Structured logs, cloud storage |
+| TensorBoard | `TensorBoardLogger` | `tensorboard` | Local visualisation |
+| W&B | `WandbLogger` | `wandb` | Cloud experiment tracking |
+| xptrack | `XptrackLogger` | `xptrack` | Custom experiment tracking (stub) |
 
 ## Output
 
@@ -340,6 +430,16 @@ rltrain/
 │   ├── cnn.py                  # CNN with flatten output
 │   ├── d2rl.py                 # SkipMLP — D2RL skip connections
 │   └── rff.py                  # Random Fourier Features layer
+├── tracking/
+│   ├── __init__.py             # Re-exports MetricsLogger, TrackingCallback
+│   ├── logger.py               # MetricsLogger protocol (runtime_checkable)
+│   ├── callback.py             # TrackingCallback — Callback → Logger adapter
+│   └── backends/
+│       ├── stream.py           # StreamLogger — zero-dependency console output
+│       ├── fs.py               # FSLogger — JSONL to any fsspec filesystem
+│       ├── tensorboard.py      # TensorBoardLogger — SummaryWriter wrapper
+│       ├── wandb.py            # WandbLogger — Weights & Biases wrapper
+│       └── xptrack.py          # XptrackLogger — xptrack client (stub)
 ├── trainer.py                  # Trainer — training loop + callback orchestration
 └── utils/
     ├── builders/               # Factory functions — dynamic FQN class loading

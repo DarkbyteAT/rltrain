@@ -16,8 +16,9 @@ from rltrain.trainer import Trainer
 
 
 # --- Config ---
-AGENT_CFG = json.loads(Path("examples/cartpole/ppo.json").read_text())
-ENV_CFG = json.loads(Path("examples/cartpole/env.json").read_text())
+EXAMPLES_DIR = Path(__file__).parent
+AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo.json").read_text())
+ENV_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "env.json").read_text())
 RUN_DIR = Path("results/cartpole_video_demo")
 NUM_STEPS = 500_000
 CHECKPOINT_STEPS = 25_000

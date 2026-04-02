@@ -28,9 +28,9 @@ def test_preprocess_obs_returns_input_unchanged_without_swap():
 
 def test_preprocess_obs_transposes_channels_when_swap_enabled():
     """With channel swap, preprocess_obs converts (N, H, W, C) to (N, C, H, W)."""
-    # Given: an MDP with swap_channels=True and a (1, H, W, C) image observation
+    # Given: an MDP with swap_channels=True and a non-square (1, H, W, C) observation
     mdp = _make_mdp(swap_channels=True)
-    obs = np.random.rand(1, 8, 6, 3)  # non-square to verify correct axis order
+    obs = np.random.rand(1, 8, 6, 3)
 
     # When: preprocessing is applied
     result = mdp.preprocess_obs(obs)
