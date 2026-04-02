@@ -66,6 +66,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+!rltrain/env/
+!tests/env/
 .pyvenv/
 
 # ===============================

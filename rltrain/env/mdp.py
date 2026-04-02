@@ -34,6 +34,23 @@ class MDP:
         self.log_freq = log_freq
         self.swap_channels = swap_channels
 
+    def preprocess_obs(self, obs: np.ndarray) -> np.ndarray:
+        """Apply observation preprocessing (e.g. channel swap for image envs).
+
+        Parameters
+        ----------
+        `obs` : `np.ndarray`
+            Raw observation from the gymnasium environment.
+
+        Returns
+        -------
+        `np.ndarray`
+            Preprocessed observation ready for the agent.
+        """
+        if self.swap_channels:
+            return obs.squeeze().T[np.newaxis, :]
+        return obs
+
     def setup(self, seed: int | None):
         self.seed = seed
         self.target_reward = self.env.envs[0].spec.reward_threshold
@@ -59,9 +76,7 @@ class MDP:
         self.length = 0
         self.reward_sum = 0.0
 
-        # Adjusts next observation to put channels axis first if input is an image
-        if self.swap_channels:
-            self.state = self.state.squeeze().T[np.newaxis, :]
+        self.state = self.preprocess_obs(self.state)
 
     def step(self, policy: Callable[[np.ndarray], np.ndarray]) -> Trajectory[np.ndarray]:
         """
@@ -89,9 +104,7 @@ class MDP:
         next_state, reward, terminated, truncated, _ = self.env.step(action)
         done = terminated | truncated
 
-        # Adjusts next observation to put channels axis first if input is an image
-        if self.swap_channels:
-            next_state = next_state.squeeze().T[np.newaxis, :]
+        next_state = self.preprocess_obs(next_state)
 
         self.state = next_state
         self.reward_sum += reward[0]
