@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 import numpy as np
 import seaborn as sns
 
-from rltrain.agents.agent import Agent
-from rltrain.env import MDP
+if TYPE_CHECKING:
+    from rltrain.agents.agent import Agent
+    from rltrain.env import MDP
 
 
 log = logging.getLogger(__name__)
