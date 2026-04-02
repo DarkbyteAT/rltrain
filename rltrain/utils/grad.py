@@ -17,7 +17,11 @@ def get_grad(params: Iterable[nn.Parameter]) -> T.Tensor:
         A flattened vector of the gradients of each parameter.
     """
     
-    return T.cat([p.grad.view(-1) for p in params])
+    # p.grad is Optional[Tensor] — it is None for frozen parameters
+    # (requires_grad=False). This function is only called from Agent.learn()
+    # immediately after loss.backward(), which populates .grad on every
+    # parameter that requires_grad. Frozen params are never passed here.
+    return T.cat([p.grad.view(-1) for p in params])  # type: ignore[union-attr]
 
 @T.no_grad()
 def set_grad(grads: T.Tensor, params: Iterable[nn.Parameter]):

@@ -36,6 +36,7 @@ rltrain = "rltrain.cli:main"
 
 [dependency-groups]
 dev = [
+    "pyright",
     "pytest",
     "ruff",
     "pre-commit",
