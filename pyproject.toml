@@ -44,6 +44,7 @@ dev = [
     "ruff",
     "pre-commit",
     "moviepy",
+    "pygame>=2.6.1",
 ]
 docs = [
     "mkdocs-material",
