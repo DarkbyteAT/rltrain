@@ -24,7 +24,8 @@ def test_on_train_end_writes_csv(tmp_path, stub_agent, populated_env):
     cb.on_train_start(stub_agent, populated_env, tmp_path)
     cb.on_train_end(stub_agent, populated_env, tmp_path)
 
-    assert (tmp_path / "metrics.csv").exists()
+    df = pd.read_csv(tmp_path / "metrics.csv", index_col="Episode")
+    assert len(df) == populated_env.episode_count
 
 
 def test_on_checkpoint_skips_when_zero_episodes(tmp_path, stub_agent, stub_env):
@@ -37,9 +38,10 @@ def test_on_checkpoint_skips_when_zero_episodes(tmp_path, stub_agent, stub_env):
 
 
 def test_on_checkpoint_before_train_start_is_safe(stub_agent, populated_env, tmp_path):
-    """Calling on_checkpoint before on_train_start should not crash."""
+    """Calling on_checkpoint before on_train_start should not crash or write files."""
     cb = CSVLoggerCallback()
     cb.on_checkpoint(stub_agent, populated_env, tmp_path)
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_csv_overwrites_on_each_checkpoint(tmp_path, stub_agent, populated_env):

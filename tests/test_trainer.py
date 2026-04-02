@@ -1,72 +1,41 @@
-import torch as T
+"""Smoke tests for the Trainer."""
 
-import rltrain.utils.builders as mk
-from rltrain.env import MDP
+from rltrain.callbacks.checkpoint import CheckpointCallback
+from rltrain.callbacks.csv_logger import CSVLoggerCallback
+from rltrain.callbacks.plot import PlotCallback
 from rltrain.trainer import Trainer
 
 
-CARTPOLE_ENV_CFG = {"id": "CartPole-v1", "wrappers": []}
-CARTPOLE_AGENT_CFG = {
-    "fqn": "rltrain.agents.actor_critic.PPO",
-    "gamma": 0.99,
-    "tau": 0.01,
-    "eps_per_rollout": 1,
-    "normalise": False,
-    "continuous": False,
-    "shared_features": False,
-    "beta_critic": 0.5,
-    "horizon": 128,
-    "lambda_gae": 0.95,
-    "num_epochs": 4,
-    "batch_size": 32,
-    "early_stop": 0.2,
-    "eps_clip": 0.2,
-    "model": {
-        "actor": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 4,
-                "hiddens": [32, 32],
-                "outputs": 2,
-            }
-        ],
-        "critic": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 4,
-                "hiddens": [32, 32],
-                "outputs": 1,
-            }
-        ],
-    },
-    "opt": {
-        "actor": {"fqn": "torch.optim.Adam", "lr": 0.0003},
-        "critic": {"fqn": "torch.optim.Adam", "lr": 0.001},
-    },
-}
-
-
-def test_ppo_cartpole_smoke(tmp_path):
-    agent = mk.agent(device=T.device("cpu"), **CARTPOLE_AGENT_CFG)
-    env = MDP(
-        mk.env(**CARTPOLE_ENV_CFG),
-        run_beta=0.1,
-        log_freq=100,
-        swap_channels=False,
-    )
-
+def test_ppo_cartpole_smoke(tmp_path, cartpole_agent, cartpole_env):
+    """PPO trains on CartPole for 1000 steps without crashing."""
     trainer = Trainer(
-        agent,
-        env,
+        cartpole_agent,
+        cartpole_env,
         num_steps=1000,
         checkpoint_steps=500,
         run_dir=tmp_path,
         callbacks=[],
         seed=42,
     )
-
     trainer.fit()
 
-    assert env.total_steps >= 1000
-    assert env.episode_count > 0
-    assert len(env.return_history) == env.episode_count
+    assert cartpole_env.total_steps >= 1000
+    assert cartpole_env.episode_count > 0
+    assert len(cartpole_env.return_history) == cartpole_env.episode_count
+
+
+def test_trainer_default_callbacks(tmp_path, cartpole_agent, cartpole_env):
+    """Trainer with callbacks=None should use the 3 built-in defaults."""
+    trainer = Trainer(
+        cartpole_agent,
+        cartpole_env,
+        num_steps=500,
+        checkpoint_steps=250,
+        run_dir=tmp_path,
+        seed=42,
+    )
+
+    assert len(trainer.callbacks) == 3
+    assert any(isinstance(cb, CSVLoggerCallback) for cb in trainer.callbacks)
+    assert any(isinstance(cb, PlotCallback) for cb in trainer.callbacks)
+    assert any(isinstance(cb, CheckpointCallback) for cb in trainer.callbacks)
