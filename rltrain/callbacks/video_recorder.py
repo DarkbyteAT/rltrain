@@ -91,6 +91,7 @@ class VideoRecorderCallback:
 
         record_kwargs: dict = {
             "video_folder": str(video_dir),
+            "episode_trigger": lambda _: True,
             "name_prefix": self._name_prefix,
             "fps": self._fps,
             "disable_logger": True,
