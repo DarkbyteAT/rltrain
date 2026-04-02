@@ -45,7 +45,11 @@ def resolve(cfg: Any) -> Any:
     """
     if isinstance(cfg, dict):
         if "fqn" in cfg:
-            cls = load(cfg["fqn"])
+            fqn = cfg["fqn"]
+            try:
+                cls = load(fqn)
+            except (ModuleNotFoundError, AttributeError) as e:
+                raise type(e)(f"Failed to resolve fqn={fqn!r}: {e}") from e
             deferred = cfg.get("deferred", False)
             kwargs = {k: resolve(v) for k, v in cfg.items() if k not in ("fqn", "deferred")}
             if deferred:

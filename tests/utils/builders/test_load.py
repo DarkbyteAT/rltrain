@@ -85,15 +85,9 @@ def test_resolve_list_of_fqn_dicts():
 # --- resolve: nested fqn dicts ----------------------------------------------
 
 
-def test_resolve_nested_fqn_dicts():
+def test_resolve_nested_fqn_in_kwargs():
     """An fqn dict whose kwargs contain another fqn dict resolves recursively."""
-    # Given -- a Sequential wrapping a single Linear via nested config
-    cfg = {
-        "fqn": "torch.nn.Sequential",
-        "args": [  # positional via list -- but Sequential takes *args, so we test nesting a different way
-        ],
-    }
-    # Use a simpler nesting: a dict without fqn whose values contain fqn dicts
+    # Given -- a dict without fqn whose values contain fqn dicts (nested resolution)
     cfg = {
         "policy": {"fqn": "torch.nn.Linear", "in_features": 4, "out_features": 2},
         "activation": {"fqn": "torch.nn.ReLU"},
@@ -155,3 +149,39 @@ def test_resolve_dict_without_fqn_recurses():
     assert isinstance(result["layer"], torch.nn.Linear)
     assert result["name"] == "my_layer"
     assert result["count"] == 3
+
+
+# --- resolve: edge cases ------------------------------------------------
+
+
+def test_resolve_empty_dict():
+    """An empty dict resolves to an empty dict."""
+    assert resolve({}) == {}
+
+
+def test_resolve_empty_list():
+    """An empty list resolves to an empty list."""
+    assert resolve([]) == []
+
+
+# --- resolve: error propagation ------------------------------------------
+
+
+def test_resolve_invalid_fqn_raises_with_context():
+    """resolve() wraps FQN load errors with the failing fqn for debugging."""
+    # Given
+    cfg = {"fqn": "nonexistent.module.Class", "x": 1}
+
+    # When / Then
+    with pytest.raises(ModuleNotFoundError, match="nonexistent.module.Class"):
+        resolve(cfg)
+
+
+def test_resolve_invalid_attr_raises_with_context():
+    """resolve() wraps attribute errors with the failing fqn for debugging."""
+    # Given
+    cfg = {"fqn": "torch.optim.NonExistentOptimizer"}
+
+    # When / Then
+    with pytest.raises(AttributeError, match="torch.optim.NonExistentOptimizer"):
+        resolve(cfg)

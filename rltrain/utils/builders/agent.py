@@ -22,8 +22,10 @@ def agent(
         Mapping of network name to a list of module configs (each with an
         ``"fqn"`` key plus constructor kwargs).
     `opt`
-        Mapping of optimiser name to an optimiser config (``"fqn"`` key,
-        constructor kwargs, and ``"deferred": true``).
+        Mapping of optimiser name to an optimiser config (``"fqn"`` key
+        plus constructor kwargs). Automatically resolved as deferred
+        (``functools.partial``) since optimisers need ``model.parameters()``
+        at ``setup()`` time, not at build time.
     `device`
         Torch device to place the agent on.
     `**kwargs`
