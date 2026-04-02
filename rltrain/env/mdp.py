@@ -48,7 +48,7 @@ class MDP:
             Preprocessed observation ready for the agent.
         """
         if self.swap_channels:
-            return obs.squeeze().T[np.newaxis, :]
+            return np.transpose(obs, (0, 3, 1, 2))
         return obs
 
     def setup(self, seed: int | None):
