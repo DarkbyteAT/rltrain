@@ -27,8 +27,7 @@ rltrain/              # Framework package
 ├── trainer.py        # Trainer class — training loop + callback orchestration
 └── utils/            # Builders (FQN loader), discount, center, grad, lerp
 
-{cartpole,acrobot,breakout,invaders,pixelcopter,catcher}/
-                      # Experiment configs (env.json + agent variants)
+examples/             # Experiment configs (env.json + agent variants per environment)
 run.py                # Thin CLI wrapper — arg parsing, object creation, calls Trainer.fit()
 ```
 
@@ -67,7 +66,7 @@ Networks are built by composing modules listed in JSON. Each model entry becomes
 - **Single-env vectorisation** — wraps 1 env in `SyncVectorEnv` (no true parallelism)
 - **No experiment tracking** integration (WandB, TensorBoard)
 - **No CI/CD** pipeline
-- Experiment configs mixed with framework code at repo root
+- Experiment configs in `examples/` — dissertation artifacts, not part of the framework package
 
 ## Working With This Codebase
 
