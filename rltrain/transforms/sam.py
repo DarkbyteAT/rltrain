@@ -49,7 +49,10 @@ class SAM:
         adv_params = init_params + (self.rho * init_grad)
         vector_to_parameters(adv_params, model.parameters())
 
-        # Recompute loss and backpropagate at the perturbed point
+        # Zero gradients before recomputing at perturbed point
+        for p in model.parameters():
+            if p.grad is not None:
+                p.grad.zero_()
         loss = loss_fn(*batch)
         loss.backward()
 

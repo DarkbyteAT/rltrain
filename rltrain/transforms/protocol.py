@@ -22,8 +22,8 @@ class GradientTransform(Protocol):
     - ``post_step()`` runs **after** ``descend()`` — for transforms that
       operate on the updated parameters (e.g. LAMP noise injection + rollback).
 
-    Both hooks have default no-op implementations so that a transform only
-    needs to override the phase it participates in.
+    Concrete classes must implement both methods.  Use an empty body (``...``)
+    for phases the transform does not participate in.
     """
 
     def apply(

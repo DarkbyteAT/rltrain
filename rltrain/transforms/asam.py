@@ -17,6 +17,9 @@ from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from rltrain.utils import get_grad, set_grad
 
 
+__all__ = ["ASAM"]
+
+
 class ASAM:
     """Adaptive Sharpness-Aware Minimisation.
 
@@ -51,7 +54,10 @@ class ASAM:
         adv_params = init_params + perturbation
         vector_to_parameters(adv_params, model.parameters())
 
-        # Recompute loss and backpropagate at the perturbed point
+        # Zero gradients before recomputing at perturbed point
+        for p in model.parameters():
+            if p.grad is not None:
+                p.grad.zero_()
         loss = loss_fn(*batch)
         loss.backward()
 

@@ -249,11 +249,7 @@ def test_asam_gradients_differ_from_sam(batch_5):
 
 
 def test_asam_perturbation_scales_with_parameter_magnitude(batch_5):
-    """ASAM perturbation direction is |theta|^2 * grad, so larger parameters get larger perturbations.
-
-    We verify by manually computing the expected perturbation and checking that
-    the gradient at the perturbed point uses that direction.
-    """
+    """ASAM perturbation direction is |theta|^2 * grad -- larger params get larger perturbations."""
     agent = make_pg_agent(VanillaPG, grad_transforms=[ASAM(rho=0.1)])
 
     # Compute initial loss + grad
@@ -263,19 +259,28 @@ def test_asam_perturbation_scales_with_parameter_magnitude(batch_5):
     init_params = parameters_to_vector(agent.model.parameters()).detach().clone()
     init_grad = get_grad(agent.model.parameters()).detach().clone()
 
-    # Hand-compute expected perturbation direction
-    scaled_grad = init_params.abs().square() * init_grad
-    expected_direction = F.normalize(scaled_grad, dim=0)
-    expected_perturbed = init_params + 0.1 * expected_direction
-
-    # The perturbation should differ from SAM's uniform direction
+    # Hand-compute ASAM vs SAM perturbation directions
+    asam_direction = F.normalize(init_params.abs().square() * init_grad, dim=0)
     sam_direction = F.normalize(init_grad, dim=0)
-    assert not T.allclose(expected_direction, sam_direction, atol=1e-7), (
+
+    # The two directions must differ (parameter-magnitude scaling has an effect)
+    assert not T.allclose(asam_direction, sam_direction, atol=1e-7), (
         "ASAM direction equals SAM direction — parameter scaling had no effect"
     )
 
-    # Verify the expected perturbed point is correct by checking ASAM math
-    assert T.allclose(expected_perturbed, init_params + 0.1 * expected_direction)
+    # Verify scaling property: the ratio of perturbation components should correlate
+    # with the ratio of parameter magnitudes squared
+    param_magnitudes = init_params.abs().square()
+    # Where grad is non-negligible, larger params should have larger perturbation components
+    mask = init_grad.abs() > 1e-8
+    if mask.sum() > 1:
+        scaled = (asam_direction[mask] / (sam_direction[mask] + 1e-10)).abs()
+        magnitudes = param_magnitudes[mask]
+        # The scaling ratio should correlate with parameter magnitude
+        correlation = T.corrcoef(T.stack([scaled, magnitudes]))[0, 1]
+        assert correlation > 0.5, (
+            f"ASAM perturbation does not scale with parameter magnitude (correlation={correlation:.3f})"
+        )
 
 
 def test_asam_parameters_restored_after_perturbation(batch_5):

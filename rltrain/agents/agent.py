@@ -42,6 +42,8 @@ class Agent(abc.ABC):
         self.gamma = gamma
         self.grad_clip = grad_clip
         self.grad_transforms = grad_transforms
+        for transform in self.grad_transforms:
+            self.name += f"-{type(transform).__name__}"
 
     @T.inference_mode()
     def __call__(self, states: np.ndarray) -> np.ndarray:

@@ -17,6 +17,9 @@ import torch.nn.functional as F
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
 
+__all__ = ["LAMPRollback"]
+
+
 class LAMPRollback:
     """Local-Averaging over Multiple Perturbations with periodic rollback.
 
@@ -34,6 +37,7 @@ class LAMPRollback:
     def __init__(self, eps: float = 5e-3, rollback_len: int = 10) -> None:
         self.eps = eps
         self.rollback_len = rollback_len
+        # Lazily initialised on first post_step() call — needs parameter vector size
         self.mean_params: T.Tensor | None = None
         self.rollback_step: int = 0
 
