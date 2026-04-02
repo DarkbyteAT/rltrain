@@ -1,4 +1,4 @@
-.PHONY: lint format format-check check typecheck test all
+.PHONY: lint format format-check fix typecheck test all
 
 lint:
 	uv run ruff check rltrain/
@@ -9,7 +9,7 @@ format:
 format-check:
 	uv run ruff format --check rltrain/
 
-check:
+fix:
 	uv run ruff check --fix rltrain/
 
 typecheck:
