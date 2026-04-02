@@ -55,6 +55,8 @@ uv run pyright rltrain/             # type check (basic mode)
 
 Tool configs live in separate files (`ruff.toml`, `pytest.ini`, `pyrightconfig.json`), not in `pyproject.toml`.
 
+A Makefile wraps these commands for convenience: `make lint`, `make format`, `make typecheck`, `make test`, or `make all` to run the full quality gate (format-check → lint → typecheck → test). Run `make fix` to auto-fix lint violations.
+
 ## Pull Request Workflow
 
 1. Create a PR with a clear description (see PR template below).
