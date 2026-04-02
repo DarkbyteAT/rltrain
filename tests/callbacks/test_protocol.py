@@ -4,6 +4,7 @@ from rltrain.callbacks import Callback
 from rltrain.callbacks.checkpoint import CheckpointCallback
 from rltrain.callbacks.csv_logger import CSVLoggerCallback
 from rltrain.callbacks.plot import PlotCallback
+from rltrain.callbacks.video_recorder import VideoRecorderCallback
 
 
 def test_checkpoint_satisfies_protocol():
@@ -38,3 +39,7 @@ def test_partial_callback_does_not_satisfy_protocol():
         def on_train_start(self, agent, env, run_dir): ...
 
     assert not isinstance(IncompleteCallback(), Callback)
+
+
+def test_video_recorder_satisfies_protocol():
+    assert isinstance(VideoRecorderCallback(), Callback)

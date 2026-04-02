@@ -27,6 +27,9 @@ dependencies = [
     "typed-argument-parser",
 ]
 
+[project.optional-dependencies]
+video = ["moviepy"]
+
 [project.urls]
 Homepage = "https://github.com/DarkbyteAT/rltrain"
 Repository = "https://github.com/DarkbyteAT/rltrain"
@@ -40,6 +43,7 @@ dev = [
     "pytest",
     "ruff",
     "pre-commit",
+    "moviepy",
 ]
 
 [build-system]

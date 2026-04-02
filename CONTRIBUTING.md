@@ -71,7 +71,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 ```
 rltrain/              # Framework package
 ├── agents/           # Agent implementations (policy_gradient/, actor_critic/, q_learning/)
-├── callbacks/        # Callback protocol + built-in callbacks (checkpoint, csv_logger, plot)
+├── callbacks/        # Callback protocol + built-in callbacks (checkpoint, csv_logger, plot, video_recorder)
 ├── env/              # MDP wrapper + Trajectory dataclass
 ├── nn/               # Network modules (mlp, cnn, d2rl, rff)
 ├── trainer.py        # Trainer class — training loop + callback orchestration

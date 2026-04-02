@@ -248,6 +248,39 @@ trainer = Trainer(
 )
 ```
 
+### Video Recording
+
+Record evaluation videos at training checkpoints using gymnasium's `RecordVideo` wrapper:
+
+```python
+from rltrain.callbacks.video_recorder import VideoRecorderCallback
+
+# Auto-detect env from training MDP (records 3 episodes per checkpoint):
+trainer = Trainer(
+    agent, env,
+    num_steps=100_000,
+    checkpoint_steps=2500,
+    run_dir=run_dir,
+    callbacks=[
+        CSVLoggerCallback(),
+        PlotCallback(num_steps=100_000),
+        CheckpointCallback(),
+        VideoRecorderCallback(),
+    ],
+)
+
+# Explicit factory with custom wrappers:
+VideoRecorderCallback(
+    env_fn=lambda: gym.make("CartPole-v1", render_mode="rgb_array"),
+    num_episodes=5,
+)
+
+# Record every 50th training episode instead of at checkpoints:
+VideoRecorderCallback(episode_trigger=lambda ep: ep % 50 == 0)
+```
+
+Videos are saved to `run_dir/videos/`. Requires `render_mode="rgb_array"` support — if unavailable, the callback disables itself with a warning. Install the video extra: `pip install rltrain[video]`.
+
 ### Hook Methods
 
 | Method | Called | Arguments |
@@ -273,6 +306,9 @@ models/
 metrics.csv             # Episode-level metrics (length, return, running return)
 per_episode.svg         # Return vs episode plot
 per_sample.svg          # Return vs timestep plot
+videos/                 # Evaluation videos (if VideoRecorderCallback enabled)
+    rl-video-episode-0.mp4
+    ...
 ```
 
 ## Architecture
@@ -294,7 +330,8 @@ rltrain/
 │   ├── __init__.py             # Callback protocol (runtime_checkable)
 │   ├── checkpoint.py           # CheckpointCallback — model state_dict saves
 │   ├── csv_logger.py           # CSVLoggerCallback — episode metrics to CSV
-│   └── plot.py                 # PlotCallback — per-episode and per-sample SVG plots
+│   ├── plot.py                 # PlotCallback — per-episode and per-sample SVG plots
+│   └── video_recorder.py      # VideoRecorderCallback — eval episode video recording
 ├── env/
 │   ├── mdp.py                  # MDP wrapper — auto-reset, metric tracking, preprocessing
 │   └── trajectory.py           # Trajectory dataclass — (s, a, r, s', done)
