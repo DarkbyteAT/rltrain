@@ -122,6 +122,30 @@ trainer = Trainer(
 trainer.fit()
 ```
 
+### Loading a Trained Agent
+
+After training, load a saved agent for inference or evaluation:
+
+```python
+from rltrain.utils.builders import load_agent
+
+# Load the final checkpoint (default)
+agent = load_agent("results/PPO/2024-01-15_12-00-00")
+
+# Load a specific step-based checkpoint
+agent = load_agent("results/PPO/2024-01-15_12-00-00", checkpoint="2500")
+
+# Explicit device selection
+agent = load_agent("results/PPO/2024-01-15_12-00-00", device="cpu")
+
+# Use the agent for inference
+import numpy as np
+obs = np.array([[1.0, 0.5, -0.2, 0.1]])  # CartPole observation
+actions = agent(obs)  # returns numpy array of sampled actions
+```
+
+The loaded agent's model is set to evaluation mode. Optimizer state and replay buffers are not restored — use this for inference and evaluation, not continued training.
+
 ### CLI Arguments
 
 | Argument | Default | Description |
