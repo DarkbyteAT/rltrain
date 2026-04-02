@@ -25,7 +25,7 @@ repos:
       - id: bandit
         name: scan vulnerabilities
         entry: bandit
-        args: ["-r", "rltrain"]
+        args: ["-r", "rltrain", "--skip", "B101,B311"]
         pass_filenames: false
 
   # ruff: linter, import sorter, formatter

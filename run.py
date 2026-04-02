@@ -15,6 +15,7 @@ from rltrain.callbacks.csv_logger import CSVLoggerCallback
 from rltrain.callbacks.plot import PlotCallback
 from rltrain.env import MDP
 from rltrain.trainer import Trainer
+from rltrain.utils.device import resolve_device
 
 
 DT_SAVE = "%Y-%m-%d_%H-%M-%S (%z)"
@@ -30,7 +31,7 @@ class Parser(Tap):
     checkpoint_steps: int = 2500
     reward_run_rate: float = 0.1
     img: bool = False
-    gpu: bool = False
+    device: str = "auto"
 
     workers: int = 12
     log_freq: int = 1
@@ -49,7 +50,7 @@ level = args.log_level if isinstance(args.log_level, int) else getattr(logging, 
 logging.basicConfig(stream=sys.stdout, level=level, format=LOG_FORMAT)
 log = logging.getLogger("Train")
 
-device = T.device("cuda") if args.gpu and T.cuda.is_available() else T.device("cpu")
+device = resolve_device(args.device)
 log.info("device=%s", device)
 
 if args.workers != 1:
