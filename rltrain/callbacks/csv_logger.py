@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from rltrain.agents.agent import Agent
-from rltrain.env import MDP
+if TYPE_CHECKING:
+    from rltrain.agents.agent import Agent
+    from rltrain.env import MDP
 
 
 log = logging.getLogger(__name__)

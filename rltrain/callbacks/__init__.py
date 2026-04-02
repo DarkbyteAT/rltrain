@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from rltrain.agents.agent import Agent
-from rltrain.env import MDP
+if TYPE_CHECKING:
+    from rltrain.agents.agent import Agent
+    from rltrain.env import MDP
 
 
 @runtime_checkable

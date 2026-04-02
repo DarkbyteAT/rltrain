@@ -2,23 +2,14 @@ from functools import partial
 
 import torch.nn as nn
 
-
-def _load(fqn: str):
-    """Minimal reimplementation of rltrain.utils.builders.load.load to avoid
-    importing the full rltrain package (which requires the old gym API)."""
-    parts = fqn.split(".")
-    module = ".".join(parts[:-1])
-    root = __import__(module)
-    for sub in parts[1:]:
-        root = getattr(root, sub)
-    return root
+from rltrain.utils.builders.load import load
 
 
 def _build_opt_factories(opt_config: dict[str, dict]) -> dict[str, partial]:
     """Reproduce the optimizer factory-building logic from agent.py."""
     factories = {}
     for name, kwargs in opt_config.items():
-        opt_type = _load(kwargs["fqn"])
+        opt_type = load(kwargs["fqn"])
         opt_kwargs = {k: v for k, v in kwargs.items() if k != "fqn"}
         factories[name] = partial(opt_type, **opt_kwargs)
     return factories
