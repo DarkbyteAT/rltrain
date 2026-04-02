@@ -68,3 +68,5 @@ def test_ppo_cartpole_smoke(tmp_path):
     trainer.fit()
 
     assert env.total_steps >= 1000
+    assert env.episode_count > 0
+    assert len(env.return_history) == env.episode_count

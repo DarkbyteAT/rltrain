@@ -32,3 +32,4 @@ def test_center_large_values():
     x = T.tensor([1e6, 2e6, 3e6])
     out = center(x)
     assert T.isclose(out.mean(), T.tensor(0.0), atol=EPS)
+    assert T.isclose(out.std(), T.tensor(1.0), atol=EPS)
