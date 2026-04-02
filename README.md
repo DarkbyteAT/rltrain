@@ -362,6 +362,17 @@ The repository includes pre-configured experiments from the original dissertatio
 | Breakout-MinAtar-v1 | MinAtar arcade | 10x10x4 image | 3 |
 | SpaceInvaders-MinAtar-v1 | MinAtar arcade | 10x10x6 image | 4 |
 
+## Documentation
+
+Full documentation is available at [https://darkbyteat.github.io/rltrain](https://darkbyteat.github.io/rltrain).
+
+To build the docs locally:
+
+```bash
+uv sync --group docs
+uv run mkdocs serve
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code conventions, architecture rules, and key patterns.

@@ -7,6 +7,7 @@ repos:
         args: ["--maxkb=5000"]  # ML projects may have larger files
       - id: check-json
       - id: check-yaml
+        exclude: mkdocs.yml
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
