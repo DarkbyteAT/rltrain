@@ -27,16 +27,17 @@ def test_preprocess_obs_returns_input_unchanged_without_swap():
 
 
 def test_preprocess_obs_transposes_channels_when_swap_enabled():
-    """With channel swap, preprocess_obs applies squeeze().T[newaxis, :]."""
-    # Given: an MDP with swap_channels=True and a (1, H, W, C) image observation
+    """With channel swap, preprocess_obs converts (N, H, W, C) to (N, C, H, W)."""
+    # Given: an MDP with swap_channels=True and a non-square (1, H, W, C) observation
     mdp = _make_mdp(swap_channels=True)
-    obs = np.random.rand(1, 4, 4, 3)
+    obs = np.random.rand(1, 8, 6, 3)
 
     # When: preprocessing is applied
     result = mdp.preprocess_obs(obs)
 
-    # Then: the output has channels-first layout
-    expected = obs.squeeze().T[np.newaxis, :]
+    # Then: the output has channels-first layout (N, C, H, W)
+    expected = np.transpose(obs, (0, 3, 1, 2))
+    assert result.shape == (1, 3, 8, 6)
     np.testing.assert_array_equal(result, expected)
 
 

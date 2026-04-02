@@ -19,7 +19,7 @@ class VideoRecorderCallback:
         *,
         env_fn: Callable[[], gym.Env] | None = None,
         num_episodes: int = 3,
-        episode_trigger: Callable[[int], bool] | None = None,
+        eval_trigger: Callable[[int], bool] | None = None,
         video_length: int = 0,
         name_prefix: str = "rl-video",
         fps: int = 30,
@@ -30,7 +30,7 @@ class VideoRecorderCallback:
 
 - `env_fn` — Zero-arg callable returning a `gym.Env` with `render_mode="rgb_array"`. If `None`, auto-detects from `MDP.env.envs[0].spec.id` in `on_train_start`. The auto-detection creates a bare env without user-applied wrappers; pass `env_fn` explicitly when wrappers matter for the recording.
 - `num_episodes` — Number of evaluation episodes to record at each trigger point. Default: 3.
-- `episode_trigger` — Optional callable `(training_episode: int) -> bool` controlling when eval rollouts happen during training. When set, rollouts trigger in `on_episode_end` instead of the default `on_checkpoint`. For example, `lambda ep: ep % 50 == 0` records every 50th training episode.
+- `eval_trigger` — Optional callable `(training_episode: int) -> bool` controlling when eval rollouts happen during training. When set, rollouts trigger in `on_episode_end` instead of the default `on_checkpoint`. For example, `lambda ep: ep % 50 == 0` records every 50th training episode.
 - `video_length` — Fixed video length in frames. 0 means record full episodes. Forwarded to `RecordVideo`.
 - `name_prefix` — Filename prefix for recorded videos. Default: `"rl-video"`.
 - `fps` — Frames per second for the output video. Default: 30.
@@ -45,7 +45,7 @@ Satisfies the `Callback` protocol via structural subtyping — implements all fi
 |------|-----------|
 | `on_train_start(agent, env, run_dir)` | Build eval env from `env_fn` or auto-detect from `env.env.envs[0].spec.id`. Wrap with `RecordVideo(eval_env, video_folder=run_dir / "videos", ...)`. Create the videos directory. |
 | `on_step(agent, env, step)` | No-op. |
-| `on_episode_end(agent, env, episode)` | If `episode_trigger` is set and `episode_trigger(episode)` returns True, run eval rollouts. Otherwise no-op. |
+| `on_episode_end(agent, env, episode)` | If `eval_trigger` is set and `eval_trigger(episode)` returns True, run eval rollouts. Otherwise no-op. |
 | `on_checkpoint(agent, env, run_dir)` | Default trigger: run `num_episodes` eval rollouts on the recording env. |
 | `on_train_end(agent, env, run_dir)` | Run final recording, then close the eval env. |
 

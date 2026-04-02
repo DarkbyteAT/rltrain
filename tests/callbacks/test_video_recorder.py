@@ -103,16 +103,16 @@ def test_checkpoint_trigger_produces_video_files(tmp_path):
     assert len(videos) >= 1
 
 
-def test_checkpoint_is_noop_when_episode_trigger_is_set(tmp_path):
-    """When episode_trigger is configured, on_checkpoint should not run rollouts."""
-    # Given: a callback with an episode trigger that never fires
+def test_checkpoint_is_noop_when_eval_trigger_is_set(tmp_path):
+    """When eval_trigger is configured, on_checkpoint should not run rollouts."""
+    # Given: a callback with an eval trigger that never fires
     mdp = _make_mdp()
     mdp.setup(seed=42)
     agent = _make_agent_stub()
     cb = VideoRecorderCallback(
         env_fn=_make_recording_env,
         num_episodes=1,
-        episode_trigger=lambda _ep: False,
+        eval_trigger=lambda _ep: False,
     )
     cb.on_train_start(agent, mdp, tmp_path)
 
@@ -128,8 +128,8 @@ def test_checkpoint_is_noop_when_episode_trigger_is_set(tmp_path):
 # --- on_episode_end: custom trigger ---
 
 
-def test_episode_trigger_runs_rollouts_when_predicate_matches(tmp_path):
-    """on_episode_end should run eval rollouts when episode_trigger returns True."""
+def test_eval_trigger_runs_rollouts_when_predicate_matches(tmp_path):
+    """on_episode_end should run eval rollouts when eval_trigger returns True."""
     # Given: a callback triggered on episode 1 only
     mdp = _make_mdp()
     mdp.setup(seed=42)
@@ -137,7 +137,7 @@ def test_episode_trigger_runs_rollouts_when_predicate_matches(tmp_path):
     cb = VideoRecorderCallback(
         env_fn=_make_recording_env,
         num_episodes=1,
-        episode_trigger=lambda ep: ep == 1,
+        eval_trigger=lambda ep: ep == 1,
     )
     cb.on_train_start(agent, mdp, tmp_path)
 
@@ -167,5 +167,4 @@ def test_train_end_closes_eval_env(tmp_path):
     cb.on_train_end(agent, mdp, tmp_path)
 
     # Then: the eval env reference still exists (close doesn't None it out)
-    # but the env was closed (gymnasium sets np_random to None after close)
     assert cb._eval_env is not None
