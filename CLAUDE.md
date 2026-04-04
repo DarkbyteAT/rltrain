@@ -12,7 +12,10 @@ RLTrain is a PyTorch deep RL framework originally built for a 2022 dissertation 
 - **Environment**: `MDP` wraps `gymnasium.vector.SyncVectorEnv` — 5-tuple `step()` with `terminated | truncated` combined into `done` at the MDP level.
 - **Trainer + Callbacks**: `Trainer.fit()` owns the loop. `Callback` Protocol with 5 hooks. Built-in: CSV, plots, checkpoints.
 - **Configuration**: JSON files with `fqn` fields resolved by the FQN builder at runtime.
+- **Gradient Transforms**: Composable `GradientTransform` pipeline (SAM, ASAM, LAMPRollback) applied between `loss.backward()` and `descend()`.
+- **Experiment Tracking**: `TrackingCallback` adapts Callback hooks to pluggable `MetricsLogger` backends (Stream, JSONL, TensorBoard, W&B, xptrack).
 - **Device**: `resolve_device("auto")` → CUDA → MPS → CPU. CLI: `--device {cpu,cuda,mps,auto}`.
+- **Documentation**: MkDocs Material site at https://darkbyteat.github.io/rltrain.
 
 ## Known Technical Debt
 
