@@ -38,9 +38,18 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  # pytest: runs tests (local custom hook)
+  # local hooks (pyright, pytest)
   - repo: local
     hooks:
+      # pyright: type checker
+      - id: pyright
+        name: type check
+        language: system
+        entry: bash
+        args:
+          - -c
+          - pyright rltrain/
+        pass_filenames: false
       - id: pytest
         name: unit tests
         language: system
