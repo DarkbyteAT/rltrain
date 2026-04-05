@@ -120,7 +120,7 @@ class VideoRecorderCallback:
         Passes the full ``EnvSpec`` to preserve any custom kwargs from the
         original environment registration.
         """
-        spec = env.env.envs[0].spec
+        spec = env.env.envs[0].spec  # type: ignore[reportAttributeAccessIssue]  # gymnasium stub gap: SyncVectorEnv.envs exists at runtime
         if spec is None:
             raise RuntimeError("Cannot auto-detect env — provide env_fn to VideoRecorderCallback")
         return gym.make(spec, render_mode="rgb_array")

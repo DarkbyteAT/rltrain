@@ -30,19 +30,19 @@ class WandbLogger:
     def start(self, config: dict[str, Any], run_dir: Path) -> None:
         import wandb
 
-        wandb.init(project=self._project, config=config, dir=str(run_dir), **self._wandb_kwargs)
+        wandb.init(project=self._project, config=config, dir=str(run_dir), **self._wandb_kwargs)  # type: ignore[reportAttributeAccessIssue]  # wandb uses dynamic module exports
 
     def log_scalars(self, metrics: dict[str, float], step: int) -> None:
         import wandb
 
-        wandb.log(metrics, step=step)
+        wandb.log(metrics, step=step)  # type: ignore[reportAttributeAccessIssue]
 
     def log_hyperparams(self, params: dict[str, Any]) -> None:
         import wandb
 
-        wandb.config.update(params, allow_val_change=True)
+        wandb.config.update(params, allow_val_change=True)  # type: ignore[reportAttributeAccessIssue]
 
     def finish(self) -> None:
         import wandb
 
-        wandb.finish()
+        wandb.finish()  # type: ignore[reportAttributeAccessIssue]

@@ -12,7 +12,7 @@ def wrap(fqn: str, env_fn: Callable[[], gym.Env], **kwargs) -> Callable[[], gym.
     return lambda: wrapper_type(env_fn(), **kwargs)
 
 
-def _make_env_fn(id: str, wrappers: list[dict[str]], **kwargs) -> Callable[[], gym.Env]:
+def _make_env_fn(id: str, wrappers: list[dict[str, Any]], **kwargs) -> Callable[[], gym.Env]:
     """Build a factory that creates a wrapped gymnasium env."""
 
     def env_fn() -> gym.Env:
@@ -23,14 +23,14 @@ def _make_env_fn(id: str, wrappers: list[dict[str]], **kwargs) -> Callable[[], g
     return env_fn
 
 
-def env(id: str, wrappers: list[dict[str]], num_envs: int = 1, **kwargs) -> vgym.VectorEnv:
+def env(id: str, wrappers: list[dict[str, Any]], num_envs: int = 1, **kwargs) -> vgym.VectorEnv:
     """Build a vectorised gymnasium environment.
 
     Parameters
     ----------
     `id` : `str`
         Gymnasium environment ID.
-    `wrappers` : `list[dict[str]]`
+    `wrappers` : `list[dict[str, Any]]`
         Wrapper specifications, each with an ``fqn`` key and optional kwargs.
     `num_envs` : `int`
         Number of parallel environments in the ``SyncVectorEnv``.

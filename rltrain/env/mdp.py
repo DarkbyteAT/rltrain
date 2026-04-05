@@ -59,9 +59,9 @@ class MDP:
 
     def setup(self, seed: int | None):
         self.seed = seed
-        self.target_reward = self.env.envs[0].spec.reward_threshold
-        self.log.info(f"{self.env.envs[0].observation_space.shape=}")
-        self.log.info(f"{self.env.envs[0].action_space=}")
+        self.target_reward = self.env.envs[0].spec.reward_threshold  # type: ignore[reportAttributeAccessIssue]  # gymnasium stub gap: SyncVectorEnv.envs exists at runtime
+        self.log.info(f"{self.env.envs[0].observation_space.shape=}")  # type: ignore[reportAttributeAccessIssue]
+        self.log.info(f"{self.env.envs[0].action_space=}")  # type: ignore[reportAttributeAccessIssue]
         self.log.info(f"{self.num_envs=}")
 
         if self.target_reward is not None:

@@ -88,9 +88,9 @@ def load_agent(
 
     # --- DQN-specific post-load fixups ----------------------------------- #
     if hasattr(agent, "target"):
-        agent.target.load_state_dict(agent.model["qnet"].state_dict())
+        agent.target.load_state_dict(agent.model["qnet"].state_dict())  # type: ignore[reportAttributeAccessIssue]  # DQN-specific attr guarded by hasattr
     if hasattr(agent, "eps_greedy"):
-        agent.eps_greedy = 0.0
+        agent.eps_greedy = 0.0  # type: ignore[reportAttributeAccessIssue]
 
     log.info("loaded agent from '%s' (checkpoint=%s, device=%s)", run_dir, checkpoint, device)
     return agent
