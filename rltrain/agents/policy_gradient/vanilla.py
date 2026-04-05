@@ -39,8 +39,8 @@ class VanillaPG(Agent):
         if self.continuous:
             # Check if the action is batched, if not add extra dimension
             if len(actions.shape) == 1:
-                actions.unsqueeze_(1)
-            return action_dst.log_prob(actions).squeeze()
+                actions = actions.unsqueeze(1)
+            return action_dst.log_prob(actions).squeeze(-1)
         else:
             return action_dst.log_prob(actions.squeeze(-1)).squeeze(-1)
 
@@ -64,10 +64,20 @@ class VanillaPG(Agent):
 
     def load(self) -> tuple[T.Tensor, ...]:
         # Stack trajectories and merge (timesteps, num_envs) into a single batch dim.
+        # Trajectory order: state, action, reward, next_state, done
         arrays = [np.stack(x) for x in zip(*self.memory, strict=False)]
         tensors = [T.from_numpy(a.reshape(-1, *a.shape[2:])) for a in arrays]
-        # done (last element) must stay bool for bitwise ~ in loss computations.
-        return tuple(t.float() if i < len(tensors) - 1 else t.bool() for i, t in enumerate(tensors))
+        # done (idx 4) stays bool for bitwise ~; actions (idx 1) stay long for
+        # Categorical.log_prob in discrete mode, float for continuous.
+        result = []
+        for i, t in enumerate(tensors):
+            if i == 4:
+                result.append(t.bool())
+            elif i == 1 and not self.continuous:
+                result.append(t.long())
+            else:
+                result.append(t.float())
+        return tuple(result)
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
         states, actions, rewards, _, dones = batch
