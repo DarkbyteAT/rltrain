@@ -19,7 +19,7 @@ Agents are callable (via `Agent.__call__`), so the typical usage is `env.step(ag
 
 ### Construction
 
-`MDP` is not constructed directly by user code. The builder function `rltrain.utils.builders.env()` creates the `SyncVectorEnv` from a JSON config and the `Trainer` wraps it in an `MDP`.
+`MDP` is not constructed by the `Trainer`. The builder function `rltrain.utils.builders.env()` creates the `SyncVectorEnv` from a JSON config, which is then wrapped in an `MDP` before being passed to the `Trainer`.
 
 ## Trajectory
 

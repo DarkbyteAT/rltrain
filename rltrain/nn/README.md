@@ -15,7 +15,7 @@ Reusable network building blocks for agents. All modules use orthogonal weight i
 
 Creates an `nn.Sequential` MLP from a tuple of layer sizes. Activation functions are placed between all layers except the last. Each `nn.Linear` layer gets orthogonal weight init.
 
-### `cnn(channels, kernels, strides, act_fn=nn.SiLU())`
+### `cnn(channels, kernels, strides, act_fn=nn.SiLU)`
 
 Creates an `nn.Sequential` CNN with `nn.Conv2d` layers followed by `nn.Flatten()`. Each conv layer gets orthogonal weight init. Default activation is SiLU (Swish).
 
@@ -33,7 +33,7 @@ Every module in this package initialises linear and conv layer weights with `nn.
 
 ## FQN Resolution and JSON Composition
 
-Networks are specified in agent JSON configs as lists of module specs under the `model` key. Each spec is a dict with an `"fqn"` key and constructor kwargs. The builder wraps each list in `nn.Sequential`, so multiple modules compose into a pipeline:
+Networks are specified in agent JSON configs as a mapping of names to lists of module specs under the `model` key. Each spec is a dict with an `"fqn"` key and constructor kwargs. The builder wraps each list in `nn.Sequential`, so multiple modules compose into a pipeline:
 
 ```json
 {
