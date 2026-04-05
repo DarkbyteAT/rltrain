@@ -105,10 +105,10 @@ class Trainer:
                 for cb in self.callbacks:
                     cb.on_episode_end(self.agent, self.env, self.env.episode_count)
 
-            if self.env.episode_steps != last_checkpoint and (
+            if self.env.total_steps != last_checkpoint and (
                 self.env.total_steps % self.checkpoint_steps == 0 or self.env.total_steps >= self.num_steps
             ):
-                last_checkpoint = self.env.episode_steps
+                last_checkpoint = self.env.total_steps
                 for cb in self.callbacks:
                     cb.on_checkpoint(self.agent, self.env, self.run_dir)
 

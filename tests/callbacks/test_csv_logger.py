@@ -13,10 +13,10 @@ def test_on_checkpoint_writes_csv(tmp_path, stub_agent, populated_env):
     csv_path = tmp_path / "metrics.csv"
     assert csv_path.exists()
 
-    df = pd.read_csv(csv_path, index_col="Episode")
+    df = pd.read_csv(csv_path, index_col="episode")
     assert len(df) == populated_env.episode_count
-    assert list(df.columns) == ["Length", "Return", "Running Return"]
-    assert df["Return"].tolist() == populated_env.return_history
+    assert list(df.columns) == ["length", "return", "running_return"]
+    assert df["return"].tolist() == populated_env.return_history
 
 
 def test_on_train_end_writes_csv(tmp_path, stub_agent, populated_env):
@@ -24,7 +24,7 @@ def test_on_train_end_writes_csv(tmp_path, stub_agent, populated_env):
     cb.on_train_start(stub_agent, populated_env, tmp_path)
     cb.on_train_end(stub_agent, populated_env, tmp_path)
 
-    df = pd.read_csv(tmp_path / "metrics.csv", index_col="Episode")
+    df = pd.read_csv(tmp_path / "metrics.csv", index_col="episode")
     assert len(df) == populated_env.episode_count
 
 
@@ -50,7 +50,7 @@ def test_csv_overwrites_on_each_checkpoint(tmp_path, stub_agent, populated_env):
     cb.on_train_start(stub_agent, populated_env, tmp_path)
 
     cb.on_checkpoint(stub_agent, populated_env, tmp_path)
-    df1 = pd.read_csv(tmp_path / "metrics.csv", index_col="Episode")
+    df1 = pd.read_csv(tmp_path / "metrics.csv", index_col="episode")
 
     populated_env.episode_count = 5
     populated_env.length_history.extend([60, 70])
@@ -58,7 +58,7 @@ def test_csv_overwrites_on_each_checkpoint(tmp_path, stub_agent, populated_env):
     populated_env.run_history.extend([43.0, 49.0])
 
     cb.on_checkpoint(stub_agent, populated_env, tmp_path)
-    df2 = pd.read_csv(tmp_path / "metrics.csv", index_col="Episode")
+    df2 = pd.read_csv(tmp_path / "metrics.csv", index_col="episode")
 
     assert len(df1) == 3
     assert len(df2) == 5

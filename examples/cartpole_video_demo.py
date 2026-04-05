@@ -1,6 +1,7 @@
 """Train PPO on CartPole-v1 with video recording until it hits a score of 500."""
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import gymnasium as gym
@@ -17,9 +18,9 @@ from rltrain.trainer import Trainer
 
 # --- Config ---
 EXAMPLES_DIR = Path(__file__).parent
-AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo.json").read_text())
+AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo-sam.json").read_text())
 ENV_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "env.json").read_text())
-RUN_DIR = Path("results/cartpole_video_demo")
+RUN_DIR = Path("results/cartpole_video_demo") / datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
 NUM_STEPS = 500_000
 CHECKPOINT_STEPS = 25_000
 SEED = 42

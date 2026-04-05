@@ -98,9 +98,10 @@ def test_checkpoint_trigger_produces_video_files(tmp_path):
     cb.on_checkpoint(agent, mdp, tmp_path)
     cb.on_train_end(agent, mdp, tmp_path)
 
-    # Then: at least one video file is written to run_dir/videos/
+    # Then: exactly one video named by training step is written
     videos = list((tmp_path / "videos").glob("*.mp4"))
-    assert len(videos) >= 1
+    assert len(videos) == 1
+    assert f"step-{mdp.total_steps}" in videos[0].name
 
 
 def test_checkpoint_is_noop_when_eval_trigger_is_set(tmp_path):

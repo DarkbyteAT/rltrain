@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+
 if TYPE_CHECKING:
     from rltrain.agents.agent import Agent
     from rltrain.env import MDP
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class CSVLoggerCallback:
-    """Writes episode metrics (Episode, Length, Return, Running Return) to CSV.
+    """Writes episode metrics (episode, length, return, running_return) to CSV.
 
     The CSV is written at each checkpoint and at train end to capture the full
     episode history up to that point.
@@ -44,10 +45,10 @@ class CSVLoggerCallback:
             return
         pd.DataFrame(
             {
-                "Episode": np.arange(1, env.episode_count + 1),
-                "Length": np.asarray(env.length_history),
-                "Return": np.asarray(env.return_history),
-                "Running Return": np.asarray(env.run_history),
+                "episode": np.arange(1, env.episode_count + 1),
+                "length": np.asarray(env.length_history),
+                "return": np.asarray(env.return_history),
+                "running_return": np.asarray(env.run_history),
             }
-        ).set_index("Episode").to_csv(self._csv_path)
+        ).set_index("episode").to_csv(self._csv_path)
         log.debug("wrote metrics to '%s'", self._csv_path)

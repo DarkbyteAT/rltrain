@@ -26,9 +26,10 @@ def _identity(obs: np.ndarray) -> np.ndarray:
 class VideoRecorderCallback:
     """Records evaluation videos of agent behaviour during training.
 
-    Uses gymnasium's ``RecordVideo`` wrapper on a separate persistent evaluation
-    environment. By default, records at each checkpoint; optionally configure
-    ``eval_trigger`` to record at specific training episodes instead.
+    Runs evaluation rollouts on a separate environment and writes MP4 files
+    named by training step (e.g. ``step-25000.mp4``). By default, records at
+    each checkpoint; optionally configure ``eval_trigger`` to record at
+    specific training episodes instead.
 
     Parameters
     ----------
@@ -45,7 +46,7 @@ class VideoRecorderCallback:
         the default ``on_checkpoint``. For example, ``lambda ep: ep % 50 == 0``
         records every 50th training episode.
     `video_length` : `int`
-        Fixed video length in frames. 0 means record full episodes.
+        Maximum video length in frames per episode. 0 means record full episodes.
     `name_prefix` : `str`
         Filename prefix for recorded videos.
     `fps` : `int`
@@ -71,52 +72,42 @@ class VideoRecorderCallback:
 
         self._eval_env: gym.Env | None = None
         self._preprocess_obs: Callable[[np.ndarray], np.ndarray] = _identity
+        self._video_dir: Path | None = None
         self._enabled: bool = True
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
         self._preprocess_obs = env.preprocess_obs
 
         try:
-            base_env = self._env_fn() if self._env_fn is not None else self._make_env_from_mdp(env)
+            self._eval_env = self._env_fn() if self._env_fn is not None else self._make_env_from_mdp(env)
         except Exception:
             log.warning("VideoRecorderCallback: failed to create eval env — disabling", exc_info=True)
             self._enabled = False
             return
 
-        if base_env.render_mode != "rgb_array":
+        if self._eval_env.render_mode != "rgb_array":
             log.warning(
                 "VideoRecorderCallback: eval env render_mode is '%s', not 'rgb_array' — disabling",
-                base_env.render_mode,
+                self._eval_env.render_mode,
             )
-            base_env.close()
+            self._eval_env.close()
+            self._eval_env = None
             self._enabled = False
             return
 
-        video_dir = run_dir / "videos"
-        video_dir.mkdir(parents=True, exist_ok=True)
-
-        record_kwargs: dict = {
-            "video_folder": str(video_dir),
-            "episode_trigger": lambda _: True,
-            "name_prefix": self._name_prefix,
-            "fps": self._fps,
-            "disable_logger": True,
-        }
-        if self._video_length > 0:
-            record_kwargs["video_length"] = self._video_length
-
-        self._eval_env = gym.wrappers.RecordVideo(base_env, **record_kwargs)
-        log.info("VideoRecorderCallback: recording to '%s'", video_dir)
+        self._video_dir = run_dir / "videos"
+        self._video_dir.mkdir(parents=True, exist_ok=True)
+        log.info("VideoRecorderCallback: recording to '%s'", self._video_dir)
 
     def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
 
     def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
         if self._eval_trigger is not None and self._eval_trigger(episode):
-            self._run_eval_rollouts(agent)
+            self._run_eval_rollouts(agent, env.total_steps)
 
     def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
         if self._eval_trigger is None:
-            self._run_eval_rollouts(agent)
+            self._run_eval_rollouts(agent, env.total_steps)
 
     def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
         if self._eval_env is not None:
@@ -134,14 +125,35 @@ class VideoRecorderCallback:
             raise RuntimeError("Cannot auto-detect env — provide env_fn to VideoRecorderCallback")
         return gym.make(spec, render_mode="rgb_array")
 
-    def _run_eval_rollouts(self, agent: Agent) -> None:
-        """Run num_episodes evaluation episodes on the recording env."""
-        if not self._enabled or self._eval_env is None:
+    def _run_eval_rollouts(self, agent: Agent, step: int) -> None:
+        """Run evaluation episodes and save each as a step-named MP4."""
+        if not self._enabled or self._eval_env is None or self._video_dir is None:
             return
-        for _ in range(self._num_episodes):
+
+        import moviepy
+
+        for ep in range(self._num_episodes):
+            frames: list[np.ndarray] = []
             obs, _ = self._eval_env.reset()
             terminated, truncated = False, False
+
             while not (terminated or truncated):
+                frame = self._eval_env.render()
+                if frame is not None:
+                    frames.append(frame)
+                if 0 < self._video_length <= len(frames):
+                    break
                 processed = self._preprocess_obs(obs[np.newaxis, ...])
                 action = agent(processed)[0]
                 obs, _, terminated, truncated, _ = self._eval_env.step(action)
+
+            if not frames:
+                log.warning("VideoRecorderCallback: no frames captured at step %d", step)
+                continue
+
+            suffix = f"-{ep}" if self._num_episodes > 1 else ""
+            path = self._video_dir / f"{self._name_prefix}-step-{step}{suffix}.mp4"
+            clip = moviepy.ImageSequenceClip(frames, fps=self._fps)
+            clip.write_videofile(str(path), logger=None)
+            clip.close()
+            log.debug("VideoRecorderCallback: wrote '%s' (%d frames)", path, len(frames))
