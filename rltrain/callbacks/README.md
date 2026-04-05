@@ -27,7 +27,7 @@ If no callbacks are passed to the `Trainer`, it defaults to `CSVLoggerCallback`,
 
 ## How to Write a Custom Callback
 
-1. Create a class with any subset of the five hook methods matching the signatures above.
+1. Create a class with all five hook methods matching the signatures above. Use `...` for hooks you don't need.
 2. No base class or decorator is needed -- structural subtyping handles protocol conformance.
 3. Pass an instance to the `Trainer`'s `callbacks` list.
 
