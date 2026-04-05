@@ -39,7 +39,11 @@ Both must be updated alongside code changes in the same PR.
 
 ### Tests
 
-Plain `def test_*` functions with pytest — no classes.
+See [tests/README.md](tests/README.md) for the full testing guide. Key points:
+
+- Test structure mirrors the source layout (`tests/agents/` → `rltrain/agents/`, etc.)
+- Plain `def test_*` functions — no classes
+- Given-When-Then structure
 
 ```bash
 uv run pytest tests/ -v
@@ -70,20 +74,10 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-```
-rltrain/              # Framework package
-├── agents/           # Agent implementations (policy_gradient/, actor_critic/, q_learning/)
-├── callbacks/        # Callback protocol + built-in callbacks (checkpoint, csv_logger, plot, video_recorder)
-├── env/              # MDP wrapper + Trajectory dataclass
-├── nn/               # Network modules (mlp, cnn, d2rl, rff)
-├── trainer.py        # Trainer class — training loop + callback orchestration
-├── transforms/       # Gradient transform pipeline (SAM, ASAM, LAMPRollback)
-└── utils/            # Builders (FQN loader), device, discount, center, grad, lerp
-
-examples/             # Experiment configs (env.json + agent variants per environment)
-tests/                # Test suite (pytest)
-run.py                # Thin CLI wrapper
-```
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
+- **`examples/`** — experiment configs (env.json + agent variants per environment)
+- **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
+- **`run.py`** — thin CLI wrapper
 
 ## Architecture Rules
 

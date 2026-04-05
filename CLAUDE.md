@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-See [README.md](README.md) for usage and configuration. See [CONTRIBUTING.md](CONTRIBUTING.md) for code conventions, architecture rules, and key patterns.
+Claude Code guidance for this repository.
+
+@AGENTS.md
 
 ## Project Context
 
@@ -30,7 +32,8 @@ Documentation is a first-class citizen. Update docs alongside code changes in th
 |----------|------|----------|------------------|
 | Users | `README.md` | Installation, usage, configuration, CLI args, examples | Dev conventions, architecture rules |
 | Developers | `CONTRIBUTING.md` | Code conventions, testing, linting, architecture rules, key patterns | Usage guides, configuration reference |
-| AI | `CLAUDE.md` (this file) | Project context, architecture summary, tech debt, doc maintenance rules | Anything already in README or CONTRIBUTING |
+| AI agents | `AGENTS.md` | Commands, rules, pitfalls, key doc references | Project context or architecture |
+| Claude | `CLAUDE.md` (this file) | `@AGENTS.md` + architecture, design decisions, tech debt | Anything in README or CONTRIBUTING |
 
 **When changing code:**
 - New user-facing feature or API change → update `README.md`

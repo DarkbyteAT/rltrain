@@ -40,19 +40,7 @@ graph LR
 | PPO | `PPO` | Actor-critic | Clipped surrogate objective, mini-batch epochs, KL early stopping |
 | DQN | `VanillaDQN` | Q-learning | Replay buffer, target network with soft updates, epsilon-greedy decay |
 
-All policy gradient and actor-critic agents inherit along a clean chain:
-
-```
-Agent (ABC)
-├── VanillaPG
-│   └── REINFORCE
-│       └── VanillaAC
-│           └── AdvantageAC
-│               └── PPO
-└── VanillaDQN
-```
-
-Each level adds one concept — baselines, TD bootstrapping, GAE, clipping — making the hierarchy a readable tutorial in itself.
+All policy gradient and actor-critic agents inherit along a clean chain: `Agent` (ABC) → `VanillaPG` → `REINFORCE` → `VanillaAC` → `AdvantageAC` → `PPO`, with `VanillaDQN` branching from `Agent` directly. Each level adds one concept — baselines, TD bootstrapping, GAE, clipping — making the hierarchy a readable tutorial in itself.
 
 ## Neural Network Modules
 
