@@ -3,7 +3,7 @@ from collections.abc import Callable
 import gymnasium as gym
 import gymnasium.vector as vgym
 
-from rltrain.utils.builders import load
+from rltrain.utils.builders.load import load
 
 
 def wrap(fqn: str, env_fn: Callable[[], gym.Env], **kwargs) -> Callable[[], gym.Env]:
