@@ -10,7 +10,13 @@ from rltrain.utils import lerp
 
 class MDP:
     """Simple wrapper around the ``gymnasium`` framework that automatically resets environments, as
-    well as tracking several statistics, and handling (minimal) input-preprocessing."""
+    well as tracking several statistics, and handling (minimal) input-preprocessing.
+
+    Supports both single-env (``num_envs=1``) and multi-env vectorised operation.
+    ``SyncVectorEnv`` auto-resets done environments, so the MDP only calls ``reset()``
+    once at setup time.  Per-env episode tracking (length, return, running return) is
+    maintained independently via arrays.
+    """
 
     target_reward: float | None
 
@@ -23,13 +29,13 @@ class MDP:
     run_history: list[float]
 
     state: np.ndarray
-    done: bool
-    length: int
-    reward_sum: float
+    _lengths: np.ndarray
+    _reward_sums: np.ndarray
 
     def __init__(self, env: vgym.VectorEnv, run_beta: float, log_freq: int, swap_channels: bool):
         self.log = logging.getLogger("Environment")
         self.env = env
+        self.num_envs: int = env.num_envs
         self.run_beta = run_beta
         self.log_freq = log_freq
         self.swap_channels = swap_channels
@@ -56,6 +62,7 @@ class MDP:
         self.target_reward = self.env.envs[0].spec.reward_threshold
         self.log.info(f"{self.env.envs[0].observation_space.shape=}")
         self.log.info(f"{self.env.envs[0].action_space=}")
+        self.log.info(f"{self.num_envs=}")
 
         if self.target_reward is not None:
             self.log.info(f"{self.target_reward=:.3f}")
@@ -68,25 +75,19 @@ class MDP:
         self.return_history = []
         self.run_history = []
 
-        self.reset(seed=seed)
+        self._lengths = np.zeros(self.num_envs, dtype=np.int64)
+        self._reward_sums = np.zeros(self.num_envs, dtype=np.float64)
 
-    def reset(self, seed: int | None = None):
         self.state, _ = self.env.reset(seed=seed)
-        self.done = False
-        self.length = 0
-        self.reward_sum = 0.0
-
         self.state = self.preprocess_obs(self.state)
 
     def step(self, policy: Callable[[np.ndarray], np.ndarray]) -> Trajectory[np.ndarray]:
-        """
-        Takes a step in the environment, using the given policy function for action-selection.
-        Environments are automatically managed by this function, and the following metrics are
-        recorded:
+        """Takes a step in the environment using the given policy function for action-selection.
 
-        - Length (``length_history``)
-        - Episode returns (``cum_history``)
-        - EMA of returns (``run_history``)
+        ``SyncVectorEnv`` automatically resets sub-environments that are done, so
+        ``next_state`` for a finished environment is already the first observation of
+        the *new* episode.  Episode statistics are recorded per-env before the internal
+        counters are zeroed.
 
         Parameters
         ----------
@@ -98,7 +99,6 @@ class MDP:
         ``Trajectory[ndarray]``
             ``(state, action, reward, next_state, done)``
         """
-
         state = self.state
         action = policy(state)
         next_state, reward, terminated, truncated, _ = self.env.step(action)
@@ -107,33 +107,43 @@ class MDP:
         next_state = self.preprocess_obs(next_state)
 
         self.state = next_state
-        self.reward_sum += reward[0]
-        self.done = done[0]
-        self.length += 1
-        self.total_steps += 1
+        self._lengths += 1
+        self._reward_sums += reward
+        self.total_steps += self.num_envs
 
-        # Appends results for completed episode to history-lists for graphing purposes
-        if self.done:
-            self.run_reward = (
-                self.reward_sum if self.run_reward is None else lerp(self.run_reward, self.reward_sum, self.run_beta)
-            )
-            self.length_history.append(self.length)
-            self.return_history.append(self.reward_sum)
-            self.run_history.append(self.run_reward)
-            self.episode_steps += self.length
-            self.episode_count += 1
+        # Record completed episodes — may be zero, one, or many per step.
+        done_mask = done.astype(bool)
 
-            if self.episode_count % self.log_freq == 0 or (
-                self.target_reward is not None and self.run_reward is not None and self.run_reward >= self.target_reward
-            ):
-                self.log.info(
-                    f"episode={self.episode_count}\t"
-                    f"step={self.total_steps}\t"
-                    f"length={self.length}\t"
-                    f"return={self.reward_sum:.3f}\t"
-                    f"run={self.run_reward:.3f}"
+        if done_mask.any():
+            for i in np.where(done_mask)[0]:
+                ep_length = int(self._lengths[i])
+                ep_return = float(self._reward_sums[i])
+
+                self.run_reward = (
+                    ep_return if self.run_reward is None else lerp(self.run_reward, ep_return, self.run_beta)
                 )
+                self.length_history.append(ep_length)
+                self.return_history.append(ep_return)
+                self.run_history.append(self.run_reward)
+                self.episode_steps += ep_length
+                self.episode_count += 1
 
-            self.reset()
+                if self.episode_count % self.log_freq == 0 or (
+                    self.target_reward is not None
+                    and self.run_reward is not None
+                    and self.run_reward >= self.target_reward
+                ):
+                    self.log.info(
+                        f"episode={self.episode_count}\t"
+                        f"step={self.total_steps}\t"
+                        f"length={ep_length}\t"
+                        f"return={ep_return:.3f}\t"
+                        f"run={self.run_reward:.3f}"
+                    )
+
+            # Reset per-env counters for finished envs only.
+            # SyncVectorEnv has already auto-reset the underlying env.
+            self._lengths[done_mask] = 0
+            self._reward_sums[done_mask] = 0.0
 
         return Trajectory(state, action, reward, next_state, done)
