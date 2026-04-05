@@ -20,7 +20,7 @@ The policy gradient chain (`VanillaPG` through `PPO`) lives in two subpackages: 
 
 `Agent` is an abstract base class. The key orchestration method is `learn()`, which is **not** overridden by subclasses. It defines the fixed optimisation pipeline:
 
-1. `loss(*batch)` -- compute and backpropagate the loss.
+1. `loss(*batch)` -- compute the loss (backpropagated by `learn()`).
 2. `GradientTransform.apply()` -- pre-descent hooks (e.g. SAM perturbation).
 3. `descend()` -- optimizer step with optional gradient clipping.
 4. `GradientTransform.post_step()` -- post-descent hooks (e.g. LAMP rollback).
@@ -59,6 +59,6 @@ Subclasses implement these abstract methods:
 ## Conventions
 
 - Set `name: str` as a class attribute for display and logging.
-- Use PyTorch aliases: `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`.
+- Use PyTorch aliases: `T` for `torch`, `nn` for `torch.nn`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`.
 - New optimisation techniques (gradient manipulation, parameter perturbation) belong in `rltrain/transforms/`, not in `learn()` or subclass overrides.
 - Policy gradient agents support both discrete (`Categorical`) and continuous (`MultivariateNormal`) action spaces via the `continuous` flag.

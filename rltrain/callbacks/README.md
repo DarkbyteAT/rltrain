@@ -4,7 +4,7 @@ Extensible hook system for the training loop. The `Trainer.fit()` method invokes
 
 ## Callback Protocol
 
-`Callback` is a `@runtime_checkable` Protocol defined in `__init__.py`. All five hook methods default to no-ops (`...`), so implementations only need the subset they care about. Any class with the right method signatures satisfies the protocol -- no inheritance required.
+`Callback` is a `@runtime_checkable` Protocol defined in `__init__.py`. The Trainer calls all five hooks unconditionally, so implementations must define all five methods. Use `...` as the body for hooks you don't need. No inheritance required — any class with the right method signatures satisfies the protocol via structural subtyping.
 
 | Hook | When | Signature |
 |------|------|-----------|

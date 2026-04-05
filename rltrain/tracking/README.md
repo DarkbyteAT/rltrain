@@ -16,7 +16,7 @@ graph LR
 
 ## MetricsLogger Protocol
 
-`MetricsLogger` is a `@runtime_checkable` Protocol defined in `logger.py`. All methods default to no-ops, so backends only implement what they need.
+`MetricsLogger` is a `@runtime_checkable` Protocol defined in `logger.py`. `TrackingCallback` calls all four methods unconditionally, so backends must define all of them. Use `...` as the body for methods that don't apply — no inheritance required.
 
 | Method | When | Purpose |
 |--------|------|---------|

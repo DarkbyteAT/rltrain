@@ -19,7 +19,7 @@ Creates an `nn.Sequential` MLP from a tuple of layer sizes. Activation functions
 
 Creates an `nn.Sequential` CNN with `nn.Conv2d` layers followed by `nn.Flatten()`. Each conv layer gets orthogonal weight init. Default activation is SiLU (Swish).
 
-### `SkipMLP(inputs, hiddens, outputs, act_fn=None)`
+### `SkipMLP(inputs, hiddens, outputs, act_fn=nn.SiLU)`
 
 D2RL-style MLP where the raw input is concatenated with the output of every hidden layer, creating skip connections from input to all depths. This improves gradient flow for deeper networks. Default activation is SiLU.
 
