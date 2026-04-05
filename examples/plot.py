@@ -142,7 +142,16 @@ app = typer.Typer(add_completion=False)
 
 @app.command()
 def main(
-    in_path: Annotated[Path, typer.Argument(help="Path to results directory containing trial data.")],
+    in_path: Annotated[
+        Path,
+        typer.Argument(
+            help="Path to results directory containing trial data.",
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            readable=True,
+        ),
+    ],
     out_path: Annotated[Path, typer.Argument(help="Path to output directory for metrics and tables.")],
 ) -> None:
     """Aggregate trial results and produce metrics tables."""
@@ -153,8 +162,10 @@ def main(
     env_paths = [p for p in in_path.iterdir() if p.is_dir()]
     policy_paths = [p for env_path in env_paths for p in env_path.iterdir() if p.is_dir()]
     loaded_dfs = [load_trials_data(p) for p in policy_paths if p.is_dir()]
+    if not loaded_dfs:
+        typer.echo(f"No trial data found in {in_path}", err=True)
+        raise typer.Exit(1)
     full_df = pd.concat([dfs[0] for dfs in loaded_dfs])
-    resampled_df = pd.concat([dfs[1] for dfs in loaded_dfs])  # noqa: F841
 
     # Compute metrics for each environment-policy-algorithm triple
     metrics_df = pd.DataFrame(

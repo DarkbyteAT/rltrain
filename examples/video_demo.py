@@ -28,12 +28,18 @@ app = typer.Typer(add_completion=False)
 
 @app.command()
 def main(
-    agent: Annotated[Path, typer.Option(help="Path to agent JSON config file.")] = Path(
-        "examples/cartpole/ppo-sam.json"
-    ),
-    env: Annotated[Path, typer.Option(help="Path to environment JSON config file.")] = Path(
-        "examples/cartpole/env.json"
-    ),
+    agent: Annotated[
+        Path,
+        typer.Option(
+            help="Path to agent JSON config file.", exists=True, file_okay=True, dir_okay=False, readable=True
+        ),
+    ] = Path("examples/cartpole/ppo-sam.json"),
+    env: Annotated[
+        Path,
+        typer.Option(
+            help="Path to environment JSON config file.", exists=True, file_okay=True, dir_okay=False, readable=True
+        ),
+    ] = Path("examples/cartpole/env.json"),
     steps: Annotated[int, typer.Option(help="Total training environment steps.")] = 500_000,
     checkpoint_steps: Annotated[int, typer.Option(help="Steps between checkpoints.")] = 25_000,
     seed: Annotated[int, typer.Option(help="RNG seed for reproducibility.")] = 42,
