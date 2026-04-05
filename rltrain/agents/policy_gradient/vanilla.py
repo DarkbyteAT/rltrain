@@ -42,7 +42,7 @@ class VanillaPG(Agent):
                 actions.unsqueeze_(1)
             return action_dst.log_prob(actions).squeeze()
         else:
-            return action_dst.log_prob(actions.squeeze()).squeeze()
+            return action_dst.log_prob(actions.squeeze(-1)).squeeze(-1)
 
     def act(self, states: T.Tensor) -> dst.Distribution:
         return self.policy(self.actor(states))
@@ -63,7 +63,11 @@ class VanillaPG(Agent):
                 self.memory.clear()
 
     def load(self) -> tuple[T.Tensor, ...]:
-        return tuple(T.from_numpy(np.asarray(x).squeeze()) for x in zip(*self.memory, strict=False))
+        # Stack trajectories and merge (timesteps, num_envs) into a single batch dim.
+        arrays = [np.stack(x) for x in zip(*self.memory, strict=False)]
+        tensors = [T.from_numpy(a.reshape(-1, *a.shape[2:])) for a in arrays]
+        # done (last element) must stay bool for bitwise ~ in loss computations.
+        return tuple(t.float() if i < len(tensors) - 1 else t.bool() for i, t in enumerate(tensors))
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
         states, actions, rewards, _, dones = batch
