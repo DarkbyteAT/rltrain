@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 import gymnasium as gym
 import gymnasium.vector as vgym
@@ -42,7 +43,7 @@ def env(id: str, wrappers: list[dict[str]], num_envs: int = 1, **kwargs) -> vgym
     return vgym.SyncVectorEnv([_make_env_fn(id, wrappers, **kwargs) for _ in range(num_envs)])
 
 
-def eval_env(id: str, wrappers: list[dict[str]], **kwargs) -> gym.Env:
+def eval_env(id: str, wrappers: list[dict[str, Any]], **kwargs) -> gym.Env:
     """Build a single wrapped env with ``render_mode="rgb_array"`` for evaluation."""
     kwargs.setdefault("render_mode", "rgb_array")
     return _make_env_fn(id, wrappers, **kwargs)()
