@@ -32,7 +32,7 @@ The repository ships with example configs under `examples/`. Train PPO on CartPo
 
 ```bash
 python run.py \
-    --agents examples/cartpole/ppo.json \
+    --agent examples/cartpole/ppo.json \
     --env examples/cartpole/env.json \
     --dump results/
 ```
@@ -41,17 +41,18 @@ RLTrain auto-detects the best available device (CUDA, then MPS, then CPU). Overr
 
 ```bash
 python run.py \
-    --agents examples/cartpole/ppo.json \
+    --agent examples/cartpole/ppo.json \
     --env examples/cartpole/env.json \
     --dump results/ \
     --device mps
 ```
 
-Train multiple agents sequentially by passing several config files:
+Train multiple agents sequentially by repeating `--agent`:
 
 ```bash
 python run.py \
-    --agents examples/cartpole/ppo.json examples/cartpole/reinforce.json \
+    --agent examples/cartpole/ppo.json \
+    --agent examples/cartpole/reinforce.json \
     --env examples/cartpole/env.json \
     --dump results/
 ```
@@ -112,14 +113,18 @@ trainer.fit()
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--agents` | required | Path(s) to agent JSON config files |
+| `--agent` | required | Path(s) to agent JSON config files (repeat for multiple) |
 | `--env` | required | Path to environment JSON config file |
 | `--dump` | required | Output directory for results |
-| `--num_steps` | 100,000 | Total training environment steps |
-| `--checkpoint_steps` | 2,500 | Steps between saving metrics and plots |
-| `--reward_run_rate` | 0.1 | EMA beta for running average return |
+| `--num-steps` | 100,000 | Total training environment steps |
+| `--checkpoint-steps` | 2,500 | Steps between saving metrics and plots |
+| `--reward-run-rate` | 0.1 | EMA beta for running average return |
 | `--device` | auto | Device backend: `cpu`, `cuda`, `mps`, or `auto` |
 | `--workers` | 12 | PyTorch inter/intra-op thread count |
 | `--seed` | current time | RNG seed for reproducibility |
-| `--img` | false | Channel-first preprocessing for image observations |
-| `--save_all` | false | Save model checkpoints at every interval |
+| `--img` / `--no-img` | false | Channel-first preprocessing for image observations |
+| `--save-all` / `--no-save-all` | false | Save model checkpoints at every interval |
+| `--log-freq` | 1 | Logging frequency (episodes) |
+| `--log-level` | INFO | Logging level (DEBUG, INFO, WARNING, ERROR) |
+
+Run `python run.py --help` for auto-generated help.

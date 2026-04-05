@@ -18,13 +18,13 @@ Experiment configurations from the original dissertation (COMP3200, University o
 
 ```bash
 # Train PPO on CartPole
-python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/
+python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/
 
 # Train REINFORCE with SAM on Acrobot
-python run.py --agents examples/acrobot/reinforce-sam.json --env examples/acrobot/env.json --dump results/
+python run.py --agent examples/acrobot/reinforce-sam.json --env examples/acrobot/env.json --dump results/
 
 # Train multiple agents sequentially
-python run.py --agents examples/cartpole/ppo.json examples/cartpole/a2c.json --env examples/cartpole/env.json --dump results/
+python run.py --agent examples/cartpole/ppo.json --agent examples/cartpole/a2c.json --env examples/cartpole/env.json --dump results/
 ```
 
 ## Using the Trainer API

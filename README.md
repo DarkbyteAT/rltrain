@@ -69,18 +69,18 @@ pip install -e ".[dev]"
 
 ### Training an Agent
 
-**CLI** (thin wrapper around the Trainer API):
+**CLI** (thin wrapper around the Trainer API, powered by [typer](https://typer.tiangolo.com/)):
 
 ```bash
 # Train PPO on CartPole (auto-detects best device: CUDA → MPS → CPU)
-python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/
+python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/
 
 # Explicitly select a device backend
-python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device mps
-python run.py --agents examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device cuda
+python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device mps
+python run.py --agent examples/cartpole/ppo.json --env examples/cartpole/env.json --dump results/ --device cuda
 
 # Train multiple agents sequentially
-python run.py --agents examples/cartpole/ppo.json examples/cartpole/reinforce.json --env examples/cartpole/env.json --dump results/
+python run.py --agent examples/cartpole/ppo.json --agent examples/cartpole/reinforce.json --env examples/cartpole/env.json --dump results/
 ```
 
 **Trainer API** (programmatic use):
@@ -138,17 +138,21 @@ The loaded agent's model is set to evaluation mode. Optimizer state and replay b
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--agent` | required | Path(s) to agent JSON config files |
+| `--agent` | required | Path(s) to agent JSON config files (repeat for multiple agents) |
 | `--env` | required | Path to environment JSON config file |
 | `--dump` | required | Output directory for results |
-| `--num_steps` | 100,000 | Total training environment steps |
-| `--checkpoint_steps` | 2,500 | Steps between saving metrics and plots |
-| `--reward_run_rate` | 0.1 | EMA beta for running average return |
+| `--num-steps` | 100,000 | Total training environment steps |
+| `--checkpoint-steps` | 2,500 | Steps between saving metrics and plots |
+| `--reward-run-rate` | 0.1 | EMA beta for running average return |
 | `--device` | auto | Device backend: `cpu`, `cuda`, `mps`, or `auto` (CUDA → MPS → CPU) |
 | `--workers` | 12 | PyTorch inter/intra-op thread count |
 | `--seed` | current time | RNG seed for reproducibility |
-| `--img` | false | Channel-first preprocessing for image observations |
-| `--save_all` | false | Save model checkpoints at every interval (not just final) |
+| `--img` / `--no-img` | false | Channel-first preprocessing for image observations |
+| `--save-all` / `--no-save-all` | false | Save model checkpoints at every interval (not just final) |
+| `--log-freq` | 1 | Logging frequency (episodes) |
+| `--log-level` | INFO | Logging level (DEBUG, INFO, WARNING, ERROR) |
+
+Run `python run.py --help` for auto-generated help.
 
 ## Configuration
 

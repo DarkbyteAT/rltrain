@@ -24,7 +24,7 @@ dependencies = [
     "pandas",
     "seaborn",
     "gymnasium",
-    "typed-argument-parser",
+    "typer",
 ]
 
 [project.optional-dependencies]
