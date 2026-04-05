@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
+from typing import Annotated
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import typer
 from sklearn.linear_model import LinearRegression
-from tap import Tap
 
 
 def load_trials_data(policy_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -136,76 +137,58 @@ def format_table(latex_str: str) -> str:
     )
 
 
-class Parser(Tap):
-    in_path: Path
-    out_path: Path
+app = typer.Typer(add_completion=False)
 
 
-# Path to environment results folder passed in CLI args
-args = Parser().parse_args()
-in_path = args.in_path
-out_path = args.out_path
+@app.command()
+def main(
+    in_path: Annotated[Path, typer.Argument(help="Path to results directory containing trial data.")],
+    out_path: Annotated[Path, typer.Argument(help="Path to output directory for metrics and tables.")],
+) -> None:
+    """Aggregate trial results and produce metrics tables."""
+    sns.set_style("darkgrid")
+    sns.set_context("paper")
 
-sns.set_style("darkgrid")
-sns.set_context("paper")
+    # Load all CSV files into DataFrame
+    env_paths = [p for p in in_path.iterdir() if p.is_dir()]
+    policy_paths = [p for env_path in env_paths for p in env_path.iterdir() if p.is_dir()]
+    loaded_dfs = [load_trials_data(p) for p in policy_paths if p.is_dir()]
+    full_df = pd.concat([dfs[0] for dfs in loaded_dfs])
+    resampled_df = pd.concat([dfs[1] for dfs in loaded_dfs])  # noqa: F841
 
-# Load all CSV files into DataFrame
-env_paths = [p for p in in_path.iterdir() if p.is_dir()]
-policy_paths = [p for env_path in env_paths for p in env_path.iterdir() if p.is_dir()]
-loaded_dfs = [load_trials_data(p) for p in policy_paths if p.is_dir()]
-full_df = pd.concat([dfs[0] for dfs in loaded_dfs])
-resampled_df = pd.concat([dfs[1] for dfs in loaded_dfs])
+    # Compute metrics for each environment-policy-algorithm triple
+    metrics_df = pd.DataFrame(
+        [
+            calculate_metrics(algo_df)
+            for _, env_df in full_df.groupby("Environment")
+            for _, policy_df in env_df.groupby("Policy")
+            for _, algo_df in policy_df.groupby("Algorithm")
+        ]
+    )
 
-# Compute metrics for each environment-policy-algorithm triple
-metrics_df = pd.DataFrame(
-    [
-        calculate_metrics(algo_df)
-        for _, env_df in full_df.groupby("Environment")
-        for _, policy_df in env_df.groupby("Policy")
-        for _, algo_df in policy_df.groupby("Algorithm")
-    ]
-)
+    metrics_df.set_index(["Environment", "Policy", "Algorithm"], inplace=True)
+    full_df.set_index(["Environment", "Policy", "Algorithm"], inplace=True)
 
-metrics_df.set_index(["Environment", "Policy", "Algorithm"], inplace=True)
-full_df.set_index(["Environment", "Policy", "Algorithm"], inplace=True)
+    out_path.mkdir(parents=True, exist_ok=True)
+    metrics_df.to_csv(out_path / "metrics.csv")
+    full_df.to_csv(out_path / "full_results.csv")
 
-out_path.mkdir(parents=True, exist_ok=True)
-metrics_df.to_csv(out_path / "metrics.csv")
-full_df.to_csv(out_path / "full_results.csv")
+    print(metrics_df["Cumulative Return"])
+    print(metrics_df["Max Return"])
+    print(metrics_df[["Slope", "R^2"]])
 
-print(metrics_df["Cumulative Return"])
-print(metrics_df["Max Return"])
-print(metrics_df[["Slope", "R^2"]])
+    cum_table = metrics_df["Cumulative Return"].to_latex(caption="Cumulative Return", longtable=True)
+    max_table = metrics_df["Max Return"].to_latex(caption="Maximum Episodic Return", longtable=True)
+    slope_table = metrics_df["M"].to_latex(caption="Slope", longtable=True)
+    intercept_table = metrics_df["C"].to_latex(caption="Intercept", longtable=True)
+    rsq_table = metrics_df["R^2"].to_latex(caption="$R^2$", longtable=True)
 
-cum_table = metrics_df["Cumulative Return"].to_latex(caption="Cumulative Return", longtable=True)
-max_table = metrics_df["Max Return"].to_latex(caption="Maximum Episodic Return", longtable=True)
-slope_table = metrics_df["M"].to_latex(caption="Slope", longtable=True)
-intercept_table = metrics_df["C"].to_latex(caption="Intercept", longtable=True)
-rsq_table = metrics_df["R^2"].to_latex(caption="$R^2$", longtable=True)
+    (out_path / "cum_table.tex").write_text(format_table(cum_table))
+    (out_path / "max_table.tex").write_text(format_table(max_table))
+    (out_path / "slope_table.tex").write_text(format_table(slope_table))
+    (out_path / "intercept_table.tex").write_text(format_table(intercept_table))
+    (out_path / "rsq_table.tex").write_text(format_table(rsq_table))
 
-(out_path / "cum_table.tex").write_text(format_table(cum_table))
-(out_path / "max_table.tex").write_text(format_table(max_table))
-(out_path / "slope_table.tex").write_text(format_table(slope_table))
-(out_path / "intercept_table.tex").write_text(format_table(intercept_table))
-(out_path / "rsq_table.tex").write_text(format_table(rsq_table))
 
-# for env, env_df in resampled_df.groupby(["Environment"]):
-#     env = env[0]
-#     env_path = out_path/"plots"/env
-#     env_path.mkdir(parents=True, exist_ok=True)
-
-#     for policy, policy_df in env_df.groupby(["Policy"]):
-#         policy = policy[0]
-#         plot_path = env_path/f"{policy}.png"
-#         fig = plt.figure(dpi=600, clear=True)
-#         fig.suptitle(f"Return over Timesteps ({policy} on {env})")
-
-#         sns.lineplot(
-#             policy_df,
-#             x = "Timestep",
-#             y = "return",
-#             hue = "Algorithm"
-#         )
-
-#         print(f"saving plot to '{plot_path}'...")
-#         fig.savefig(plot_path)
+if __name__ == "__main__":
+    app()

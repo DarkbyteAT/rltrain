@@ -2,7 +2,7 @@
 
 
 def main() -> None:
-    """CLI entry point — delegates to run.train()."""
-    from run import args, train
+    """CLI entry point — delegates to run.app()."""
+    from run import app
 
-    train(args)
+    app()
