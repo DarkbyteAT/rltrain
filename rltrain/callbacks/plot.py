@@ -11,6 +11,7 @@ import matplotlib.ticker as tck
 import numpy as np
 import seaborn as sns
 
+
 if TYPE_CHECKING:
     from rltrain.agents.agent import Agent
     from rltrain.env import MDP

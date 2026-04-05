@@ -1,7 +1,9 @@
+from collections.abc import Container, Iterable
 from pathlib import Path
-from typing import Container, Iterable, TypeVar, Union
+from typing import TypeVar
+
 
 T = TypeVar("T")
 
-PathLike = Union[str, Path]
-SupportsIn = Union[Container[T], Iterable[T]]
+PathLike = str | Path
+SupportsIn = Container[T] | Iterable[T]

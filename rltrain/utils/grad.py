@@ -1,32 +1,34 @@
+from collections.abc import Iterable
+
 import torch as T
 import torch.nn as nn
 
-from typing import Iterable
 
 def get_grad(params: Iterable[nn.Parameter]) -> T.Tensor:
     """Returns the current gradient of each parameter as a flattened vector.
-    
+
     Parameters
     ----------
     ``params`` : ``Iterable[Parameter]``
         An ``Iterable`` of the parameters to collect gradients from.
-    
+
     Returns
     -------
     ``Tensor``
         A flattened vector of the gradients of each parameter.
     """
-    
+
     # p.grad is Optional[Tensor] — it is None for frozen parameters
     # (requires_grad=False). This function is only called from Agent.learn()
     # immediately after loss.backward(), which populates .grad on every
     # parameter that requires_grad. Frozen params are never passed here.
     return T.cat([p.grad.view(-1) for p in params])  # type: ignore[union-attr]
 
+
 @T.no_grad()
 def set_grad(grads: T.Tensor, params: Iterable[nn.Parameter]):
     """Sets the gradient of each parameter to the corresponding elements of a vector.
-    
+
     Parameters
     ----------
     ``grads`` : ``Tensor``
@@ -34,9 +36,9 @@ def set_grad(grads: T.Tensor, params: Iterable[nn.Parameter]):
     ``params`` : ``Iterable[Parameter]``
         An ``Iterable`` of parameters to update the gradients of.
     """
-    
+
     i = 0
-    
+
     for p in params:
-        p.grad = grads[i:i+p.numel()].view(p.shape)
+        p.grad = grads[i : i + p.numel()].view(p.shape)
         i += p.numel()

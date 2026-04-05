@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+
 if TYPE_CHECKING:
     from rltrain.agents.agent import Agent
     from rltrain.env import MDP

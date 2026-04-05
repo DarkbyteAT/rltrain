@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import torch as T
 
+
 if TYPE_CHECKING:
     from rltrain.agents.agent import Agent
     from rltrain.env import MDP

@@ -1,10 +1,12 @@
 from typing import TypeVar
 
+
 XY = TypeVar("XY")
 
-def lerp(input: XY, target : XY, step: float) -> XY:
+
+def lerp(input: XY, target: XY, step: float) -> XY:
     """Computes the linear interpolation between ``x`` and ``y``, with a step size of ``step``.
-    
+
     Parameters
     ----------
     ``x``

@@ -29,8 +29,13 @@ def test_callback_lifecycle_order(tmp_path, cartpole_agent, cartpole_env):
     """Verify train_start is first, train_end is last, and episodes happen."""
     recorder = RecordingCallback()
     trainer = Trainer(
-        cartpole_agent, cartpole_env, num_steps=500, checkpoint_steps=250,
-        run_dir=tmp_path, callbacks=[recorder], seed=42,
+        cartpole_agent,
+        cartpole_env,
+        num_steps=500,
+        checkpoint_steps=250,
+        run_dir=tmp_path,
+        callbacks=[recorder],
+        seed=42,
     )
     trainer.fit()
 
@@ -46,8 +51,13 @@ def test_multiple_callbacks_all_called(tmp_path, cartpole_agent, cartpole_env):
     r1 = RecordingCallback()
     r2 = RecordingCallback()
     trainer = Trainer(
-        cartpole_agent, cartpole_env, num_steps=500, checkpoint_steps=250,
-        run_dir=tmp_path, callbacks=[r1, r2], seed=42,
+        cartpole_agent,
+        cartpole_env,
+        num_steps=500,
+        checkpoint_steps=250,
+        run_dir=tmp_path,
+        callbacks=[r1, r2],
+        seed=42,
     )
     trainer.fit()
 
@@ -57,8 +67,13 @@ def test_multiple_callbacks_all_called(tmp_path, cartpole_agent, cartpole_env):
 def test_empty_callbacks_list_runs_without_error(tmp_path, cartpole_agent, cartpole_env):
     """Trainer with callbacks=[] should train without crashing."""
     trainer = Trainer(
-        cartpole_agent, cartpole_env, num_steps=500, checkpoint_steps=250,
-        run_dir=tmp_path, callbacks=[], seed=42,
+        cartpole_agent,
+        cartpole_env,
+        num_steps=500,
+        checkpoint_steps=250,
+        run_dir=tmp_path,
+        callbacks=[],
+        seed=42,
     )
     trainer.fit()
     assert cartpole_env.total_steps >= 500

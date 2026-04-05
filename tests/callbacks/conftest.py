@@ -11,9 +11,13 @@ class StubAgent:
     """Minimal agent-like object with a real nn.ModuleDict for state_dict."""
 
     name: str = "TestAgent"
-    model: nn.ModuleDict = field(default_factory=lambda: nn.ModuleDict({
-        "actor": nn.Sequential(nn.Linear(4, 2)),
-    }))
+    model: nn.ModuleDict = field(
+        default_factory=lambda: nn.ModuleDict(
+            {
+                "actor": nn.Sequential(nn.Linear(4, 2)),
+            }
+        )
+    )
 
 
 @dataclass
