@@ -1,41 +1,58 @@
 {
-    "fqn": "rltrain.agents.actor_critic.AdvantageAC",
-    "beta_critic": 0.5,
-    "gamma": 0.995,
-    "lambda_gae": 0.9,
-    "tau": 0.01,
-    "horizon": 256,
-    "normalise": true,
-    "grad_transforms": [
-        {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
-        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
-    ],
-	"model": {
-        "actor": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 6,
-                "hiddens": [256, 256, 256, 256],
-                "outputs": 3
-            }
-        ],
-        "critic": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 6,
-                "hiddens": [256, 256, 256, 256],
-                "outputs": 1
-            }
-        ]
+  "fqn": "rltrain.agents.actor_critic.AdvantageAC",
+  "beta_critic": 0.5,
+  "gamma": 0.995,
+  "lambda_gae": 0.9,
+  "tau": 1e-2,
+  "horizon": 256,
+  "normalise": true,
+  "grad_transforms": [
+    {
+      "fqn": "rltrain.transforms.SAM",
+      "rho": 1e-2
     },
-    "opt": {
-        "actor": {
-            "fqn": "torch.optim.Adam",
-            "lr": 3e-4
-        },
-        "critic": {
-            "fqn": "torch.optim.Adam",
-            "lr": 3e-4
-        }
+    {
+      "fqn": "rltrain.transforms.LAMPRollback",
+      "eps": 5e-3,
+      "rollback_len": 10
     }
+  ],
+  "model": {
+    "actor": [
+      {
+        "fqn": "rltrain.nn.SkipMLP",
+        "inputs": 6,
+        "hiddens": [
+          256,
+          256,
+          256,
+          256
+        ],
+        "outputs": 3
+      }
+    ],
+    "critic": [
+      {
+        "fqn": "rltrain.nn.SkipMLP",
+        "inputs": 6,
+        "hiddens": [
+          256,
+          256,
+          256,
+          256
+        ],
+        "outputs": 1
+      }
+    ]
+  },
+  "opt": {
+    "actor": {
+      "fqn": "torch.optim.Adam",
+      "lr": 3e-4
+    },
+    "critic": {
+      "fqn": "torch.optim.Adam",
+      "lr": 3e-4
+    }
+  }
 }

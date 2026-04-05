@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-import gymnasium as gym
 import torch as T
 
 import rltrain.utils.builders as mk
@@ -41,7 +40,7 @@ trainer = Trainer(
         PlotCallback(num_steps=NUM_STEPS),
         CheckpointCallback(),
         VideoRecorderCallback(
-            env_fn=lambda: gym.make("CartPole-v1", render_mode="rgb_array"),
+            env_fn=lambda: mk.eval_env(**ENV_CFG),
             num_episodes=1,
         ),
     ],

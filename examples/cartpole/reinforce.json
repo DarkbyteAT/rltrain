@@ -1,34 +1,44 @@
 {
-    "fqn": "rltrain.agents.policy_gradient.REINFORCE",
-    "beta_critic": 0.5,
-    "gamma": 0.995,
-    "tau": 5e-3,
-    "model": {
-        "actor": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 4,
-                "hiddens": [256, 256, 256, 256],
-                "outputs": 2
-            }
+  "fqn": "rltrain.agents.policy_gradient.REINFORCE",
+  "beta_critic": 0.5,
+  "gamma": 0.995,
+  "tau": 5e-3,
+  "model": {
+    "actor": [
+      {
+        "fqn": "rltrain.nn.SkipMLP",
+        "inputs": 4,
+        "hiddens": [
+          256,
+          256,
+          256,
+          256
         ],
-        "critic": [
-            {
-                "fqn": "rltrain.nn.SkipMLP",
-                "inputs": 4,
-                "hiddens": [256, 256, 256, 256],
-                "outputs": 1
-            }
-        ]
+        "outputs": 2
+      }
+    ],
+    "critic": [
+      {
+        "fqn": "rltrain.nn.SkipMLP",
+        "inputs": 4,
+        "hiddens": [
+          256,
+          256,
+          256,
+          256
+        ],
+        "outputs": 1
+      }
+    ]
+  },
+  "opt": {
+    "actor": {
+      "fqn": "torch.optim.Adam",
+      "lr": 3e-4
     },
-    "opt": {
-        "actor": {
-            "fqn": "torch.optim.Adam",
-            "lr": 3e-4
-        },
-        "critic": {
-            "fqn": "torch.optim.Adam",
-            "lr": 3e-4
-        }
+    "critic": {
+      "fqn": "torch.optim.Adam",
+      "lr": 3e-4
     }
+  }
 }
