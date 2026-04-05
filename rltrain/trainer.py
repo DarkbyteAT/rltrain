@@ -98,12 +98,13 @@ class Trainer:
             for cb in self.callbacks:
                 cb.on_step(self.agent, self.env, self.env.total_steps)
 
-            # MDP.step() resets done to False after an episode ends, so we
-            # detect episode completion by watching the episode counter.
-            if self.env.episode_count > last_episode:
-                last_episode = self.env.episode_count
+            # Fire on_episode_end once per completed episode. With multi-env,
+            # several sub-envs can finish in one step, so the counter may jump
+            # by more than 1.
+            while self.env.episode_count > last_episode:
+                last_episode += 1
                 for cb in self.callbacks:
-                    cb.on_episode_end(self.agent, self.env, self.env.episode_count)
+                    cb.on_episode_end(self.agent, self.env, last_episode)
 
             if self.env.total_steps != last_checkpoint and (
                 self.env.total_steps % self.checkpoint_steps == 0 or self.env.total_steps >= self.num_steps
