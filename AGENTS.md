@@ -29,6 +29,20 @@ make all                       # format-check + lint + typecheck + test
 - @CONTRIBUTING.md — code conventions, architecture rules, key patterns, PR workflow
 - @tests/README.md — test organisation, conventions, running tests
 
+### Module READMEs
+
+Before working in a module, read its README for architecture, protocols, and how-to-add guides.
+
+| Module | README | Covers |
+|--------|--------|--------|
+| `rltrain/agents/` | @rltrain/agents/README.md | Agent hierarchy, template method pattern, how to add new algorithms |
+| `rltrain/callbacks/` | @rltrain/callbacks/README.md | Callback protocol, built-in callbacks, how to write custom ones |
+| `rltrain/nn/` | @rltrain/nn/README.md | Network modules, orthogonal init, FQN resolution |
+| `rltrain/transforms/` | @rltrain/transforms/README.md | GradientTransform protocol, SAM/ASAM/LAMP, how to add new transforms |
+| `rltrain/tracking/` | @rltrain/tracking/README.md | TrackingCallback, MetricsLogger protocol, backend implementations |
+| `rltrain/utils/` | @rltrain/utils/README.md | FQN builder system, device resolution, math helpers |
+| `rltrain/env/` | @rltrain/env/README.md | MDP wrapper, Trajectory dataclass |
+
 ## Critical Rules
 
 ### Agents
