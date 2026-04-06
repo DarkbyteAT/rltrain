@@ -22,7 +22,7 @@ pip install -e ".[dev]"
 
 ## Code Conventions
 
-- **Python 3.10+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
+- **Python 3.11+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - **PyTorch aliases** — `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
 - **NumPy-style docstrings** with backtick-wrapped parameter names
 - **Orthogonal weight init** on all linear and conv layers
@@ -74,7 +74,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (re-exported from samgria: SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (provided by samgria: SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
 - **`examples/`** — experiment configs (env.json + agent variants per environment)
 - **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
 - **`run.py`** — thin CLI wrapper
@@ -83,7 +83,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 - **Framework code in `rltrain/`**, experiment configs in `examples/`, results in `dump/`.
 - **Agent inheritance chain** is deliberate — each level adds one concept. Maintain this when adding algorithms.
-- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in `rltrain/transforms/`, not hardcoded in `learn()` or subclasses.
+- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in [samgria](https://github.com/DarkbyteAT/samgria), not hardcoded in `learn()` or subclasses.
 - **All networks** must use orthogonal weight initialisation.
 - **JSON + FQN** — new agents/networks must be instantiable via the FQN builder with keyword arguments from JSON.
 - **No environment-specific dependencies** — rltrain is a general-purpose RL framework. Users plug gymnasium-compatible environments from downstream scripts.
@@ -123,7 +123,7 @@ The pipeline is configured via the `grad_transforms` key in agent JSON, using th
 
 Omitting `grad_transforms` (or passing an empty list) gives vanilla gradient descent.
 
-Built-in transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria) and re-exported via `rltrain/transforms/`:
+Built-in transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria):
 
 | Transform | Phase | Description |
 |-----------|-------|-------------|
