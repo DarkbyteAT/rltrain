@@ -1,4 +1,6 @@
-from rltrain.nn.cnn import cnn as cnn
-from rltrain.nn.d2rl import SkipMLP as SkipMLP
-from rltrain.nn.mlp import mlp as mlp
-from rltrain.nn.rff import RFF as RFF
+"""Neural network modules — re-exported from toblox."""
+
+from toblox import RFF as RFF
+from toblox import SkipMLP as SkipMLP
+from toblox import cnn as cnn
+from toblox import mlp as mlp

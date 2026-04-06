@@ -92,7 +92,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ### FQN Builder System
 
-The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `rltrain.nn.SkipMLP`, not `rltrain.nn.d2rl.SkipMLP`).
+The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `toblox.SkipMLP` for nn modules, `samgria.SAM` for gradient transforms).
 
 ### Agent Template Method
 

@@ -175,8 +175,8 @@ Agents are specified as JSON objects. The `fqn` field resolves to a Python class
     "early_stop": 0.05,
     "eps_clip": 0.2,
     "model": {
-        "actor": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
-        "critic": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 1}]
+        "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
+        "critic": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 1}]
     },
     "opt": {
         "actor": {"fqn": "torch.optim.Adam", "lr": 3e-4},
@@ -190,9 +190,9 @@ Networks are composed sequentially — each entry in the model list becomes a la
 ```json
 {
     "model": {
-        "embedding": [{"fqn": "rltrain.nn.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}],
-        "actor": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 3}],
-        "critic": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 1}]
+        "embedding": [{"fqn": "toblox.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}],
+        "actor": [{"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 3}],
+        "critic": [{"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 1}]
     }
 }
 ```
