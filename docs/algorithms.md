@@ -162,9 +162,9 @@ Exploration uses epsilon-greedy with a linear decay schedule.
 
 Any agent can optionally use composable gradient transforms for flatter loss landscapes and improved generalisation. Transforms are specified via the `grad_transforms` key in agent JSON config:
 
-- **SAM** (`rltrain.transforms.SAM`) -- adversarial weight perturbation that seeks parameters in flat regions of the loss surface.
-- **ASAM** (`rltrain.transforms.ASAM`) -- like SAM but perturbation is scaled by parameter magnitude, making the sharpness measure scale-invariant.
-- **LAMP** (`rltrain.transforms.LAMPRollback`) -- injects parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter regions.
+- **SAM** (`samgria.SAM`) -- adversarial weight perturbation that seeks parameters in flat regions of the loss surface.
+- **ASAM** (`samgria.ASAM`) -- like SAM but perturbation is scaled by parameter magnitude, making the sharpness measure scale-invariant.
+- **LAMP** (`samgria.LAMPRollback`) -- injects parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter regions.
 
 Transforms compose naturally -- stack SAM with LAMP by listing both in `grad_transforms`.
 

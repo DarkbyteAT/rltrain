@@ -219,7 +219,7 @@ Add composable gradient transforms to any agent via the `grad_transforms` key:
 ```json
 {
     "grad_transforms": [
-        {"fqn": "rltrain.transforms.SAM", "rho": 0.01}
+        {"fqn": "samgria.SAM", "rho": 0.01}
     ]
 }
 ```
@@ -229,8 +229,8 @@ SAM (Sharpness-Aware Minimization) perturbs weights adversarially before recompu
 ```json
 {
     "grad_transforms": [
-        {"fqn": "rltrain.transforms.SAM", "rho": 0.01},
-        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+        {"fqn": "samgria.SAM", "rho": 0.01},
+        {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
     ]
 }
 ```

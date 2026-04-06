@@ -74,7 +74,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), transforms (SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`. Network modules are provided by [toblox](https://github.com/DarkbyteAT/toblox).
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), utils (builders, device, math helpers), and `trainer.py`. Network modules are provided by [toblox](https://github.com/DarkbyteAT/toblox). Gradient transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria).
 - **`examples/`** — experiment configs (env.json + agent variants per environment)
 - **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
 - **`run.py`** — thin CLI wrapper
@@ -83,7 +83,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 - **Framework code in `rltrain/`**, experiment configs in `examples/`, results in `dump/`.
 - **Agent inheritance chain** is deliberate — each level adds one concept. Maintain this when adding algorithms.
-- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in `rltrain/transforms/`, not hardcoded in `learn()` or subclasses.
+- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in [samgria](https://github.com/DarkbyteAT/samgria), not hardcoded in `learn()` or subclasses.
 - **All networks** must use orthogonal weight initialisation.
 - **JSON + FQN** — new agents/networks must be instantiable via the FQN builder with keyword arguments from JSON.
 - **No environment-specific dependencies** — rltrain is a general-purpose RL framework. Users plug gymnasium-compatible environments from downstream scripts.
@@ -116,14 +116,14 @@ The pipeline is configured via the `grad_transforms` key in agent JSON, using th
 
 ```json
 "grad_transforms": [
-    {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
-    {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    {"fqn": "samgria.SAM", "rho": 1e-2},
+    {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
 ]
 ```
 
 Omitting `grad_transforms` (or passing an empty list) gives vanilla gradient descent.
 
-Built-in transforms live in `rltrain/transforms/`:
+Built-in transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria):
 
 | Transform | Phase | Description |
 |-----------|-------|-------------|

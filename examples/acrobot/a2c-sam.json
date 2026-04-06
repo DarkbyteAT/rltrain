@@ -8,7 +8,7 @@
   "normalise": true,
   "grad_transforms": [
     {
-      "fqn": "rltrain.transforms.SAM",
+      "fqn": "samgria.SAM",
       "rho": 1e-2
     }
   ],

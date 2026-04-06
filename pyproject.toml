@@ -25,6 +25,7 @@ dependencies = [
     "seaborn",
     "gymnasium",
     "typer",
+    "samgria @ git+https://github.com/DarkbyteAT/samgria.git",
 ]
 
 [project.optional-dependencies]
