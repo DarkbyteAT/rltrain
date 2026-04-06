@@ -44,6 +44,8 @@ All policy gradient and actor-critic agents inherit along a clean chain: `Agent`
 
 ## Neural Network Modules
 
+Network modules are provided by the [toblox](https://github.com/DarkbyteAT/toblox) package.
+
 | Module | Description | Use Case |
 |--------|-------------|----------|
 | `mlp` | Multi-layer perceptron with orthogonal init | Dense observations (CartPole, Acrobot) |

@@ -22,7 +22,7 @@ pip install -e ".[dev]"
 
 ## Code Conventions
 
-- **Python 3.10+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
+- **Python 3.11+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - **PyTorch aliases** — `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
 - **NumPy-style docstrings** with backtick-wrapped parameter names
 - **Orthogonal weight init** on all linear and conv layers
@@ -92,7 +92,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ### FQN Builder System
 
-The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `toblox.SkipMLP` for nn modules, `samgria.SAM` for gradient transforms).
+The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `toblox.SkipMLP` for nn modules, `rltrain.transforms.SAM` for gradient transforms).
 
 ### Agent Template Method
 
