@@ -7,9 +7,9 @@ import torch as T
 import torch.distributions as dst
 import torch.nn as nn
 import torch.optim as optim
+from samgria import GradientTransform
 
 from rltrain.env import MDP, Trajectory
-from rltrain.transforms import GradientTransform  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class Agent(abc.ABC):
