@@ -1,0 +1,1339 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular PyTorch framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/superpowers/plans/2026-04-02-video-recorder-callback/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>VideoRecorderCallback Implementation Plan - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#videorecordercallback-implementation-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              VideoRecorderCallback Implementation Plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#card-a-encapsulate-observation-preprocessing-mdppreprocess_obs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card A: Encapsulate observation preprocessing — MDP.preprocess_obs()
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Card A: Encapsulate observation preprocessing — MDP.preprocess_obs()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-a1-write-failing-tests-for-preprocess_obs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task A1: Write failing tests for preprocess_obs()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-a2-implement-preprocess_obs-and-refactor-mdp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task A2: Implement preprocess_obs() and refactor MDP
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#card-b-implement-videorecordercallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card B: Implement VideoRecorderCallback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Card B: Implement VideoRecorderCallback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-b1-protocol-conformance-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B1: Protocol conformance test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-b2-scaffold-videorecordercallback-with-no-op-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B2: Scaffold VideoRecorderCallback with no-op hooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-b3-auto-detection-fallback-on_train_start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B3: Auto-detection fallback + on_train_start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-b4-eval-rollout-on_checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B4: Eval rollout + on_checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-b5-on_episode_end-trigger-on_train_end-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B5: on_episode_end trigger + on_train_end cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-b6-full-test-suite-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task B6: Full test suite + documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependency-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trello-wave-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trello Wave Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="videorecordercallback-implementation-plan">VideoRecorderCallback Implementation Plan<a class="headerlink" href="#videorecordercallback-implementation-plan" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> Add a <code>VideoRecorderCallback</code> that records evaluation videos of agent gameplay at training checkpoints, using gymnasium's <code>RecordVideo</code> wrapper on an isolated eval environment.</p>
+<p><strong>Architecture:</strong> Two independent cards. Card A extracts <code>MDP.preprocess_obs()</code> to encapsulate observation preprocessing. Card B implements the <code>VideoRecorderCallback</code> itself. Card B depends on Card A (it calls <code>env.preprocess_obs()</code> during eval rollouts). Within each card, work follows TDD: write failing test → implement → verify → commit.</p>
+<p><strong>Tech Stack:</strong> Python, gymnasium (<code>RecordVideo</code> wrapper, <code>gym.make</code>), PyTorch (agent inference), pytest.</p>
+<p><strong>Spec:</strong> <a href="../../specs/2026-04-02-video-recorder-callback-design/"><code>docs/superpowers/specs/2026-04-02-video-recorder-callback-design.md</code></a></p>
+<hr />
+<h2 id="card-a-encapsulate-observation-preprocessing-mdppreprocess_obs">Card A: Encapsulate observation preprocessing — <code>MDP.preprocess_obs()</code><a class="headerlink" href="#card-a-encapsulate-observation-preprocessing-mdppreprocess_obs" title="Permanent link">&para;</a></h2>
+<p><strong>Trello:</strong> <a href="https://trello.com/c/ERxUf9Aa">Card #21</a> — no dependencies, can start immediately.</p>
+<p><strong>Files:</strong>
+- Modify: <code>rltrain/env/mdp.py</code> (add <code>preprocess_obs</code>, refactor <code>reset</code> and <code>step</code>)
+- Create: <code>tests/env/test_preprocess_obs.py</code></p>
+<h3 id="task-a1-write-failing-tests-for-preprocess_obs">Task A1: Write failing tests for <code>preprocess_obs()</code><a class="headerlink" href="#task-a1-write-failing-tests-for-preprocess_obs" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Create the test file</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># tests/env/test_preprocess_obs.py</span>
+<span class="sd">&quot;&quot;&quot;Tests for MDP.preprocess_obs() observation preprocessing.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">gymnasium</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gymnasium.vector</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">vgym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDP</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_mdp</span><span class="p">(</span><span class="n">swap_channels</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MDP</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper: build an MDP wrapping CartPole (no channel swap needed).&quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">vgym</span><span class="o">.</span><span class="n">SyncVectorEnv</span><span class="p">([</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="n">MDP</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">run_beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">log_freq</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">swap_channels</span><span class="o">=</span><span class="n">swap_channels</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_preprocess_obs_identity_when_no_swap</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;With swap_channels=False, preprocess_obs returns the input unchanged.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">(</span><span class="n">swap_channels</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">]])</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">mdp</span><span class="o">.</span><span class="n">preprocess_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">obs</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_preprocess_obs_swaps_channels</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;With swap_channels=True, preprocess_obs applies squeeze().T[newaxis, :].&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">(</span><span class="n">swap_channels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Simulate a (1, H, W, C) image observation from a vectorised env</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">mdp</span><span class="o">.</span><span class="n">preprocess_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_preprocess_obs_used_by_reset</span><span class="p">(</span><span class="n">cartpole_env</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;After reset, state should equal preprocess_obs applied to raw obs.&quot;&quot;&quot;</span>
+    <span class="c1"># cartpole_env has swap_channels=False, so state == raw obs</span>
+    <span class="n">cartpole_env</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">cartpole_env</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run tests to verify they fail</strong></li>
+</ul>
+<p>Run: <code>pytest tests/env/test_preprocess_obs.py -v</code>
+Expected: FAIL — <code>AttributeError: 'MDP' object has no attribute 'preprocess_obs'</code></p>
+<h3 id="task-a2-implement-preprocess_obs-and-refactor-mdp">Task A2: Implement <code>preprocess_obs()</code> and refactor <code>MDP</code><a class="headerlink" href="#task-a2-implement-preprocess_obs-and-refactor-mdp" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Add <code>preprocess_obs</code> method to <code>MDP</code></strong></li>
+</ul>
+<p>In <code>rltrain/env/mdp.py</code>, add this method to the <code>MDP</code> class (after <code>__init__</code>, before <code>setup</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">preprocess_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply observation preprocessing (e.g. channel swap for image envs).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    `obs` : `np.ndarray`</span>
+<span class="sd">        Raw observation from the gymnasium environment.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    `np.ndarray`</span>
+<span class="sd">        Preprocessed observation ready for the agent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swap_channels</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obs</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="k">return</span> <span class="n">obs</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Replace inline channel-swap in <code>reset()</code></strong></li>
+</ul>
+<p>Change:
+<div class="highlight"><pre><span></span><code><span class="c1"># Adjusts next observation to put channels axis first if input is an image</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swap_channels</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+</code></pre></div></p>
+<p>To:
+<div class="highlight"><pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_obs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+</code></pre></div></p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Replace inline channel-swap in <code>step()</code></strong></li>
+</ul>
+<p>Change:
+<div class="highlight"><pre><span></span><code><span class="c1"># Adjusts next observation to put channels axis first if input is an image</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">swap_channels</span><span class="p">:</span>
+    <span class="n">next_state</span> <span class="o">=</span> <span class="n">next_state</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+</code></pre></div></p>
+<p>To:
+<div class="highlight"><pre><span></span><code><span class="n">next_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_obs</span><span class="p">(</span><span class="n">next_state</span><span class="p">)</span>
+</code></pre></div></p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Run preprocess_obs tests</strong></li>
+</ul>
+<p>Run: <code>pytest tests/env/test_preprocess_obs.py -v</code>
+Expected: All 3 tests PASS.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 7: Run full test suite to verify no regressions</strong></li>
+</ul>
+<p>Run: <code>pytest -v</code>
+Expected: All existing tests PASS (the refactor is purely internal).</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 8: Commit</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>rltrain/env/mdp.py<span class="w"> </span>tests/env/test_preprocess_obs.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;refactor: extract MDP.preprocess_obs() for observation preprocessing&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="card-b-implement-videorecordercallback">Card B: Implement <code>VideoRecorderCallback</code><a class="headerlink" href="#card-b-implement-videorecordercallback" title="Permanent link">&para;</a></h2>
+<p><strong>Trello:</strong> <a href="https://trello.com/c/UlugejBr">Card #20</a> — depends on Card A (<code>preprocess_obs</code>).</p>
+<p><strong>Files:</strong>
+- Create: <code>rltrain/callbacks/video_recorder.py</code>
+- Create: <code>tests/callbacks/test_video_recorder.py</code>
+- Modify: <code>tests/callbacks/test_protocol.py</code> (add protocol conformance test)
+- Modify: <code>README.md</code> (add VideoRecorderCallback to callbacks section)
+- Modify: <code>CONTRIBUTING.md</code> (add video_recorder.py to directory tree)</p>
+<h3 id="task-b1-protocol-conformance-test">Task B1: Protocol conformance test<a class="headerlink" href="#task-b1-protocol-conformance-test" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 1: Add protocol test for VideoRecorderCallback</strong></li>
+</ul>
+<p>Append to <code>tests/callbacks/test_protocol.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.callbacks.video_recorder</span><span class="w"> </span><span class="kn">import</span> <span class="n">VideoRecorderCallback</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_video_recorder_satisfies_protocol</span><span class="p">():</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">VideoRecorderCallback</span><span class="p">(),</span> <span class="n">Callback</span><span class="p">)</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 2: Run test to verify it fails</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_protocol.py::test_video_recorder_satisfies_protocol -v</code>
+Expected: FAIL — <code>ModuleNotFoundError: No module named 'rltrain.callbacks.video_recorder'</code></p>
+<h3 id="task-b2-scaffold-videorecordercallback-with-no-op-hooks">Task B2: Scaffold <code>VideoRecorderCallback</code> with no-op hooks<a class="headerlink" href="#task-b2-scaffold-videorecordercallback-with-no-op-hooks" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 3: Create the callback module</strong></li>
+</ul>
+<p>Create <code>rltrain/callbacks/video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Video recorder callback — records evaluation videos at checkpoint intervals.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">gymnasium</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.agents.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDP</span>
+
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">VideoRecorderCallback</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Records evaluation videos of agent behaviour during training.</span>
+
+<span class="sd">    Uses gymnasium&#39;s ``RecordVideo`` wrapper on a separate persistent evaluation</span>
+<span class="sd">    environment. By default, records at each checkpoint; optionally configure</span>
+<span class="sd">    ``episode_trigger`` to record at specific training episodes instead.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    `env_fn` : `Callable[[], gym.Env] | None`</span>
+<span class="sd">        Zero-arg callable returning a ``gym.Env`` with ``render_mode=&quot;rgb_array&quot;``.</span>
+<span class="sd">        If None, auto-detects from the training MDP&#39;s env spec. The auto-detection</span>
+<span class="sd">        creates a bare env without user-applied wrappers; pass ``env_fn`` explicitly</span>
+<span class="sd">        when wrappers matter for the recording.</span>
+<span class="sd">    `num_episodes` : `int`</span>
+<span class="sd">        Number of evaluation episodes to record at each trigger point.</span>
+<span class="sd">    `episode_trigger` : `Callable[[int], bool] | None`</span>
+<span class="sd">        When set, controls when eval rollouts happen during training based on the</span>
+<span class="sd">        training episode count. Rollouts trigger in ``on_episode_end`` instead of</span>
+<span class="sd">        the default ``on_checkpoint``.</span>
+<span class="sd">    `video_length` : `int`</span>
+<span class="sd">        Fixed video length in frames. 0 means record full episodes.</span>
+<span class="sd">    `name_prefix` : `str`</span>
+<span class="sd">        Filename prefix for recorded videos.</span>
+<span class="sd">    `fps` : `int`</span>
+<span class="sd">        Frames per second for the output video.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">env_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">gym</span><span class="o">.</span><span class="n">Env</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_episodes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">episode_trigger</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">video_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">name_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rl-video&quot;</span><span class="p">,</span>
+        <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env_fn</span> <span class="o">=</span> <span class="n">env_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_episodes</span> <span class="o">=</span> <span class="n">num_episodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_episode_trigger</span> <span class="o">=</span> <span class="n">episode_trigger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_length</span> <span class="o">=</span> <span class="n">video_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_prefix</span> <span class="o">=</span> <span class="n">name_prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span> <span class="o">=</span> <span class="n">fps</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">Env</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_episode_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">episode</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 4: Run protocol test</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_protocol.py::test_video_recorder_satisfies_protocol -v</code>
+Expected: PASS.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 5: Commit</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>rltrain/callbacks/video_recorder.py<span class="w"> </span>tests/callbacks/test_protocol.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: scaffold VideoRecorderCallback with protocol conformance&quot;</span>
+</code></pre></div>
+<h3 id="task-b3-auto-detection-fallback-on_train_start">Task B3: Auto-detection fallback + <code>on_train_start</code><a class="headerlink" href="#task-b3-auto-detection-fallback-on_train_start" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 6: Write tests for auto-detection and <code>on_train_start</code> setup</strong></li>
+</ul>
+<p>Append to <code>tests/callbacks/test_video_recorder.py</code> (create the file):</p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Tests for the VideoRecorderCallback.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">unittest.mock</span><span class="w"> </span><span class="kn">import</span> <span class="n">MagicMock</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">gymnasium</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gymnasium.vector</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">vgym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.callbacks.video_recorder</span><span class="w"> </span><span class="kn">import</span> <span class="n">VideoRecorderCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDP</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_mdp</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MDP</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a minimal MDP wrapping CartPole.&quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">vgym</span><span class="o">.</span><span class="n">SyncVectorEnv</span><span class="p">([</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="n">MDP</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">run_beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">log_freq</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">swap_channels</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_agent_stub</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MagicMock</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a stub agent whose __call__ returns a valid CartPole action.&quot;&quot;&quot;</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">MagicMock</span><span class="p">()</span>
+    <span class="n">agent</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">obs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">agent</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_auto_detect_creates_eval_env</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;With no env_fn, on_train_start should auto-detect from MDP spec.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">()</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">_make_agent_stub</span><span class="p">(),</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">cb</span><span class="o">.</span><span class="n">_eval_env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">cb</span><span class="o">.</span><span class="n">_enabled</span> <span class="ow">is</span> <span class="kc">True</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;videos&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_explicit_env_fn_used</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;When env_fn is provided, it should be used instead of auto-detection.&quot;&quot;&quot;</span>
+    <span class="n">factory_called</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">my_factory</span><span class="p">():</span>
+        <span class="k">nonlocal</span> <span class="n">factory_called</span>
+        <span class="n">factory_called</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">)</span>
+
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span><span class="n">env_fn</span><span class="o">=</span><span class="n">my_factory</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">_make_agent_stub</span><span class="p">(),</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">factory_called</span>
+    <span class="k">assert</span> <span class="n">cb</span><span class="o">.</span><span class="n">_eval_env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_graceful_disable_on_non_renderable_env</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If env can&#39;t render rgb_array, callback disables itself.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bad_factory</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">)</span>  <span class="c1"># no render_mode</span>
+
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span><span class="n">env_fn</span><span class="o">=</span><span class="n">bad_factory</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">_make_agent_stub</span><span class="p">(),</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">cb</span><span class="o">.</span><span class="n">_enabled</span> <span class="ow">is</span> <span class="kc">False</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 7: Run tests to verify they fail</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py -v</code>
+Expected: FAIL — <code>on_train_start</code> is a no-op, <code>_eval_env</code> is None, <code>videos/</code> dir not created.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 8: Implement auto-detection and <code>on_train_start</code></strong></li>
+</ul>
+<p>Replace the <code>on_train_start</code> no-op in <code>rltrain/callbacks/video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_train_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">preprocess_obs</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">base_env</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_env_fn</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_env_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_env_from_mdp</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;VideoRecorderCallback: failed to create eval env — disabling&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">base_env</span><span class="o">.</span><span class="n">render_mode</span> <span class="o">!=</span> <span class="s2">&quot;rgb_array&quot;</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;VideoRecorderCallback: eval env render_mode is &#39;</span><span class="si">%s</span><span class="s2">&#39;, not &#39;rgb_array&#39; — disabling&quot;</span><span class="p">,</span>
+            <span class="n">base_env</span><span class="o">.</span><span class="n">render_mode</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">base_env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span>
+
+    <span class="n">video_dir</span> <span class="o">=</span> <span class="n">run_dir</span> <span class="o">/</span> <span class="s2">&quot;videos&quot;</span>
+    <span class="n">video_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">record_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;video_folder&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">video_dir</span><span class="p">),</span>
+        <span class="s2">&quot;name_prefix&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_prefix</span><span class="p">,</span>
+        <span class="s2">&quot;fps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span><span class="p">,</span>
+        <span class="s2">&quot;disable_logger&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">record_kwargs</span><span class="p">[</span><span class="s2">&quot;video_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_length</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">wrappers</span><span class="o">.</span><span class="n">RecordVideo</span><span class="p">(</span><span class="n">base_env</span><span class="p">,</span> <span class="o">**</span><span class="n">record_kwargs</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;VideoRecorderCallback: recording to &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">video_dir</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_env_from_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gym</span><span class="o">.</span><span class="n">Env</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Auto-detect env ID from the training MDP and create a renderable copy.&quot;&quot;&quot;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">envs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">spec</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot auto-detect env — provide env_fn to VideoRecorderCallback&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">)</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 9: Run tests</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py -v</code>
+Expected: All 3 tests PASS.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 10: Commit</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>rltrain/callbacks/video_recorder.py<span class="w"> </span>tests/callbacks/test_video_recorder.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: VideoRecorderCallback on_train_start with auto-detection and graceful disable&quot;</span>
+</code></pre></div>
+<h3 id="task-b4-eval-rollout-on_checkpoint">Task B4: Eval rollout + <code>on_checkpoint</code><a class="headerlink" href="#task-b4-eval-rollout-on_checkpoint" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 11: Write test for checkpoint-triggered recording</strong></li>
+</ul>
+<p>Append to <code>tests/callbacks/test_video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_on_checkpoint_runs_eval_rollouts</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;on_checkpoint should produce video files in run_dir/videos/.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">_make_agent_stub</span><span class="p">()</span>
+
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span>
+        <span class="n">env_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">),</span>
+        <span class="n">num_episodes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_checkpoint</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="n">videos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">((</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;videos&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.mp4&quot;</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">videos</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 12: Run test to verify it fails</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py::test_on_checkpoint_runs_eval_rollouts -v</code>
+Expected: FAIL — <code>on_checkpoint</code> is a no-op, no videos written.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 13: Implement <code>_run_eval_rollouts</code> and <code>on_checkpoint</code></strong></li>
+</ul>
+<p>Add to <code>rltrain/callbacks/video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run_eval_rollouts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run num_episodes evaluation episodes on the recording env.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_num_episodes</span><span class="p">):</span>
+        <span class="n">obs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="p">(</span><span class="n">terminated</span> <span class="ow">or</span> <span class="n">truncated</span><span class="p">):</span>
+            <span class="n">processed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="p">(</span><span class="n">processed</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">obs</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_episode_trigger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_eval_rollouts</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Key detail:</strong> The eval env is a plain <code>gym.Env</code> (not vectorised), so observations have shape <code>(obs_dim,)</code>. We add batch dimensions via <code>[np.newaxis, ...]</code> to match what <code>preprocess_obs</code> and <code>agent()</code> expect (they work on batched arrays from <code>SyncVectorEnv</code>), then index <code>[0]</code> to get scalar action back.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 14: Run test</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py::test_on_checkpoint_runs_eval_rollouts -v</code>
+Expected: PASS — at least 1 <code>.mp4</code> file in <code>videos/</code>.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 15: Commit</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>rltrain/callbacks/video_recorder.py<span class="w"> </span>tests/callbacks/test_video_recorder.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: VideoRecorderCallback eval rollouts on checkpoint&quot;</span>
+</code></pre></div>
+<h3 id="task-b5-on_episode_end-trigger-on_train_end-cleanup">Task B5: <code>on_episode_end</code> trigger + <code>on_train_end</code> cleanup<a class="headerlink" href="#task-b5-on_episode_end-trigger-on_train_end-cleanup" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 16: Write tests for episode trigger and train end</strong></li>
+</ul>
+<p>Append to <code>tests/callbacks/test_video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_on_episode_end_triggers_when_configured</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;With episode_trigger set, on_episode_end should run rollouts.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">_make_agent_stub</span><span class="p">()</span>
+
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span>
+        <span class="n">env_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">),</span>
+        <span class="n">num_episodes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">episode_trigger</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ep</span><span class="p">:</span> <span class="n">ep</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_episode_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># should trigger</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_episode_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># should NOT trigger</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="n">videos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">((</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;videos&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.mp4&quot;</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">videos</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_on_checkpoint_noop_when_episode_trigger_set</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;With episode_trigger set, on_checkpoint should NOT run rollouts.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">_make_agent_stub</span><span class="p">()</span>
+
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span>
+        <span class="n">env_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">),</span>
+        <span class="n">num_episodes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">episode_trigger</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ep</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># never triggers</span>
+    <span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_checkpoint</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="n">videos</span> <span class="o">=</span> <span class="nb">list</span><span class="p">((</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;videos&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.mp4&quot;</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">videos</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_on_train_end_closes_env</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;on_train_end should close the eval env.&quot;&quot;&quot;</span>
+    <span class="n">mdp</span> <span class="o">=</span> <span class="n">_make_mdp</span><span class="p">()</span>
+    <span class="n">mdp</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">_make_agent_stub</span><span class="p">()</span>
+
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">VideoRecorderCallback</span><span class="p">(</span>
+        <span class="n">env_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;CartPole-v1&quot;</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;rgb_array&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_start</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">mdp</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="c1"># After close, the env should not be usable</span>
+    <span class="k">assert</span> <span class="n">cb</span><span class="o">.</span><span class="n">_eval_env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 17: Run tests to verify they fail</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py -k "episode_end or noop or train_end" -v</code>
+Expected: FAIL — <code>on_episode_end</code> and <code>on_train_end</code> are no-ops.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 18: Implement <code>on_episode_end</code> and <code>on_train_end</code></strong></li>
+</ul>
+<p>Replace the no-ops in <code>rltrain/callbacks/video_recorder.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">on_episode_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">episode</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_episode_trigger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_episode_trigger</span><span class="p">(</span><span class="n">episode</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_eval_rollouts</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_train_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_episode_trigger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_eval_rollouts</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eval_env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;VideoRecorderCallback: eval env closed&quot;</span><span class="p">)</span>
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 19: Run all video recorder tests</strong></li>
+</ul>
+<p>Run: <code>pytest tests/callbacks/test_video_recorder.py -v</code>
+Expected: All tests PASS.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 20: Commit</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>rltrain/callbacks/video_recorder.py<span class="w"> </span>tests/callbacks/test_video_recorder.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: VideoRecorderCallback episode trigger and train-end cleanup&quot;</span>
+</code></pre></div>
+<h3 id="task-b6-full-test-suite-documentation">Task B6: Full test suite + documentation<a class="headerlink" href="#task-b6-full-test-suite-documentation" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 21: Run full test suite</strong></li>
+</ul>
+<p>Run: <code>pytest -v</code>
+Expected: All tests PASS, no regressions.</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 22: Update <code>README.md</code> callbacks section</strong></li>
+</ul>
+<p>In the <code>## Callbacks</code> section, after the existing <code>WandbCallback</code> example and before <code>### Hook Methods</code>, add:</p>
+<div class="highlight"><pre><span></span><code><span class="gu">### Video Recording</span>
+
+Record evaluation videos at training checkpoints using gymnasium&#39;s <span class="sb">`RecordVideo`</span> wrapper:
+
+\```python
+from rltrain.callbacks.video_recorder import VideoRecorderCallback
+
+<span class="gh"># Auto-detect env from training MDP (records 3 episodes per checkpoint):</span>
+trainer = Trainer(
+    agent, env,
+    num_steps=100_000,
+    checkpoint_steps=2500,
+    run_dir=run_dir,
+    callbacks=[
+        CSVLoggerCallback(),
+        PlotCallback(num_steps=100_000),
+        CheckpointCallback(),
+        VideoRecorderCallback(),
+    ],
+)
+
+<span class="gh"># Explicit factory with custom wrappers:</span>
+VideoRecorderCallback(
+    env_fn=lambda: gym.make(&quot;CartPole-v1&quot;, render_mode=&quot;rgb_array&quot;),
+    num_episodes=5,
+)
+
+<span class="gh"># Record every 50th training episode instead of at checkpoints:</span>
+VideoRecorderCallback(episode_trigger=lambda ep: ep % 50 == 0)
+\```
+
+Videos are saved to <span class="sb">`run_dir/videos/`</span>. The callback requires the eval environment to support <span class="sb">`render_mode=&quot;rgb_array&quot;`</span> — if it doesn&#39;t, the callback disables itself with a warning.
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 23: Update <code>CONTRIBUTING.md</code> directory tree</strong></li>
+</ul>
+<p>Add <code>video_recorder.py</code> to the callbacks directory listing:</p>
+<div class="highlight"><pre><span></span><code>├── callbacks/        # Callback protocol + built-in callbacks (checkpoint, csv_logger, plot, video_recorder)
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 24: Update <code>README.md</code> directory tree</strong></li>
+</ul>
+<p>Add <code>video_recorder.py</code> to the callbacks directory listing:</p>
+<div class="highlight"><pre><span></span><code>├── callbacks/
+│   ├── __init__.py             # Callback protocol (runtime_checkable)
+│   ├── checkpoint.py           # CheckpointCallback — model state_dict saves
+│   ├── csv_logger.py           # CSVLoggerCallback — episode metrics to CSV
+│   ├── plot.py                 # PlotCallback — per-episode and per-sample SVG plots
+│   └── video_recorder.py      # VideoRecorderCallback — eval episode video recording
+</code></pre></div>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Step 25: Commit docs</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>README.md<span class="w"> </span>CONTRIBUTING.md
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;docs: add VideoRecorderCallback to README and CONTRIBUTING&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="dependency-graph">Dependency Graph<a class="headerlink" href="#dependency-graph" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph LR
+    A["Card A: preprocess_obs()"] --&gt; B["Card B: VideoRecorderCallback"]</code></pre>
+<p>Card A has no dependencies and can start immediately. Card B depends on Card A because <code>_run_eval_rollouts</code> calls <code>env.preprocess_obs()</code>. Within Card B, tasks B1–B6 are sequential (each builds on the previous).</p>
+<h2 id="trello-wave-execution">Trello Wave Execution<a class="headerlink" href="#trello-wave-execution" title="Permanent link">&para;</a></h2>
+<p><strong>Wave 1:</strong> Card A only (no blockers).
+<strong>Wave 2:</strong> Card B (after Card A merges to main).</p>
+<p>Both cards have "Definition of Done" checklists already created on Trello. Map commits to checklist items:</p>
+<table>
+<thead>
+<tr>
+<th>Card A Commit</th>
+<th>Checklist Item</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task A2, Step 8 commit</td>
+<td>Extract preprocess_obs, replace inline transforms, add tests, existing tests pass</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Card B Commit</th>
+<th>Checklist Item</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task B2, Step 5</td>
+<td>Implement VideoRecorderCallback class satisfying the Callback protocol</td>
+</tr>
+<tr>
+<td>Task B3, Step 10</td>
+<td>Wrap env with RecordVideo in on_train_start</td>
+</tr>
+<tr>
+<td>Task B3, Step 10</td>
+<td>Gracefully skip if env does not support render_mode='rgb_array'</td>
+</tr>
+<tr>
+<td>Task B4, Step 15</td>
+<td>Save videos to run_dir/videos/</td>
+</tr>
+<tr>
+<td>Task B5, Step 20</td>
+<td>Support configurable recording triggers</td>
+</tr>
+<tr>
+<td>Task B6, Step 21</td>
+<td>Add tests for callback lifecycle and protocol conformance</td>
+</tr>
+<tr>
+<td>Task B6, Step 25</td>
+<td>Update docs with usage example</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

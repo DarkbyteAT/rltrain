@@ -1,0 +1,1072 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular PyTorch framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/superpowers/specs/2026-04-02-loss-tests-cicd-tracking-design/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Design Spec: Loss Tests, CI/CD, Experiment Tracking - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#design-spec-loss-tests-cicd-experiment-tracking" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Design Spec: Loss Tests, CI/CD, Experiment Tracking
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#card-19-agent-loss-function-samlamp-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card 19 — Agent Loss Function + SAM/LAMP Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Card 19 — Agent Loss Function + SAM/LAMP Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents-and-their-loss-computations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents and Their Loss Computations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#samlamp-tests-separate-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SAM/LAMP Tests (separate module)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#card-9-cicd-with-github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card 9 — CI/CD with GitHub Actions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Card 9 — CI/CD with GitHub Actions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ciyml-push-to-main-all-prs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ci.yml — Push to main + all PRs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#releaseyml-version-tags-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        release.yml — Version tags (v*)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-decisions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#card-11-experiment-tracking-callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Card 11 — Experiment Tracking Callback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Card 11 — Experiment Tracking Callback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metricslogger-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MetricsLogger Protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trackingcallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TrackingCallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backend-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend Adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-config-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Config Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-decisions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="design-spec-loss-tests-cicd-experiment-tracking">Design Spec: Loss Tests, CI/CD, Experiment Tracking<a class="headerlink" href="#design-spec-loss-tests-cicd-experiment-tracking" title="Permanent link">&para;</a></h1>
+<p>Three independent cards designed together because they share no file conflicts and can be implemented in parallel.</p>
+<hr />
+<h2 id="card-19-agent-loss-function-samlamp-tests">Card 19 — Agent Loss Function + SAM/LAMP Tests<a class="headerlink" href="#card-19-agent-loss-function-samlamp-tests" title="Permanent link">&para;</a></h2>
+<h3 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h3>
+<p>RL loss functions fail silently. A sign flip, a missing <code>.detach()</code>, or a wrong discount factor still produces a scalar loss — backprop runs, the agent "trains," but learns nonsense. Hand-computed expected values are the only reliable way to catch these bugs.</p>
+<h3 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>tests/agents/
+├── __init__.py
+├── conftest.py          # Minimal agent factory, seeded tensor builders
+├── test_vanilla_pg.py
+├── test_reinforce.py
+├── test_vanilla_ac.py
+├── test_a2c.py
+├── test_ppo.py
+├── test_dqn.py
+└── test_sam_lamp.py
+</code></pre></div>
+<h3 id="test-strategy">Test Strategy<a class="headerlink" href="#test-strategy" title="Permanent link">&para;</a></h3>
+<p>Each agent test:</p>
+<ol>
+<li><strong>Seed everything.</strong> <code>torch.manual_seed(0)</code>, deterministic mode.</li>
+<li><strong>Build a tiny agent.</strong> 2-input, 2-output, single hidden layer of 4 units. Orthogonal init with the known seed yields reproducible weights.</li>
+<li><strong>Construct a known batch.</strong> 3–4 timesteps of hand-crafted <code>(states, actions, rewards, next_states, dones)</code>.</li>
+<li><strong>Compute the expected loss by hand.</strong> Trace the exact math — <code>discount()</code>, <code>center()</code>, log-probs from the seeded network, critic values — and document each intermediate step as inline comments.</li>
+<li><strong>Assert <code>torch.allclose(agent.loss(*batch), expected, atol=1e-6)</code>.</strong> Float32 precision, tight enough to catch math bugs.</li>
+</ol>
+<p>The tests also serve as executable documentation of each algorithm's mathematical semantics.</p>
+<h3 id="agents-and-their-loss-computations">Agents and Their Loss Computations<a class="headerlink" href="#agents-and-their-loss-computations" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Loss formula</th>
+<th>Batch shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VanillaPG</td>
+<td><code>mean(-log_π(a\|s) · G_t) + mean(-τ · H(π))</code></td>
+<td>5 tensors: s, a, r, s', d</td>
+</tr>
+<tr>
+<td>REINFORCE</td>
+<td>VanillaPG + critic baseline: <code>mean(-log_π · (G_t - V(s)).detach()) + β·mean((G_t - V(s))²) + entropy</code></td>
+<td>5 tensors</td>
+</tr>
+<tr>
+<td>VanillaAC</td>
+<td>One-step TD: <code>mean(-log_π · δ.detach()) + β·mean(δ²) + entropy</code> where <code>δ = r + γV(s') - V(s)</code></td>
+<td>5 tensors</td>
+</tr>
+<tr>
+<td>AdvantageAC</td>
+<td>GAE: <code>mean(-log_π · A^GAE) + β·mean((A^GAE + V - V)²) + entropy</code></td>
+<td>5 tensors</td>
+</tr>
+<tr>
+<td>PPO</td>
+<td>Clipped ratio: <code>-mean(min(r·A, clip(r)·A)) + β·mean((R - V)²) + entropy</code></td>
+<td>8 tensors (includes old policy, advantages, returns)</td>
+</tr>
+<tr>
+<td>VanillaDQN</td>
+<td><code>mean((r + γ·max Q_target(s') - Q(s,a))²)</code></td>
+<td>5 tensors</td>
+</tr>
+</tbody>
+</table>
+<h3 id="samlamp-tests-separate-module">SAM/LAMP Tests (separate module)<a class="headerlink" href="#samlamp-tests-separate-module" title="Permanent link">&para;</a></h3>
+<p>Test <code>Agent.learn()</code> rather than <code>loss()</code>:</p>
+<ol>
+<li><strong>Vanilla vs SAM divergence.</strong> Same agent, same batch. SAM-mode gradients differ from vanilla-mode gradients because the perturbation changes the loss landscape.</li>
+<li><strong>Gradient shape preservation.</strong> <code>get_grad</code>/<code>set_grad</code> round-trip maintains vector shape after the double forward pass.</li>
+<li><strong>LAMP noise injection.</strong> LAMP adds noise to the perturbation direction — compare with pure SAM on the same seed; they must differ.</li>
+<li><strong>Parameter restoration.</strong> After <code>learn()</code>, parameters moved from initial values (optimiser stepped) but the perturbation was fully undone (no lingering epsilon shift).</li>
+</ol>
+<h3 id="design-decisions">Design Decisions<a class="headerlink" href="#design-decisions" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>No mocking.</strong> Real (tiny) networks test actual gradient flow.</li>
+<li><strong><code>atol=1e-6</code>.</strong> Tight enough for float32 to catch math bugs.</li>
+<li><strong>Intermediate values documented.</strong> Each test has comments showing the hand computation so future maintainers can verify expected values.</li>
+<li><strong>One test per agent.</strong> Each agent's loss is mathematically distinct — parametrization would obscure more than it clarifies.</li>
+</ul>
+<hr />
+<h2 id="card-9-cicd-with-github-actions">Card 9 — CI/CD with GitHub Actions<a class="headerlink" href="#card-9-cicd-with-github-actions" title="Permanent link">&para;</a></h2>
+<h3 id="problem_1">Problem<a class="headerlink" href="#problem_1" title="Permanent link">&para;</a></h3>
+<p>No CI/CD pipeline exists. Pre-commit hooks run locally but nothing enforces quality on push or PR.</p>
+<h3 id="workflows">Workflows<a class="headerlink" href="#workflows" title="Permanent link">&para;</a></h3>
+<h4 id="ciyml-push-to-main-all-prs"><code>ci.yml</code> — Push to main + all PRs<a class="headerlink" href="#ciyml-push-to-main-all-prs" title="Permanent link">&para;</a></h4>
+<p>Single workflow with matrix strategy:</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lint</td>
+<td><code>ruff check rltrain/</code> + <code>ruff format --check rltrain/</code></td>
+<td>Style and import enforcement</td>
+</tr>
+<tr>
+<td>typecheck</td>
+<td><code>pyright rltrain/</code></td>
+<td>Static type analysis (basic mode)</td>
+</tr>
+<tr>
+<td>test</td>
+<td><code>pytest tests/ -v</code></td>
+<td>Full test suite</td>
+</tr>
+</tbody>
+</table>
+<p>All three jobs share the same setup:
+- <code>actions/checkout@v4</code>
+- <code>actions/setup-python@v5</code> with Python 3.10
+- <code>astral-sh/setup-uv@v6</code> for uv
+- <code>uv sync --group dev</code> to install deps</p>
+<h4 id="releaseyml-version-tags-v"><code>release.yml</code> — Version tags (<code>v*</code>)<a class="headerlink" href="#releaseyml-version-tags-v" title="Permanent link">&para;</a></h4>
+<p>Triggered on tags matching <code>v*</code>:
+1. Checkout at tag
+2. Create GitHub Release with auto-generated release notes</p>
+<p>No PyPI publish. Users install via <code>pip install git+...</code> until the project is ready for public release.</p>
+<h3 id="design-decisions_1">Design Decisions<a class="headerlink" href="#design-decisions_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Single Python version (3.10).</strong> Matches pyrightconfig.json minimum. Multi-version matrix deferred until public release.</li>
+<li><strong>No caching.</strong> uv is fast enough that caching adds complexity for minimal gain.</li>
+<li><strong>Pre-commit stays local.</strong> CI runs the same checks independently, not through pre-commit.</li>
+<li><strong>No PyPI.</strong> GitHub Release only — public packaging deferred.</li>
+</ul>
+<hr />
+<h2 id="card-11-experiment-tracking-callback">Card 11 — Experiment Tracking Callback<a class="headerlink" href="#card-11-experiment-tracking-callback" title="Permanent link">&para;</a></h2>
+<h3 id="problem_2">Problem<a class="headerlink" href="#problem_2" title="Permanent link">&para;</a></h3>
+<p>rltrain has no experiment tracking integration. The Callback Protocol was designed to enable this — training metrics go to CSV files, but researchers need WandB dashboards, TensorBoard, or custom trackers.</p>
+<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>rltrain/tracking/
+├── __init__.py          # Re-exports MetricsLogger, TrackingCallback
+├── logger.py            # MetricsLogger protocol
+├── callback.py          # TrackingCallback (Callback → Logger adapter)
+└── backends/
+    ├── __init__.py
+    ├── stream.py         # StreamLogger (zero-dependency default)
+    ├── fs.py             # FSLogger (JSONL to any fsspec filesystem)
+    ├── tensorboard.py    # TensorBoardLogger
+    ├── wandb.py          # WandbLogger
+    └── xptrack.py        # XptrackLogger
+</code></pre></div>
+<h3 id="metricslogger-protocol"><code>MetricsLogger</code> Protocol<a class="headerlink" href="#metricslogger-protocol" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MetricsLogger</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">run_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_scalars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Four methods. <code>start</code>/<code>finish</code> bracket the run. <code>log_scalars</code> handles all numeric metrics. <code>log_hyperparams</code> records the JSON config once at start.</p>
+<h3 id="trackingcallback"><code>TrackingCallback</code><a class="headerlink" href="#trackingcallback" title="Permanent link">&para;</a></h3>
+<p>Thin adapter mapping Callback Protocol hooks to MetricsLogger calls. Constructed with a <code>MetricsLogger</code> instance and the experiment <code>config: dict</code> (the JSON config used to build the agent). The config is passed at construction because <code>Callback.on_train_start</code> receives <code>(agent, env, run_dir)</code> but not the raw config.</p>
+<table>
+<thead>
+<tr>
+<th>Hook</th>
+<th>Logger call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>on_train_start</code></td>
+<td><code>logger.start(config, run_dir)</code> + <code>logger.log_hyperparams(config)</code></td>
+</tr>
+<tr>
+<td><code>on_episode_end</code></td>
+<td><code>logger.log_scalars({"return", "length", "running_return"}, episode)</code></td>
+</tr>
+<tr>
+<td><code>on_train_end</code></td>
+<td><code>logger.finish()</code></td>
+</tr>
+<tr>
+<td><code>on_step</code></td>
+<td>no-op</td>
+</tr>
+<tr>
+<td><code>on_checkpoint</code></td>
+<td>no-op</td>
+</tr>
+</tbody>
+</table>
+<h3 id="backend-adapters">Backend Adapters<a class="headerlink" href="#backend-adapters" title="Permanent link">&para;</a></h3>
+<p>Each implements <code>MetricsLogger</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Wraps</th>
+<th>Dependency</th>
+<th>Output format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StreamLogger</code></td>
+<td>Any <code>IO[str]</code> (stdout, stderr)</td>
+<td>None — zero-dependency default</td>
+<td>Human-readable lines</td>
+</tr>
+<tr>
+<td><code>FSLogger</code></td>
+<td><code>fsspec</code> filesystem + path</td>
+<td><code>fsspec</code></td>
+<td>JSONL (one JSON object per <code>log_scalars</code> call)</td>
+</tr>
+<tr>
+<td><code>TensorBoardLogger</code></td>
+<td><code>torch.utils.tensorboard.SummaryWriter</code></td>
+<td>None extra (ships with PyTorch)</td>
+<td>TensorBoard events</td>
+</tr>
+<tr>
+<td><code>WandbLogger</code></td>
+<td><code>wandb.init()</code>, <code>wandb.log()</code>, <code>wandb.finish()</code></td>
+<td>Optional, import guarded</td>
+<td>WandB cloud</td>
+</tr>
+<tr>
+<td><code>XptrackLogger</code></td>
+<td>xptrack client</td>
+<td>Optional, import guarded</td>
+<td>xptrack store</td>
+</tr>
+</tbody>
+</table>
+<p><code>StreamLogger</code> is the default when no backend is configured. Human-readable metrics to stdout with no setup.</p>
+<p><code>FSLogger</code> writes to any fsspec-compatible path (<code>file:///local/path</code>, <code>s3://bucket/prefix</code>, <code>gs://bucket/prefix</code>). Each <code>log_scalars</code> call appends one JSONL line — self-describing, append-friendly, and schema-flexible if new metrics are added later.</p>
+<h3 id="json-config-integration">JSON Config Integration<a class="headerlink" href="#json-config-integration" title="Permanent link">&para;</a></h3>
+<p>Backends are FQN-addressable:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;callbacks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rltrain.tracking.TrackingCallback&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rltrain.tracking.backends.WandbLogger&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;project&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my-experiment&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
+<p>WandB and xptrack are optional — not added to core deps in <code>pyproject.toml</code>. TensorBoard comes with PyTorch. <code>StreamLogger</code> needs nothing. <code>fsspec</code> is optional but lightweight.</p>
+<h3 id="design-decisions_2">Design Decisions<a class="headerlink" href="#design-decisions_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Layered architecture.</strong> <code>MetricsLogger</code> protocol is reusable outside the training loop (evaluation scripts, sweeps, custom pipelines). The callback is one consumer of the logger, not the only one.</li>
+<li><strong><code>StreamLogger</code> as default.</strong> Zero-dependency, zero-config. Progressive disclosure: stream → FSLogger → TensorBoard → WandB/xptrack.</li>
+<li><strong>No <code>log_artifact</code>.</strong> Deferred until someone needs it — YAGNI.</li>
+<li><strong>Optional deps import-guarded.</strong> <code>ImportError</code> with install instructions, not silent failures.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

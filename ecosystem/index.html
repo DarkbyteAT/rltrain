@@ -1,0 +1,1002 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular PyTorch framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/ecosystem/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Research Ecosystem - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#research-ecosystem" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Research Ecosystem
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repositories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paper-to-repo-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paper-to-Repo Mapping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protocols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocols
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fqn-fully-qualified-name-builder-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FQN (Fully-Qualified Name) Builder System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Started
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#train-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Train an agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-seed-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-seed experiments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-experiment-tracking-with-xptrack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add experiment tracking with xptrack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-gradient-transforms-or-custom-networks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add gradient transforms or custom networks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="research-ecosystem">Research Ecosystem<a class="headerlink" href="#research-ecosystem" title="Permanent link">&para;</a></h1>
+<p>A modular research ecosystem investigating whether neural network weights exhibit exploitable structure — specifically, whether trained weights can be represented as continuous fields via implicit neural representations, and what this buys for transfer learning, continual learning, and reinforcement learning. The ecosystem spans deep RL, robust optimisation, and neural network weight representations.</p>
+<p>Each repository owns one concern and connects to the others via <a href="https://docs.python.org/3/library/typing.html#typing.runtime_checkable">runtime-checkable protocols</a> (structural subtyping — any class with matching method signatures conforms, no inheritance required) and JSON configuration with fully-qualified class names (FQNs).</p>
+<h2 id="repositories">Repositories<a class="headerlink" href="#repositories" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Repository</th>
+<th>Purpose</th>
+<th>Key Protocols</th>
+<th>Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/rltrain">rltrain</a></td>
+<td>PyTorch deep RL framework. Separates algorithm, architecture, and environment via JSON config — agents, networks, optimisers, and wrappers are resolved at runtime.</td>
+<td><code>Agent</code> (ABC), <code>Callback</code>, <code>MetricsLogger</code></td>
+<td>torch, gymnasium</td>
+</tr>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/samgria">samgria</a></td>
+<td>Composable gradient transforms for PyTorch. Provides a two-phase protocol for interventions around the gradient descent step — no custom optimiser wrappers needed.</td>
+<td><code>GradientTransform</code> (apply + post_step)</td>
+<td>torch</td>
+</tr>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/toblox">toblox</a></td>
+<td>Reusable neural network building blocks with orthogonal weight initialisation. Factory functions and modules designed for FQN-driven config composition.</td>
+<td>N/A (modules, not protocols)</td>
+<td>torch</td>
+</tr>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/xptrack">xptrack</a></td>
+<td>Lightweight experiment tracker with DuckDB storage, pluggable backends, and a NiceGUI dashboard. Zero infrastructure — just a Python library and a database file.</td>
+<td><code>Store</code>, <code>Reader</code>, <code>Hook</code>, <code>View</code></td>
+<td>duckdb, polars, nicegui</td>
+</tr>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/fractal-weight-spaces">fractal-weight-spaces</a></td>
+<td>Research on representing neural network weights as continuous fields via implicit neural representations (<a href="https://arxiv.org/abs/2006.09661">SIREN</a> — periodic activation networks, <a href="https://arxiv.org/abs/2201.12204">Functa</a> — modulation-based weight sharing). Theory and experiment design for the implicit parameters programme.</td>
+<td>N/A (research, not library)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><a href="https://github.com/DarkbyteAT/python-lib-template">python-lib-template</a></td>
+<td>Cookiecutter-style template used to scaffold all repos above. Provides pyproject.toml, quality gates (ruff, pyright, pytest, bandit), Makefile, and CI/CD.</td>
+<td>N/A (template)</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph LR
+    subgraph Configuration
+        H["Hypothesis"] --&gt; AC["agent.json"]
+        H --&gt; EC["env.json"]
+    end
+
+    subgraph rltrain
+        AC --&gt; B["FQN Builder"]
+        EC --&gt; B
+        B --&gt; TR["Trainer"]
+        TR --&gt; A["Agent"]
+        TR --&gt; E["MDP"]
+        A --&gt;|"act → step → learn"| A
+        TR --&gt;|"default callbacks"| CSV["metrics.csv\nplots, checkpoints"]
+        TR --&gt;|"opt-in"| TC["TrackingCallback"]
+    end
+
+    subgraph samgria
+        A -.-&gt;|"GradientTransform\napply + post_step"| GT["Transforms"]
+    end
+
+    subgraph toblox
+        B -.-&gt;|"FQN resolve"| NN["Network Modules"]
+    end
+
+    subgraph xptrack
+        TC --&gt;|"XptrackLogger"| XP["DuckDB Store"]
+        XP --&gt;|"Reader"| DF["Polars DataFrame"]
+        DF --&gt; D["NiceGUI Dashboard"]
+        DF --&gt; NB["Notebooks / CLI"]
+    end
+
+    subgraph fractal-weight-spaces
+        FWS["Implicit Parameters\nW = P(G(z, c))"] -.-&gt;|"future: inject into\nagent builder"| B
+    end</code></pre>
+<h2 id="paper-to-repo-mapping">Paper-to-Repo Mapping<a class="headerlink" href="#paper-to-repo-mapping" title="Permanent link">&para;</a></h2>
+<p>Papers are numbered by dependency order within the <a href="https://github.com/DarkbyteAT/fractal-weight-spaces">implicit parameters research programme</a>. See the programme's <a href="https://github.com/DarkbyteAT/fractal-weight-spaces/blob/main/docs/overview.md">research overview</a> for the full theoretical framework.</p>
+<table>
+<thead>
+<tr>
+<th>Paper</th>
+<th>Title</th>
+<th>Status</th>
+<th>Repos Used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Implicit Parameters: Representing Neural Network Weights as Continuous Learned Fields</td>
+<td>In progress</td>
+<td>fractal-weight-spaces, toblox, xptrack</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>Spectral Sharing and Layer-Role Differentiation</td>
+<td>Planned</td>
+<td>fractal-weight-spaces, toblox, xptrack</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Dual-Head Self-Modulating Implicit Parameters</td>
+<td>Planned</td>
+<td>fractal-weight-spaces, toblox, samgria, xptrack</td>
+</tr>
+<tr>
+<td><strong>3+</strong></td>
+<td>SAM in Modulation Space / Self-Consistent Zero / Functa-FINER Scaling</td>
+<td>Planned</td>
+<td>fractal-weight-spaces, samgria, xptrack</td>
+</tr>
+<tr>
+<td><strong>4+</strong></td>
+<td>Topology / Continual Learning / RL Transfer</td>
+<td>Planned</td>
+<td>fractal-weight-spaces, rltrain, toblox, samgria, xptrack</td>
+</tr>
+<tr>
+<td><strong>Dissertation (2022)</strong></td>
+<td>Effect of Robust Optimisation on Deep RL</td>
+<td>Published</td>
+<td>rltrain (transforms were inline, later extracted to samgria)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="integration-points">Integration Points<a class="headerlink" href="#integration-points" title="Permanent link">&para;</a></h2>
+<p>The repos connect through three mechanisms: runtime-checkable protocols, the FQN builder system, and shared conventions.</p>
+<h3 id="protocols">Protocols<a class="headerlink" href="#protocols" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>Defined In</th>
+<th>Consumed By</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GradientTransform</code></td>
+<td>samgria (<code>samgria.transforms.protocol</code>) — canonical upstream; rltrain (<code>rltrain.transforms.protocol</code>) — vendored copy</td>
+<td><code>Agent.learn()</code> pipeline</td>
+<td><code>apply(model, loss_fn, batch)</code> pre-descent, <code>post_step(model)</code> post-descent</td>
+</tr>
+<tr>
+<td><code>MetricsLogger</code></td>
+<td>rltrain (<code>rltrain.tracking.logger</code>)</td>
+<td><code>TrackingCallback</code></td>
+<td><code>start(config, run_dir)</code>, <code>log_scalars(metrics, step)</code>, <code>log_hyperparams(params)</code>, <code>finish()</code></td>
+</tr>
+<tr>
+<td><code>Callback</code></td>
+<td>rltrain (<code>rltrain.callbacks</code>)</td>
+<td>rltrain (<code>Trainer.fit()</code>)</td>
+<td>5 hooks: <code>on_train_start</code>, <code>on_step</code>, <code>on_episode_end</code>, <code>on_checkpoint</code>, <code>on_train_end</code></td>
+</tr>
+<tr>
+<td><code>Store</code> / <code>Reader</code></td>
+<td>xptrack (<code>xptrack.store</code>)</td>
+<td>xptrack backends, rltrain via <code>XptrackLogger</code></td>
+<td><code>write_run()</code>, <code>write_metrics()</code> / <code>query_runs()</code>, <code>query_metrics()</code></td>
+</tr>
+<tr>
+<td><code>Hook</code></td>
+<td>xptrack (<code>xptrack.hooks</code>)</td>
+<td>xptrack <code>Run</code> lifecycle</td>
+<td><code>on_run_start()</code>, <code>on_log()</code>, <code>on_run_end()</code></td>
+</tr>
+<tr>
+<td><code>View</code></td>
+<td>xptrack (<code>xptrack.ui.views</code>)</td>
+<td>xptrack NiceGUI dashboard</td>
+<td><code>render()</code>, plus <code>name</code>, <code>icon</code>, <code>metric_keys</code> attributes</td>
+</tr>
+</tbody>
+</table>
+<p>All protocols use <code>@runtime_checkable</code> — no inheritance required. Any class with matching method signatures conforms via structural subtyping.</p>
+<h3 id="fqn-fully-qualified-name-builder-system">FQN (Fully-Qualified Name) Builder System<a class="headerlink" href="#fqn-fully-qualified-name-builder-system" title="Permanent link">&para;</a></h3>
+<p>rltrain's JSON configuration resolves fully-qualified Python class names at runtime. Any class that is importable in the current environment works — install the target package (<code>pip install samgria</code>, <code>pip install toblox</code>) and reference it by its dotted import path. This is how the repos compose without hard imports:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rltrain.agents.actor_critic.PPO&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;actor&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;toblox.nn.SkipMLP&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;hiddens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">}],</span>
+<span class="w">        </span><span class="nt">&quot;critic&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;toblox.nn.SkipMLP&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;hiddens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;grad_transforms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;samgria.transforms.SAM&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rho&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Any class on the Python import path works — including classes from samgria, toblox, or user-defined packages. The builder recursively resolves nested FQN references, constructing the full object graph from a single JSON file.</p>
+<h3 id="shared-conventions">Shared Conventions<a class="headerlink" href="#shared-conventions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Convention</th>
+<th>Where</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Orthogonal weight init</td>
+<td>toblox, rltrain <code>nn/</code></td>
+<td>Preserves gradient norm through individual layers; combined with skip connections for gradient flow in deep networks</td>
+</tr>
+<tr>
+<td><code>@runtime_checkable</code> protocols</td>
+<td>samgria, rltrain, xptrack</td>
+<td>Structural subtyping — no base class coupling</td>
+</tr>
+<tr>
+<td>FQN through <code>__init__.py</code></td>
+<td>All library repos</td>
+<td>Shortest public name resolves via re-exports</td>
+</tr>
+<tr>
+<td>Given-When-Then tests</td>
+<td>All repos</td>
+<td>Consistent test structure across the ecosystem</td>
+</tr>
+<tr>
+<td>NumPy-style docstrings</td>
+<td>All repos</td>
+<td>Consistent documentation format</td>
+</tr>
+<tr>
+<td><code>make all</code> quality gate</td>
+<td>All repos</td>
+<td>format-check, lint, typecheck, test in one command</td>
+</tr>
+</tbody>
+</table>
+<h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
+<h3 id="train-an-agent">Train an agent<a class="headerlink" href="#train-an-agent" title="Permanent link">&para;</a></h3>
+<p>Clone rltrain and run PPO on CartPole:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Clone and install</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DarkbyteAT/rltrain.git
+<span class="nb">cd</span><span class="w"> </span>rltrain<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev
+
+<span class="c1"># 2. Train PPO on CartPole (auto-detects best device)</span>
+python<span class="w"> </span>run.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--agent<span class="w"> </span>examples/cartpole/ppo.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env<span class="w"> </span>examples/cartpole/env.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dump<span class="w"> </span>results/
+
+<span class="c1"># 3. Results appear in results/&lt;agent&gt;/&lt;timestamp&gt;/</span>
+ls<span class="w"> </span>results/
+</code></pre></div>
+<p>By default, each run produces <code>metrics.csv</code> (episode length, return, running return), SVG plots, and model checkpoints in the run directory.</p>
+<h3 id="multi-seed-experiments">Multi-seed experiments<a class="headerlink" href="#multi-seed-experiments" title="Permanent link">&para;</a></h3>
+<p>A single-seed RL result is not meaningful. Run multiple seeds and compare:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>seed<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="m">5</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>python<span class="w"> </span>run.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--agent<span class="w"> </span>examples/cartpole/ppo.json<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--env<span class="w"> </span>examples/cartpole/env.json<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dump<span class="w"> </span>results/<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--seed<span class="w"> </span><span class="nv">$seed</span>
+<span class="k">done</span>
+</code></pre></div>
+<p>Each seed produces a separate timestamped directory under <code>results/&lt;agent&gt;/</code>. To aggregate across seeds, load the <code>metrics.csv</code> files with pandas or Polars and compute summary statistics (median, IQR).</p>
+<h3 id="add-experiment-tracking-with-xptrack">Add experiment tracking with xptrack<a class="headerlink" href="#add-experiment-tracking-with-xptrack" title="Permanent link">&para;</a></h3>
+<p>For structured storage and querying, wire up <code>TrackingCallback</code> with <code>XptrackLogger</code>:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>xptrack<span class="o">[</span>ui<span class="o">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrackingCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rltrain.tracking.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">XptrackLogger</span>
+
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">TrackingCallback</span><span class="p">(</span>
+    <span class="n">XptrackLogger</span><span class="p">(</span><span class="n">store</span><span class="o">=</span><span class="s2">&quot;experiments.duckdb&quot;</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="s2">&quot;ppo-cartpole&quot;</span><span class="p">),</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">agent_config</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Pass tracker in the callbacks list when constructing Trainer</span>
+</code></pre></div>
+<p>This logs episode metrics and hyperparameters to a DuckDB file. Query results programmatically or launch the dashboard:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">xptrack</span>
+
+<span class="c1"># Query runs across seeds</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">xptrack</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;experiments.duckdb&quot;</span><span class="p">)</span>
+<span class="n">runs</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">query_runs</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">&quot;ppo-cartpole&quot;</span><span class="p">)</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">query_metrics</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;episode/return&quot;</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Launch the dashboard</span>
+xptrack<span class="w"> </span>ui<span class="w"> </span>--store<span class="w"> </span>experiments.duckdb
+</code></pre></div>
+<p>DuckDB uses file-based storage with a single-writer constraint. For parallel training runs, use separate store files per run and merge later, or ensure only one process writes at a time.</p>
+<p>See the <a href="../rltrain/tracking/README.md">experiment tracking guide</a> for all available backends (StreamLogger, TensorBoard, W&amp;B, JSONL).</p>
+<h3 id="add-gradient-transforms-or-custom-networks">Add gradient transforms or custom networks<a class="headerlink" href="#add-gradient-transforms-or-custom-networks" title="Permanent link">&para;</a></h3>
+<p>Install samgria or toblox into the same environment and reference their classes via FQN in the agent JSON config:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>samgria<span class="w"> </span>toblox
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;grad_transforms&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;samgria.transforms.SAM&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rho&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">}],</span>
+<span class="w">    </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;actor&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;fqn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;toblox.nn.SkipMLP&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;hiddens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">}]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>rltrain bundles its own copy of the gradient transforms (SAM, ASAM, LAMPRollback) under <code>rltrain.transforms</code>. samgria is the canonical upstream — use <code>samgria.transforms.*</code> FQNs when running samgria as a standalone library or when you need its additional utilities (<code>ParameterSnapshot</code> for meta-learning state management). Both implement the same <code>GradientTransform</code> protocol.</p>
+<p>Note that SAM and ASAM perform a second forward+backward pass per training step to compute gradients at the perturbed point, roughly doubling the per-step wall-clock cost. This is a meaningful trade-off in RL where sample efficiency already matters.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

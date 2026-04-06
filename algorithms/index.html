@@ -1,0 +1,1164 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular PyTorch framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/algorithms/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Algorithms - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#algorithms" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Algorithms
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#agent-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-gradient-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy gradient branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy gradient branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vanilla-policy-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vanilla Policy Gradient
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reinforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REINFORCE
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actor-critic-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actor-critic branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Actor-critic branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vanilla-actor-critic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vanilla Actor-Critic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advantage-actor-critic-a2c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantage Actor-Critic (A2C)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#value-based-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value-based branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Value-based branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dqn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DQN
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gradient-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gradient transforms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neural-network-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural network modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#agent-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-gradient-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy gradient branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy gradient branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vanilla-policy-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vanilla Policy Gradient
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reinforce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REINFORCE
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#actor-critic-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actor-critic branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Actor-critic branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vanilla-actor-critic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vanilla Actor-Critic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advantage-actor-critic-a2c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantage Actor-Critic (A2C)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#value-based-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value-based branch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Value-based branch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dqn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DQN
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gradient-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gradient transforms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neural-network-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural network modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="algorithms">Algorithms<a class="headerlink" href="#algorithms" title="Permanent link">&para;</a></h1>
+<p>RLTrain's agent hierarchy is designed as a learning journey. Each subclass adds exactly one new concept to its parent, so reading down the inheritance chain is a tutorial in itself.</p>
+<h2 id="agent-hierarchy">Agent hierarchy<a class="headerlink" href="#agent-hierarchy" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TD
+    A["Agent (ABC)"] --&gt; VPG["VanillaPG"]
+    VPG --&gt; R["REINFORCE"]
+    R --&gt; VAC["VanillaAC"]
+    VAC --&gt; AAC["AdvantageAC"]
+    AAC --&gt; PPO["PPO"]
+    A --&gt; DQN["VanillaDQN"]
+
+    style A fill:#7e57c2,color:#fff
+    style VPG fill:#9575cd,color:#fff
+    style R fill:#b39ddb,color:#000
+    style VAC fill:#ce93d8,color:#000
+    style AAC fill:#f48fb1,color:#000
+    style PPO fill:#ef5350,color:#fff
+    style DQN fill:#42a5f5,color:#fff</code></pre>
+<p>The left branch covers policy gradient and actor-critic methods. The right branch covers value-based methods. Both branches share the abstract <code>Agent</code> base class, which defines the template method pattern: <code>learn()</code> orchestrates the update, while subclasses override <code>loss()</code> and <code>descend()</code>.</p>
+<h2 id="policy-gradient-branch">Policy gradient branch<a class="headerlink" href="#policy-gradient-branch" title="Permanent link">&para;</a></h2>
+<h3 id="vanilla-policy-gradient">Vanilla Policy Gradient<a class="headerlink" href="#vanilla-policy-gradient" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.policy_gradient.VanillaPG</code>
+<strong>Adds:</strong> Entropy-regularised policy gradient (REINFORCE without baseline)</p>
+<p>The simplest policy gradient agent. Collects a full episode, computes discounted returns <span class="arithmatex">\(G_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k}\)</span>, and updates the policy by ascending the gradient:</p>
+<div class="arithmatex">\[\nabla_\theta J(\theta) = \mathbb{E}\left[\sum_t G_t \nabla_\theta \log \pi_\theta(a_t | s_t)\right]\]</div>
+<p>An entropy bonus <span class="arithmatex">\(\tau \cdot H(\pi)\)</span> encourages exploration by penalising overly deterministic policies.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gamma</code></td>
+<td>Discount factor</td>
+</tr>
+<tr>
+<td><code>tau</code></td>
+<td>Entropy regularisation coefficient</td>
+</tr>
+<tr>
+<td><code>normalise</code></td>
+<td>Standardise returns to zero mean, unit variance</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Williams (1992)<sup id="fnref:williams1992"><a class="footnote-ref" href="#fn:williams1992">1</a></sup> -- REINFORCE algorithm.</p>
+<h3 id="reinforce">REINFORCE<a class="headerlink" href="#reinforce" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.policy_gradient.REINFORCE</code>
+<strong>Adds:</strong> Learned value baseline</p>
+<p>Subtracting a learned baseline <span class="arithmatex">\(b(s_t)\)</span> from the return does not change the expected gradient but can dramatically reduce its variance:</p>
+<div class="arithmatex">\[\nabla_\theta J(\theta) = \mathbb{E}\left[\sum_t (G_t - b(s_t)) \nabla_\theta \log \pi_\theta(a_t | s_t)\right]\]</div>
+<p>REINFORCE trains a separate value network (the "critic") as the baseline, minimising <span class="arithmatex">\(\|V_\phi(s_t) - G_t\|^2\)</span>. The critic's loss is weighted by <code>beta_critic</code>.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>beta_critic</code></td>
+<td>Weight of the critic (baseline) loss</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Williams (1992)<sup id="fnref2:williams1992"><a class="footnote-ref" href="#fn:williams1992">1</a></sup>, Sutton &amp; Barto (2018)<sup id="fnref:sutton2018"><a class="footnote-ref" href="#fn:sutton2018">2</a></sup>.</p>
+<h2 id="actor-critic-branch">Actor-critic branch<a class="headerlink" href="#actor-critic-branch" title="Permanent link">&para;</a></h2>
+<h3 id="vanilla-actor-critic">Vanilla Actor-Critic<a class="headerlink" href="#vanilla-actor-critic" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.actor_critic.VanillaAC</code>
+<strong>Adds:</strong> TD error advantage, optional shared feature layers</p>
+<p>Instead of waiting for the full episode return, actor-critic methods bootstrap using the value function:</p>
+<div class="arithmatex">\[A_t = r_t + \gamma V(s_{t+1}) - V(s_t)\]</div>
+<p>This one-step TD error serves as the advantage estimate. The actor and critic can optionally share a feature embedding network (specified via the <code>embedding</code> key in the model config), which is common in visual RL tasks.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>continuous</code></td>
+<td>Whether the action space is continuous (Gaussian policy) or discrete (categorical)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Konda &amp; Tsitsiklis (1999)<sup id="fnref:konda1999"><a class="footnote-ref" href="#fn:konda1999">3</a></sup>, Mnih et al. (2016)<sup id="fnref:mnih2016"><a class="footnote-ref" href="#fn:mnih2016">4</a></sup>.</p>
+<h3 id="advantage-actor-critic-a2c">Advantage Actor-Critic (A2C)<a class="headerlink" href="#advantage-actor-critic-a2c" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.actor_critic.AdvantageAC</code>
+<strong>Adds:</strong> Generalised Advantage Estimation (GAE), horizon-based collection</p>
+<p>GAE interpolates between high-bias (one-step TD) and high-variance (Monte Carlo) advantage estimates using an exponentially-weighted average:</p>
+<div class="arithmatex">\[\hat{A}_t^{\text{GAE}} = \sum_{l=0}^{T-t} (\gamma \lambda)^l \delta_{t+l}\]</div>
+<p>where <span class="arithmatex">\(\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)\)</span> is the TD error and <span class="arithmatex">\(\lambda\)</span> controls the bias-variance trade-off. At <span class="arithmatex">\(\lambda = 0\)</span> this recovers one-step TD; at <span class="arithmatex">\(\lambda = 1\)</span> it recovers Monte Carlo returns.</p>
+<p>Collection switches from episode-based to horizon-based: the agent collects a fixed number of steps (<code>horizon</code>) before computing advantages and updating.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>horizon</code></td>
+<td>Number of steps to collect before each update</td>
+</tr>
+<tr>
+<td><code>lambda_gae</code></td>
+<td>GAE lambda (bias-variance trade-off)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Schulman et al. (2016)<sup id="fnref:schulman2016gae"><a class="footnote-ref" href="#fn:schulman2016gae">5</a></sup>.</p>
+<h3 id="ppo">PPO<a class="headerlink" href="#ppo" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.actor_critic.PPO</code>
+<strong>Adds:</strong> Clipped surrogate objective, mini-batch epochs, KL early stopping</p>
+<p>PPO constrains the policy update to a trust region by clipping the probability ratio:</p>
+<div class="arithmatex">\[L^{\text{CLIP}}(\theta) = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t,\ \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t\right)\right]\]</div>
+<p>where <span class="arithmatex">\(r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}\)</span>. After collecting a horizon of data, PPO runs multiple epochs of mini-batch gradient descent on the clipped objective. An optional KL divergence early-stopping criterion halts epochs if the policy changes too much.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eps_clip</code></td>
+<td>Clipping parameter <span class="arithmatex">\(\epsilon\)</span></td>
+</tr>
+<tr>
+<td><code>num_epochs</code></td>
+<td>Number of optimisation epochs per horizon</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>Mini-batch size within each epoch</td>
+</tr>
+<tr>
+<td><code>early_stop</code></td>
+<td>KL divergence threshold for early stopping (0 to disable)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Schulman et al. (2017)<sup id="fnref:schulman2017ppo"><a class="footnote-ref" href="#fn:schulman2017ppo">6</a></sup>.</p>
+<h2 id="value-based-branch">Value-based branch<a class="headerlink" href="#value-based-branch" title="Permanent link">&para;</a></h2>
+<h3 id="dqn">DQN<a class="headerlink" href="#dqn" title="Permanent link">&para;</a></h3>
+<p><strong>Class:</strong> <code>rltrain.agents.q_learning.VanillaDQN</code>
+<strong>Adds:</strong> Replay buffer, target network with soft updates, epsilon-greedy decay</p>
+<p>DQN learns an action-value function <span class="arithmatex">\(Q(s, a)\)</span> and derives a greedy policy <span class="arithmatex">\(\pi(s) = \arg\max_a Q(s, a)\)</span>. Two key techniques stabilise training:</p>
+<ol>
+<li><strong>Experience replay</strong> -- transitions are stored in a buffer and sampled uniformly for training, breaking temporal correlations.</li>
+<li><strong>Target network</strong> -- a slowly-updated copy of the Q-network provides stable TD targets. Soft updates use Polyak averaging: <span class="arithmatex">\(\theta_{\text{target}} \leftarrow (1 - \tau) \theta_{\text{target}} + \tau \theta\)</span>.</li>
+</ol>
+<p>Exploration uses epsilon-greedy with a linear decay schedule.</p>
+<p><strong>Key hyperparameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eps_start</code></td>
+<td>Initial exploration rate</td>
+</tr>
+<tr>
+<td><code>eps_end</code></td>
+<td>Final exploration rate</td>
+</tr>
+<tr>
+<td><code>eps_decay</code></td>
+<td>Decay rate for epsilon</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>Replay buffer sample size</td>
+</tr>
+<tr>
+<td><code>tau</code></td>
+<td>Soft update coefficient for target network</td>
+</tr>
+<tr>
+<td><code>buffer_size</code></td>
+<td>Maximum replay buffer capacity</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reference:</strong> Mnih et al. (2015)<sup id="fnref:mnih2015dqn"><a class="footnote-ref" href="#fn:mnih2015dqn">7</a></sup>.</p>
+<h2 id="gradient-transforms">Gradient transforms<a class="headerlink" href="#gradient-transforms" title="Permanent link">&para;</a></h2>
+<p>Any agent can optionally use composable gradient transforms for flatter loss landscapes and improved generalisation. Transforms are specified via the <code>grad_transforms</code> key in agent JSON config:</p>
+<ul>
+<li><strong>SAM</strong> (<code>rltrain.transforms.SAM</code>) -- adversarial weight perturbation that seeks parameters in flat regions of the loss surface.</li>
+<li><strong>ASAM</strong> (<code>rltrain.transforms.ASAM</code>) -- like SAM but perturbation is scaled by parameter magnitude, making the sharpness measure scale-invariant.</li>
+<li><strong>LAMP</strong> (<code>rltrain.transforms.LAMPRollback</code>) -- injects parameter noise and periodically rolls back to a moving average, encouraging exploration of flatter regions.</li>
+</ul>
+<p>Transforms compose naturally -- stack SAM with LAMP by listing both in <code>grad_transforms</code>.</p>
+<h2 id="neural-network-modules">Neural network modules<a class="headerlink" href="#neural-network-modules" title="Permanent link">&para;</a></h2>
+<p>All agents use composable network modules specified via JSON config. The <code>SkipMLP</code> module implements D2RL-style skip connections<sup id="fnref:sinha2020d2rl"><a class="footnote-ref" href="#fn:sinha2020d2rl">9</a></sup> that concatenate the original input to every hidden layer, improving gradient flow in deeper networks.</p>
+<p><strong>Reference:</strong> Foret et al. (2021)<sup id="fnref:foret2021sam"><a class="footnote-ref" href="#fn:foret2021sam">8</a></sup>.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p>The full bibliography is available at <a href="https://github.com/DarkbyteAT/rltrain/blob/main/references/references.bib"><code>references/references.bib</code></a>.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:williams1992">
+<p>Williams, R. J. (1992). Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning. <em>Machine Learning</em>, 8(3-4), 229-256.&#160;<a class="footnote-backref" href="#fnref:williams1992" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:williams1992" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:sutton2018">
+<p>Sutton, R. S. &amp; Barto, A. G. (2018). <em>Reinforcement Learning: An Introduction</em> (2nd ed.). MIT Press.&#160;<a class="footnote-backref" href="#fnref:sutton2018" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:konda1999">
+<p>Konda, V. R. &amp; Tsitsiklis, J. N. (1999). Actor-Critic Algorithms. <em>NeurIPS</em>, 12.&#160;<a class="footnote-backref" href="#fnref:konda1999" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mnih2016">
+<p>Mnih, V. et al. (2016). Asynchronous Methods for Deep Reinforcement Learning. <em>ICML</em>, 48, 1928-1937.&#160;<a class="footnote-backref" href="#fnref:mnih2016" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:schulman2016gae">
+<p>Schulman, J. et al. (2016). High-Dimensional Continuous Control Using Generalized Advantage Estimation. <em>ICLR</em>.&#160;<a class="footnote-backref" href="#fnref:schulman2016gae" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:schulman2017ppo">
+<p>Schulman, J. et al. (2017). Proximal Policy Optimization Algorithms. <em>arXiv:1707.06347</em>.&#160;<a class="footnote-backref" href="#fnref:schulman2017ppo" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mnih2015dqn">
+<p>Mnih, V. et al. (2015). Human-level Control Through Deep Reinforcement Learning. <em>Nature</em>, 518(7540), 529-533.&#160;<a class="footnote-backref" href="#fnref:mnih2015dqn" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:foret2021sam">
+<p>Foret, P. et al. (2021). Sharpness-Aware Minimization for Efficiently Improving Generalization. <em>ICLR</em>.&#160;<a class="footnote-backref" href="#fnref:foret2021sam" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+</li>
+<li id="fn:sinha2020d2rl">
+<p>Sinha, S. et al. (2020). D2RL: Deep Dense Architectures in Reinforcement Learning. <em>arXiv:2010.09163</em>.&#160;<a class="footnote-backref" href="#fnref:sinha2020d2rl" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
