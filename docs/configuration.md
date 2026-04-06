@@ -31,8 +31,8 @@ An agent config file has three sections: algorithm hyperparameters, model archit
     "early_stop": 0.05,
     "eps_clip": 0.2,
     "model": {
-        "actor": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
-        "critic": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 1}]
+        "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
+        "critic": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 1}]
     },
     "opt": {
         "actor": {"fqn": "torch.optim.Adam", "lr": 3e-4},
@@ -65,13 +65,13 @@ The `model` section maps network roles to lists of module specs. Each list entry
 {
     "model": {
         "embedding": [
-            {"fqn": "rltrain.nn.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
+            {"fqn": "toblox.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
         ],
         "actor": [
-            {"fqn": "rltrain.nn.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 3}
+            {"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 3}
         ],
         "critic": [
-            {"fqn": "rltrain.nn.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 1}
+            {"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 1}
         ]
     }
 }
@@ -111,12 +111,12 @@ Wrappers are applied in order. Any `gymnasium.Wrapper` subclass works, including
 
 ## Network modules
 
-RLTrain ships with four network modules, all using orthogonal weight initialisation and SiLU activation by default.
+Network modules are provided by the [toblox](https://github.com/DarkbyteAT/toblox) package, all using orthogonal weight initialisation and SiLU activation by default.
 
 ### MLP
 
 ```json
-{"fqn": "rltrain.nn.mlp", "inputs": 4, "hiddens": [128, 128], "outputs": 2}
+{"fqn": "toblox.mlp", "inputs": 4, "hiddens": [128, 128], "outputs": 2}
 ```
 
 Standard multi-layer perceptron. Best for low-dimensional dense observations (CartPole, Acrobot).
@@ -124,7 +124,7 @@ Standard multi-layer perceptron. Best for low-dimensional dense observations (Ca
 ### SkipMLP (D2RL)
 
 ```json
-{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}
+{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}
 ```
 
 D2RL-style MLP with skip connections from the input to every hidden layer. Improves gradient flow in deeper networks[^d2rl].
@@ -132,7 +132,7 @@ D2RL-style MLP with skip connections from the input to every hidden layer. Impro
 ### CNN
 
 ```json
-{"fqn": "rltrain.nn.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
+{"fqn": "toblox.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
 ```
 
 Convolutional network with a flatten layer at the output. Use as an embedding network for image observations.
@@ -140,7 +140,7 @@ Convolutional network with a flatten layer at the output. Use as an embedding ne
 ### RFF (Random Fourier Features)
 
 ```json
-{"fqn": "rltrain.nn.RFF", "inputs": 4, "features": 256}
+{"fqn": "toblox.RFF", "inputs": 4, "features": 256}
 ```
 
 Projects inputs through a fixed random matrix with sinusoidal activations, approximating a kernel feature map. Useful for spectral encoding of low-dimensional inputs[^rff].
@@ -152,17 +152,17 @@ Add composable gradient transforms to any agent via the `grad_transforms` key. T
 ```json
 {
     "grad_transforms": [
-        {"fqn": "rltrain.transforms.SAM", "rho": 0.01},
-        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+        {"fqn": "samgria.SAM", "rho": 0.01},
+        {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
     ]
 }
 ```
 
 | Transform | Class | Parameters | Description |
 |-----------|-------|------------|-------------|
-| SAM | `rltrain.transforms.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
-| ASAM | `rltrain.transforms.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
-| LAMP | `rltrain.transforms.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
+| SAM | `samgria.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
+| ASAM | `samgria.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
+| LAMP | `samgria.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
 
 Transforms compose -- list them in order. SAM/ASAM use the `apply()` hook (pre-descent) and LAMP uses the `post_step()` hook (post-descent), so they naturally complement each other[^sam].
 

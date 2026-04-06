@@ -60,5 +60,5 @@ Subclasses implement these abstract methods:
 
 - Set `name: str` as a class attribute for display and logging.
 - Use PyTorch aliases: `T` for `torch`, `nn` for `torch.nn`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`.
-- New optimisation techniques (gradient manipulation, parameter perturbation) belong in `rltrain/transforms/`, not in `learn()` or subclass overrides.
+- New optimisation techniques (gradient manipulation, parameter perturbation) belong in [samgria](https://github.com/DarkbyteAT/samgria), not in `learn()` or subclass overrides.
 - Policy gradient agents support both discrete (`Categorical`) and continuous (`MultivariateNormal`) action spaces via the `continuous` flag.

@@ -12,11 +12,11 @@
   "normalise": true,
   "grad_transforms": [
     {
-      "fqn": "rltrain.transforms.SAM",
+      "fqn": "samgria.SAM",
       "rho": 1e-2
     },
     {
-      "fqn": "rltrain.transforms.LAMPRollback",
+      "fqn": "samgria.LAMPRollback",
       "eps": 5e-3,
       "rollback_len": 10
     }
@@ -24,7 +24,7 @@
   "model": {
     "actor": [
       {
-        "fqn": "rltrain.nn.SkipMLP",
+        "fqn": "toblox.SkipMLP",
         "inputs": 6,
         "hiddens": [
           256,
@@ -37,7 +37,7 @@
     ],
     "critic": [
       {
-        "fqn": "rltrain.nn.SkipMLP",
+        "fqn": "toblox.SkipMLP",
         "inputs": 6,
         "hiddens": [
           256,

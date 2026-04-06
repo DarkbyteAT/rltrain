@@ -37,8 +37,7 @@ Before working in a module, read its README for architecture, protocols, and how
 |--------|--------|--------|
 | `rltrain/agents/` | @rltrain/agents/README.md | Agent hierarchy, template method pattern, how to add new algorithms |
 | `rltrain/callbacks/` | @rltrain/callbacks/README.md | Callback protocol, built-in callbacks, how to write custom ones |
-| `rltrain/nn/` | @rltrain/nn/README.md | Network modules, orthogonal init, FQN resolution |
-| `rltrain/transforms/` | @rltrain/transforms/README.md | GradientTransform protocol, SAM/ASAM/LAMP, how to add new transforms |
+| samgria (external) | [samgria docs](https://github.com/DarkbyteAT/samgria) | GradientTransform protocol, SAM/ASAM/LAMP, how to add new transforms |
 | `rltrain/tracking/` | @rltrain/tracking/README.md | TrackingCallback, MetricsLogger protocol, backend implementations |
 | `rltrain/utils/` | @rltrain/utils/README.md | FQN builder system, device resolution, math helpers |
 | `rltrain/env/` | @rltrain/env/README.md | MDP wrapper, Trajectory dataclass |
@@ -49,7 +48,7 @@ Before working in a module, read its README for architecture, protocols, and how
 
 - Agent inheritance chain is deliberate — each level adds one concept
 - `Agent.learn()` is the single orchestration point for optimisation
-- New optimisation techniques go in `rltrain/transforms/`, not in `learn()` or subclasses
+- New optimisation techniques go in [samgria](https://github.com/DarkbyteAT/samgria), not in `learn()` or subclasses
 - All networks must use orthogonal weight initialisation
 
 ### Configuration
@@ -66,7 +65,7 @@ Before working in a module, read its README for architecture, protocols, and how
 
 ### Code Style
 
-- Python 3.10+ — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
+- Python 3.11+ — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - PyTorch aliases: `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
 - NumPy-style docstrings
 
@@ -74,7 +73,7 @@ Before working in a module, read its README for architecture, protocols, and how
 
 | Don't | Do |
 |-------|-----|
-| Hardcode optimisation in `learn()` | Use `GradientTransform` in `rltrain/transforms/` |
+| Hardcode optimisation in `learn()` | Use `GradientTransform` from [samgria](https://github.com/DarkbyteAT/samgria) |
 | Add env-specific dependencies | Keep rltrain generic — envs are plugged downstream |
 | Use deep FQN paths | Re-export through `__init__.py`, use shortest public name |
 | Wrap tests in classes | Use plain `def test_*` functions |

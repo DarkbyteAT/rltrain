@@ -15,10 +15,10 @@ back to the moving average of noisy parameters.
 import pytest
 import torch as T
 import torch.nn.functional as F
+from samgria import ASAM, LAMPRollback
 from torch.nn.utils import parameters_to_vector
 
 from rltrain.agents.policy_gradient import VanillaPG
-from rltrain.transforms import ASAM, LAMPRollback
 from rltrain.utils import get_grad
 from tests.agents.conftest import make_pg_agent
 

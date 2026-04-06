@@ -9,8 +9,7 @@ import pytest
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
-
-from rltrain.transforms import SAM, LAMPRollback
+from samgria import SAM, LAMPRollback
 
 
 GAMMA = 0.99
