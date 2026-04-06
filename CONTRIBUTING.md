@@ -74,7 +74,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), transforms (SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`. Network modules are provided by [toblox](https://github.com/DarkbyteAT/toblox).
 - **`examples/`** — experiment configs (env.json + agent variants per environment)
 - **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
 - **`run.py`** — thin CLI wrapper
