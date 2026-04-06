@@ -5,11 +5,11 @@
   "tau": 5e-3,
   "grad_transforms": [
     {
-      "fqn": "rltrain.transforms.SAM",
+      "fqn": "samgria.SAM",
       "rho": 1e-2
     },
     {
-      "fqn": "rltrain.transforms.LAMPRollback",
+      "fqn": "samgria.LAMPRollback",
       "eps": 5e-3,
       "rollback_len": 10
     }

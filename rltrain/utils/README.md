@@ -35,10 +35,10 @@ FQNs must resolve through `__init__.py` re-exports. Always use the shortest publ
 | `discount(xs, dones, factor)` | `discount.py` | Compute discounted cumulative sums (returns, GAE) with episode boundary handling via the `dones` mask |
 | `center(x)` | `center.py` | Standardise a tensor to zero mean and unit variance (whitening) |
 | `lerp(input, target, step)` | `lerp.py` | Linear interpolation between two values (used for target network soft updates) |
-| `get_grad(params)` | `grad.py` | Flatten all parameter gradients into a single vector |
-| `set_grad(grads, params)` | `grad.py` | Scatter a gradient vector back into parameter `.grad` attributes |
+| `get_grad(params)` | re-exported from `samgria` | Flatten all parameter gradients into a single vector |
+| `set_grad(grads, params)` | re-exported from `samgria` | Scatter a gradient vector back into parameter `.grad` attributes |
 
-The gradient utilities (`get_grad`, `set_grad`) are used by SAM, ASAM, and other transforms that need to read, manipulate, and restore gradients as flat vectors.
+The gradient utilities (`get_grad`, `set_grad`) are re-exported from [samgria](https://github.com/DarkbyteAT/samgria) and used by SAM, ASAM, and other transforms that need to read, manipulate, and restore gradients as flat vectors.
 
 ## How to Add a New Utility
 

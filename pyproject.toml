@@ -4,14 +4,13 @@ version = "1.0.0"
 description = "PyTorch deep reinforcement learning framework"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Ammar Tarajia" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -25,6 +24,7 @@ dependencies = [
     "seaborn",
     "gymnasium",
     "typer",
+    "samgria @ git+https://github.com/DarkbyteAT/samgria.git",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +53,9 @@ docs = [
     "mkdocs-literate-nav",
     "mkdocs-section-index",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [build-system]
 requires = ["hatchling"]

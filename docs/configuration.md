@@ -152,17 +152,17 @@ Add composable gradient transforms to any agent via the `grad_transforms` key. T
 ```json
 {
     "grad_transforms": [
-        {"fqn": "rltrain.transforms.SAM", "rho": 0.01},
-        {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+        {"fqn": "samgria.SAM", "rho": 0.01},
+        {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
     ]
 }
 ```
 
 | Transform | Class | Parameters | Description |
 |-----------|-------|------------|-------------|
-| SAM | `rltrain.transforms.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
-| ASAM | `rltrain.transforms.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
-| LAMP | `rltrain.transforms.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
+| SAM | `samgria.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
+| ASAM | `samgria.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
+| LAMP | `samgria.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
 
 Transforms compose -- list them in order. SAM/ASAM use the `apply()` hook (pre-descent) and LAMP uses the `post_step()` hook (post-descent), so they naturally complement each other[^sam].
 

@@ -74,7 +74,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (re-exported from samgria: SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
 - **`examples/`** — experiment configs (env.json + agent variants per environment)
 - **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
 - **`run.py`** — thin CLI wrapper
@@ -116,14 +116,14 @@ The pipeline is configured via the `grad_transforms` key in agent JSON, using th
 
 ```json
 "grad_transforms": [
-    {"fqn": "rltrain.transforms.SAM", "rho": 1e-2},
-    {"fqn": "rltrain.transforms.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
+    {"fqn": "samgria.SAM", "rho": 1e-2},
+    {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
 ]
 ```
 
 Omitting `grad_transforms` (or passing an empty list) gives vanilla gradient descent.
 
-Built-in transforms live in `rltrain/transforms/`:
+Built-in transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria) and re-exported via `rltrain/transforms/`:
 
 | Transform | Phase | Description |
 |-----------|-------|-------------|
