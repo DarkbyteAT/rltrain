@@ -37,7 +37,6 @@ Before working in a module, read its README for architecture, protocols, and how
 |--------|--------|--------|
 | `rltrain/agents/` | @rltrain/agents/README.md | Agent hierarchy, template method pattern, how to add new algorithms |
 | `rltrain/callbacks/` | @rltrain/callbacks/README.md | Callback protocol, built-in callbacks, how to write custom ones |
-| `rltrain/nn/` | @rltrain/nn/README.md | Network modules, orthogonal init, FQN resolution |
 | `rltrain/transforms/` | @rltrain/transforms/README.md | GradientTransform protocol, SAM/ASAM/LAMP, how to add new transforms |
 | `rltrain/tracking/` | @rltrain/tracking/README.md | TrackingCallback, MetricsLogger protocol, backend implementations |
 | `rltrain/utils/` | @rltrain/utils/README.md | FQN builder system, device resolution, math helpers |
@@ -66,7 +65,7 @@ Before working in a module, read its README for architecture, protocols, and how
 
 ### Code Style
 
-- Python 3.10+ — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
+- Python 3.11+ — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - PyTorch aliases: `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
 - NumPy-style docstrings
 

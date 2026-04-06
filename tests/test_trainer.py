@@ -67,8 +67,8 @@ def test_ppo_multi_env_cartpole_e2e(tmp_path):
             "early_stop": 0.2,
             "eps_clip": 0.2,
             "model": {
-                "actor": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 2}],
-                "critic": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 1}],
+                "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 2}],
+                "critic": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 1}],
             },
             "opt": {
                 "actor": {"fqn": "torch.optim.Adam", "lr": 3e-4},

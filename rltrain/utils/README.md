@@ -21,8 +21,8 @@ The builder subpackage is the backbone of rltrain's JSON-driven configuration. I
 
 FQNs must resolve through `__init__.py` re-exports. Always use the shortest public name:
 
-- `rltrain.nn.SkipMLP` (correct) -- resolves via `rltrain/nn/__init__.py`
-- `rltrain.nn.d2rl.SkipMLP` (avoid) -- unnecessarily deep path
+- `toblox.SkipMLP` (correct) -- resolves via `toblox/__init__.py`
+- `toblox.d2rl.SkipMLP` (avoid) -- unnecessarily deep path
 
 ## Device Resolution (`device.py`)
 

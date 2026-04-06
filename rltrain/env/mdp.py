@@ -4,7 +4,7 @@ from collections.abc import Callable
 import gymnasium.vector as vgym
 import numpy as np
 
-from rltrain.env import Trajectory
+from rltrain.env.trajectory import Trajectory
 from rltrain.utils import lerp
 
 
