@@ -101,7 +101,9 @@ def test_trainer_fires_episode_end_per_episode_with_multi_env(tmp_path):
             "lambda_gae": 0.95,
             "num_epochs": 2,
             "batch_size": 32,
-            "early_stop": 0.2,
+            "epoch_terminators": [
+                {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.2, "rollback": True}
+            ],
             "eps_clip": 0.2,
             "model": {
                 "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 2}],
@@ -158,7 +160,9 @@ def test_single_env_trainer_still_works(tmp_path):
             "lambda_gae": 0.95,
             "num_epochs": 2,
             "batch_size": 32,
-            "early_stop": 0.2,
+            "epoch_terminators": [
+                {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.2, "rollback": True}
+            ],
             "eps_clip": 0.2,
             "model": {
                 "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32], "outputs": 2}],

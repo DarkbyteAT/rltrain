@@ -41,4 +41,8 @@ def agent(
     if "grad_transforms" in kwargs:
         kwargs["grad_transforms"] = resolve(kwargs["grad_transforms"])
 
+    # Resolve epoch terminator pipeline if present
+    if "epoch_terminators" in kwargs:
+        kwargs["epoch_terminators"] = resolve(kwargs["epoch_terminators"])
+
     return agent_type(model=_model, opt=_opt, device=device, **kwargs)

@@ -37,7 +37,7 @@ graph LR
 | REINFORCE | `REINFORCE` | Policy gradient | Learned value baseline reduces variance |
 | Vanilla Actor-Critic | `VanillaAC` | Actor-critic | TD error advantage, optional shared feature layers |
 | Advantage Actor-Critic | `AdvantageAC` | Actor-critic | GAE (Generalised Advantage Estimation), horizon-based collection |
-| PPO | `PPO` | Actor-critic | Clipped surrogate objective, mini-batch epochs, KL early stopping |
+| PPO | `PPO` | Actor-critic | Clipped surrogate objective, mini-batch epochs, composable epoch terminators |
 | DQN | `VanillaDQN` | Q-learning | Replay buffer, target network with soft updates, epsilon-greedy decay |
 
 All policy gradient and actor-critic agents inherit along a clean chain: `Agent` (ABC) → `VanillaPG` → `REINFORCE` → `VanillaAC` → `AdvantageAC` → `PPO`, with `VanillaDQN` branching from `Agent` directly. Each level adds one concept — baselines, TD bootstrapping, GAE, clipping — making the hierarchy a readable tutorial in itself.
@@ -174,7 +174,9 @@ Agents are specified as JSON objects. The `fqn` field resolves to a Python class
     "lambda_gae": 0.95,
     "num_epochs": 8,
     "batch_size": 128,
-    "early_stop": 0.05,
+    "epoch_terminators": [
+        {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+    ],
     "eps_clip": 0.2,
     "model": {
         "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
@@ -254,6 +256,20 @@ SAM (Sharpness-Aware Minimization) perturbs weights adversarially before recompu
     ]
 }
 ```
+
+### Epoch Terminators (PPO)
+
+PPO supports composable epoch terminators that control when to stop mini-batch optimisation within a horizon. Terminators are specified via the `epoch_terminators` key:
+
+```json
+{
+    "epoch_terminators": [
+        {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+    ]
+}
+```
+
+`KLEarlyStop` halts epochs when the approximate KL divergence between the current and old policy exceeds `target_kl`. With `rollback: true`, it also restores parameters to their pre-epoch state. Omitting `epoch_terminators` (or passing an empty list) runs all `num_epochs` unconditionally.
 
 ## Callbacks
 

@@ -112,13 +112,13 @@ Collection switches from episode-based to horizon-based: the agent collects a fi
 ### PPO
 
 **Class:** `rltrain.agents.actor_critic.PPO`
-**Adds:** Clipped surrogate objective, mini-batch epochs, KL early stopping
+**Adds:** Clipped surrogate objective, mini-batch epochs, composable epoch terminators
 
 PPO constrains the policy update to a trust region by clipping the probability ratio:
 
 $$L^{\text{CLIP}}(\theta) = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t,\ \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t\right)\right]$$
 
-where $r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}$. After collecting a horizon of data, PPO runs multiple epochs of mini-batch gradient descent on the clipped objective. An optional KL divergence early-stopping criterion halts epochs if the policy changes too much.
+where $r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}$. After collecting a horizon of data, PPO runs multiple epochs of mini-batch gradient descent on the clipped objective. Composable epoch terminators control when to stop early -- for example, `KLEarlyStop` halts epochs when the approximate KL divergence exceeds a threshold, optionally rolling back parameters to their pre-epoch state.
 
 **Key hyperparameters:**
 
@@ -127,7 +127,7 @@ where $r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t 
 | `eps_clip` | Clipping parameter $\epsilon$ |
 | `num_epochs` | Number of optimisation epochs per horizon |
 | `batch_size` | Mini-batch size within each epoch |
-| `early_stop` | KL divergence threshold for early stopping (0 to disable) |
+| `epoch_terminators` | List of `EpochTerminator` instances (e.g. `KLEarlyStop`) that control when to stop mini-batch epochs |
 
 **Reference:** Schulman et al. (2017)[^schulman2017ppo].
 

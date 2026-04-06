@@ -44,7 +44,7 @@ Subclasses implement these abstract methods:
 | `REINFORCE` | `policy_gradient/baseline.py` | Learned value baseline (critic) to reduce variance |
 | `VanillaAC` | `actor_critic/vanilla.py` | TD error advantage, optional shared embedding features |
 | `AdvantageAC` | `actor_critic/a2c.py` | Generalised Advantage Estimation (GAE), horizon-based collection instead of episode-based |
-| `PPO` | `actor_critic/ppo.py` | Clipped surrogate objective, mini-batch epochs, KL early stopping with parameter backtracking |
+| `PPO` | `actor_critic/ppo/` | Clipped surrogate objective, mini-batch epochs, composable epoch terminators (KLEarlyStop / KLERollback) |
 | `VanillaDQN` | `q_learning/vanilla.py` | Replay buffer, target network with soft updates, epsilon-greedy decay |
 
 ## How to Add a New Agent

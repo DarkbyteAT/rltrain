@@ -1,11 +1,12 @@
 import time
+from collections.abc import Sequence
 
 import numpy as np
 import torch as T
-from torch.distributions import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-from rltrain.agents.actor_critic import AdvantageAC
+from rltrain.agents.actor_critic.a2c import AdvantageAC
+from rltrain.agents.actor_critic.ppo.epoch_terminator import EpochTerminator
 from rltrain.env import MDP
 from rltrain.utils import center, discount
 
@@ -13,12 +14,20 @@ from rltrain.utils import center, discount
 class PPO(AdvantageAC):
     name: str = "Proximal Policy Optimisation"
 
-    def __init__(self, *, num_epochs: int, batch_size: int, early_stop: float, eps_clip: float, **kwargs):
+    def __init__(
+        self,
+        *,
+        num_epochs: int,
+        batch_size: int,
+        eps_clip: float,
+        epoch_terminators: Sequence[EpochTerminator] = (),
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.early_stop = early_stop
         self.eps_clip = eps_clip
+        self.epoch_terminators = epoch_terminators
 
     def step(self, env: MDP):
         trajectory = env.step(self)
@@ -26,50 +35,48 @@ class PPO(AdvantageAC):
 
         if len(self.memory) >= self.horizon:
             epoch_time = -time.time()
-            backtrack_params = parameters_to_vector(self.model.parameters()).detach()
             dataset = self.load()
             batch_idx = np.arange(0, len(dataset[0]), self.batch_size)
-            stop = False
+            pre_epoch_params = parameters_to_vector(self.model.parameters()).detach()
 
             for _ in range(self.num_epochs):
-                # Shuffle starting indices for mini-batches
                 np.random.shuffle(batch_idx)
+                approx_kl = 0.0
 
                 for i in batch_idx:
-                    self.learn(*[x[i : i + self.batch_size] for x in dataset])
-                    # Check if the algorithm should stop early
-                    stop = self.check_kl(dataset[0], dataset[-3])
+                    mini_batch = [x[i : i + self.batch_size] for x in dataset]
+                    self.learn(*mini_batch)
 
-                    # Update backtrack parameters if not stopping, else set back to last checkpoint
-                    # and break to prevent further training
-                    if not stop:
-                        backtrack_params = parameters_to_vector(self.model.parameters()).detach()
-                    else:
-                        vector_to_parameters(backtrack_params.detach(), self.model.parameters())
-                        break
+                    # Approximate KL from log ratios — cheap, no extra forward pass
+                    with T.no_grad():
+                        approx_kl = self._approx_kl(mini_batch)
 
-                # Break from outer loop also
+                # Check epoch terminators
+                stop = any(t.should_stop(approx_kl) for t in self.epoch_terminators)
                 if stop:
+                    # Rollback if any triggered terminator requests it
+                    if any(t.rollback for t in self.epoch_terminators if t.should_stop(approx_kl)):
+                        vector_to_parameters(pre_epoch_params, self.model.parameters())
                     break
+
+                pre_epoch_params = parameters_to_vector(self.model.parameters()).detach()
 
             epoch_time += time.time()
             self.log.debug(f"{epoch_time=:.3f}s")
             self.memory.clear()
 
-    def check_kl(self, states: T.Tensor, policy_old: T.Tensor) -> bool:
-        """Returns ``True`` if the updated policy's KL-divergence exceeds ``early_stop``.
+    def _approx_kl(self, mini_batch: list[T.Tensor]) -> float:
+        """Compute approximate KL divergence from the last mini-batch's log ratios.
 
-        Parameters
-        ----------
-        ``states`` : ``Tensor``
-            States over which the mean KL-divergence is to be compared over.
-        ``policy_old`` : ``Tensor``
-            Output layer of the original policy's actor network at the given states.
+        Uses the improved estimator from Schulman's blog:
+        ``mean((ratio - 1) - log(ratio))``, which is always non-negative.
         """
-
-        new_dst = self.act(states)
-        old_dst = self.policy(policy_old)
-        return bool(kl_divergence(old_dst, new_dst).mean() >= self.early_stop)
+        states, actions, _r, _ns, _d, policy_old, _adv, _ret = mini_batch
+        action_dst = self.act(states)
+        old_dst = self.policy(policy_old.detach().squeeze())
+        log_ratio = self.log_probs(action_dst, actions) - self.log_probs(old_dst, actions)
+        ratio = log_ratio.exp()
+        return float(((ratio - 1) - log_ratio).mean())
 
     def load(self) -> tuple[T.Tensor, ...]:
         states, actions, rewards, next_states, dones = super().load()

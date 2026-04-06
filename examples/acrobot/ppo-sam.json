@@ -4,7 +4,9 @@
   "gamma": 0.995,
   "lambda_gae": 0.9,
   "tau": 1e-2,
-  "early_stop": 0.05,
+  "epoch_terminators": [
+    {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+  ],
   "eps_clip": 0.2,
   "horizon": 256,
   "num_epochs": 8,
