@@ -7,6 +7,7 @@ variance. The advantage (G_t - V(s)) is detached for the actor loss so the criti
 gradient doesn't flow through the policy gradient term.
 """
 
+import pytest
 import torch as T
 
 from rltrain.agents.policy_gradient import REINFORCE
@@ -17,6 +18,7 @@ from tests.agents.conftest import make_baseline_agent
 EXPECTED_LOSS = -0.18018627166748047
 
 
+@pytest.mark.unit
 def test_reinforce_loss(batch_5):
     agent = make_baseline_agent(REINFORCE)
     loss = agent.loss(*batch_5)

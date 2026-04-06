@@ -3,6 +3,7 @@
 import gymnasium as gym
 import gymnasium.vector as vgym
 import numpy as np
+import pytest
 
 from rltrain.env import MDP
 
@@ -23,6 +24,7 @@ def _random_policy(state: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_single_env_state_shape_after_setup():
     """With num_envs=1, state has shape (1, obs_dim) after setup."""
     # Given
@@ -36,6 +38,7 @@ def test_single_env_state_shape_after_setup():
     assert mdp.num_envs == 1
 
 
+@pytest.mark.unit
 def test_single_env_trajectory_shapes():
     """With num_envs=1, trajectory arrays have a leading dim of 1."""
     # Given
@@ -53,6 +56,7 @@ def test_single_env_trajectory_shapes():
     assert traj.done.shape[0] == 1
 
 
+@pytest.mark.unit
 def test_single_env_total_steps_increments_by_one():
     """With num_envs=1, each step increments total_steps by 1."""
     # Given
@@ -67,6 +71,7 @@ def test_single_env_total_steps_increments_by_one():
     assert mdp.total_steps == 2
 
 
+@pytest.mark.unit
 def test_single_env_episode_tracking():
     """With num_envs=1, episodes are tracked correctly through completion."""
     # Given
@@ -86,6 +91,7 @@ def test_single_env_episode_tracking():
     assert mdp.episode_steps == mdp.length_history[0]
 
 
+@pytest.mark.unit
 def test_single_env_trajectory_done_is_array():
     """Trajectory.done is always np.ndarray, even with num_envs=1."""
     # Given
@@ -105,6 +111,7 @@ def test_single_env_trajectory_done_is_array():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_multi_env_state_shape_after_setup():
     """With num_envs=4, state has shape (4, obs_dim) after setup."""
     # Given
@@ -118,6 +125,7 @@ def test_multi_env_state_shape_after_setup():
     assert mdp.num_envs == 4
 
 
+@pytest.mark.unit
 def test_multi_env_trajectory_shapes():
     """With num_envs=4, trajectory arrays have a leading dim of 4."""
     # Given
@@ -135,6 +143,7 @@ def test_multi_env_trajectory_shapes():
     assert traj.done.shape[0] == 4
 
 
+@pytest.mark.unit
 def test_multi_env_total_steps_increments_by_num_envs():
     """With num_envs=4, each step increments total_steps by 4."""
     # Given
@@ -149,6 +158,7 @@ def test_multi_env_total_steps_increments_by_num_envs():
     assert mdp.total_steps == 8
 
 
+@pytest.mark.unit
 def test_multi_env_episode_tracking():
     """With num_envs=4, multiple episodes can complete and be tracked independently."""
     # Given
@@ -167,6 +177,7 @@ def test_multi_env_episode_tracking():
     assert mdp.run_reward is not None
 
 
+@pytest.mark.unit
 def test_multi_env_per_env_counters_reset_on_done():
     """After an episode ends in one sub-env, its length/return counters reset while others continue."""
     # Given
@@ -184,6 +195,7 @@ def test_multi_env_per_env_counters_reset_on_done():
     assert mdp.return_history[0] != 0.0 or mdp.length_history[0] > 0
 
 
+@pytest.mark.unit
 def test_multi_env_trajectory_done_is_per_env_array():
     """Trajectory.done is an ndarray with one element per sub-env."""
     # Given
@@ -198,6 +210,7 @@ def test_multi_env_trajectory_done_is_per_env_array():
     assert traj.done.shape == (4,)
 
 
+@pytest.mark.unit
 def test_multi_env_episode_steps_accumulates():
     """episode_steps sums the lengths of all completed episodes across all sub-envs."""
     # Given
@@ -217,6 +230,7 @@ def test_multi_env_episode_steps_accumulates():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_env_builder_num_envs_default():
     """The env builder defaults to num_envs=1."""
     # Given / When
@@ -228,6 +242,7 @@ def test_env_builder_num_envs_default():
     assert vec_env.num_envs == 1
 
 
+@pytest.mark.unit
 def test_env_builder_num_envs_multiple():
     """The env builder creates the requested number of sub-environments."""
     # Given / When

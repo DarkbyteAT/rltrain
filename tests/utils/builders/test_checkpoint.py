@@ -34,6 +34,7 @@ def _save_run_dir(tmp_path: Path, agent, *, checkpoint: str = "FINAL") -> Path:
     return run_dir
 
 
+@pytest.mark.unit
 def test_round_trip_weights_match(tmp_path: Path):
     """Loaded agent's parameters must be identical to the original's."""
     # Given -- a trained agent saved to disk
@@ -50,6 +51,7 @@ def test_round_trip_weights_match(tmp_path: Path):
         assert T.equal(p_orig, p_load), f"parameter {name!r} differs after round-trip"
 
 
+@pytest.mark.unit
 def test_round_trip_same_output(tmp_path: Path):
     """Loaded agent must produce the same action distribution as the original."""
     # Given -- a saved agent and a batch of states
@@ -69,6 +71,7 @@ def test_round_trip_same_output(tmp_path: Path):
     assert T.allclose(original_out.logits, loaded_out.logits, atol=1e-6), "action distribution differs after round-trip"
 
 
+@pytest.mark.unit
 def test_loaded_model_in_eval_mode(tmp_path: Path):
     """load_agent must set the model to eval mode."""
     # Given -- a saved agent
@@ -82,6 +85,7 @@ def test_loaded_model_in_eval_mode(tmp_path: Path):
     assert not loaded.model.training, "model should be in eval mode after loading"
 
 
+@pytest.mark.unit
 def test_step_based_checkpoint(tmp_path: Path):
     """load_agent must support step-based checkpoint names like '2500'."""
     # Given -- a saved agent with a step-based checkpoint
@@ -98,6 +102,7 @@ def test_step_based_checkpoint(tmp_path: Path):
         assert T.equal(p_orig, p_load), f"parameter {name!r} differs for step checkpoint"
 
 
+@pytest.mark.unit
 def test_missing_config_raises(tmp_path: Path):
     """load_agent must raise FileNotFoundError when agent.json is missing."""
     # Given -- a run directory with no config
@@ -109,6 +114,7 @@ def test_missing_config_raises(tmp_path: Path):
         load_agent(run_dir, device="cpu")
 
 
+@pytest.mark.unit
 def test_missing_checkpoint_raises(tmp_path: Path):
     """load_agent must raise FileNotFoundError when the .pt file is missing."""
     # Given -- a run directory with config but no model file
@@ -125,6 +131,7 @@ def test_missing_checkpoint_raises(tmp_path: Path):
         load_agent(run_dir, device="cpu")
 
 
+@pytest.mark.unit
 def test_callable_produces_actions(tmp_path: Path):
     """The loaded agent's __call__ must return numpy actions."""
     # Given -- a saved and reloaded agent
@@ -142,6 +149,7 @@ def test_callable_produces_actions(tmp_path: Path):
     assert actions.shape == (1,), f"expected shape (1,), got {actions.shape}"
 
 
+@pytest.mark.unit
 def test_accepts_string_path(tmp_path: Path):
     """load_agent must accept a string path, not just a Path object."""
     # Given
@@ -153,6 +161,7 @@ def test_accepts_string_path(tmp_path: Path):
     assert not loaded.model.training
 
 
+@pytest.mark.unit
 def test_dqn_round_trip(tmp_path: Path):
     """DQN agent round-trip: weights, target sync, eps_greedy, and act()."""
     # Given -- a DQN agent saved to disk
@@ -197,6 +206,7 @@ def test_dqn_round_trip(tmp_path: Path):
     assert actions.shape == (1,), f"expected shape (1,), got {actions.shape}"
 
 
+@pytest.mark.unit
 def test_invalid_checkpoint_name_raises():
     """load_agent must reject checkpoint names that are not FINAL or numeric."""
     # When / Then

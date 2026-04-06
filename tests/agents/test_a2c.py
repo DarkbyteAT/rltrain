@@ -8,6 +8,7 @@ where:
   R_target = A^GAE + V(s)                           (critic target)
 """
 
+import pytest
 import torch as T
 
 from rltrain.agents.actor_critic import AdvantageAC
@@ -18,6 +19,7 @@ from tests.agents.conftest import LAMBDA_GAE, make_ac_agent
 EXPECTED_LOSS = -0.16368556022644043
 
 
+@pytest.mark.unit
 def test_a2c_loss(batch_5):
     agent = make_ac_agent(AdvantageAC, horizon=128, lambda_gae=LAMBDA_GAE)
     loss = agent.loss(*batch_5)

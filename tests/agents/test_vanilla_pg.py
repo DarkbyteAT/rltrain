@@ -5,6 +5,7 @@ Loss = mean(-log_π(a|s) · G_t) + mean(-τ · H(π))
 where G_t = discount(rewards, dones, γ) is the discounted return.
 """
 
+import pytest
 import torch as T
 
 from rltrain.agents.policy_gradient import VanillaPG
@@ -15,6 +16,7 @@ from tests.agents.conftest import make_pg_agent
 EXPECTED_LOSS = -0.47168490290641785
 
 
+@pytest.mark.unit
 def test_vanilla_pg_loss(batch_5):
     agent = make_pg_agent(VanillaPG)
     loss = agent.loss(*batch_5)

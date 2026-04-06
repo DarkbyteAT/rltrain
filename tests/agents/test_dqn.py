@@ -8,6 +8,7 @@ for computing TD targets, and a replay buffer for decorrelating samples.
 
 import functools
 
+import pytest
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
@@ -20,6 +21,7 @@ from tests.agents.conftest import GAMMA
 EXPECTED_LOSS = 0.8412540555000305
 
 
+@pytest.mark.unit
 def test_dqn_loss(batch_5):
     T.manual_seed(0)
     qnet = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2))

@@ -1,8 +1,10 @@
+import pytest
 import torch.nn as nn
 
 from rltrain.utils.builders.load import resolve
 
 
+@pytest.mark.unit
 def test_distinct_optimizer_configs_produce_distinct_optimizers():
     """Each optimizer factory must use its own config, not the last-defined one.
 

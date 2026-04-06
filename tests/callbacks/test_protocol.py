@@ -1,5 +1,7 @@
 """Tests for the Callback protocol — verifies structural subtyping works."""
 
+import pytest
+
 from rltrain.callbacks import Callback
 from rltrain.callbacks.checkpoint import CheckpointCallback
 from rltrain.callbacks.csv_logger import CSVLoggerCallback
@@ -7,18 +9,22 @@ from rltrain.callbacks.plot import PlotCallback
 from rltrain.callbacks.video_recorder import VideoRecorderCallback
 
 
+@pytest.mark.unit
 def test_checkpoint_satisfies_protocol():
     assert isinstance(CheckpointCallback(), Callback)
 
 
+@pytest.mark.unit
 def test_csv_logger_satisfies_protocol():
     assert isinstance(CSVLoggerCallback(), Callback)
 
 
+@pytest.mark.unit
 def test_plot_satisfies_protocol():
     assert isinstance(PlotCallback(num_steps=1000), Callback)
 
 
+@pytest.mark.unit
 def test_custom_callback_satisfies_protocol():
     """A user-defined class with the right methods should satisfy Callback."""
 
@@ -32,6 +38,7 @@ def test_custom_callback_satisfies_protocol():
     assert isinstance(MyCallback(), Callback)
 
 
+@pytest.mark.unit
 def test_partial_callback_does_not_satisfy_protocol():
     """A class missing hook methods should NOT satisfy the protocol."""
 
@@ -41,5 +48,6 @@ def test_partial_callback_does_not_satisfy_protocol():
     assert not isinstance(IncompleteCallback(), Callback)
 
 
+@pytest.mark.unit
 def test_video_recorder_satisfies_protocol():
     assert isinstance(VideoRecorderCallback(), Callback)

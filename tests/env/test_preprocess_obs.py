@@ -3,6 +3,7 @@
 import gymnasium as gym
 import gymnasium.vector as vgym
 import numpy as np
+import pytest
 
 from rltrain.env import MDP
 
@@ -13,6 +14,7 @@ def _make_mdp(swap_channels: bool) -> MDP:
     return MDP(env, run_beta=0.1, log_freq=100, swap_channels=swap_channels)
 
 
+@pytest.mark.unit
 def test_preprocess_obs_returns_input_unchanged_without_swap():
     """Without channel swap, preprocess_obs is the identity function."""
     # Given: an MDP with swap_channels=False and an arbitrary observation
@@ -26,6 +28,7 @@ def test_preprocess_obs_returns_input_unchanged_without_swap():
     np.testing.assert_array_equal(result, obs)
 
 
+@pytest.mark.unit
 def test_preprocess_obs_transposes_channels_when_swap_enabled():
     """With channel swap, preprocess_obs converts (N, H, W, C) to (N, C, H, W)."""
     # Given: an MDP with swap_channels=True and a non-square (1, H, W, C) observation
@@ -41,6 +44,7 @@ def test_preprocess_obs_transposes_channels_when_swap_enabled():
     np.testing.assert_array_equal(result, expected)
 
 
+@pytest.mark.unit
 def test_reset_applies_preprocess_obs(cartpole_env):
     """After reset, MDP.state should be a preprocessed observation."""
     # Given: a CartPole MDP (swap_channels=False)

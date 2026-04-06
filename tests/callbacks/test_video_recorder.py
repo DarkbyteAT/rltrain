@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import gymnasium as gym
 import gymnasium.vector as vgym
 import numpy as np
+import pytest
 
 from rltrain.callbacks.video_recorder import VideoRecorderCallback
 from rltrain.env import MDP
@@ -30,6 +31,7 @@ def _make_recording_env() -> gym.Env:
 # --- on_train_start: env creation ---
 
 
+@pytest.mark.unit
 def test_auto_detect_creates_eval_env_from_mdp_spec(tmp_path):
     """Auto-detection should build a renderable eval env from MDP.env.envs[0].spec."""
     # Given: a callback with no env_fn and a CartPole MDP
@@ -46,6 +48,7 @@ def test_auto_detect_creates_eval_env_from_mdp_spec(tmp_path):
     assert (tmp_path / "videos").is_dir()
 
 
+@pytest.mark.unit
 def test_explicit_env_fn_is_called_instead_of_auto_detection(tmp_path):
     """When env_fn is provided, it should be used instead of auto-detection."""
     # Given: a callback with an explicit env factory
@@ -68,6 +71,7 @@ def test_explicit_env_fn_is_called_instead_of_auto_detection(tmp_path):
     assert cb._eval_env is not None
 
 
+@pytest.mark.unit
 def test_non_renderable_env_disables_callback(tmp_path):
     """If the eval env doesn't support rgb_array, the callback disables itself."""
     # Given: a factory that returns a non-renderable env
@@ -85,6 +89,7 @@ def test_non_renderable_env_disables_callback(tmp_path):
 # --- on_checkpoint: default trigger ---
 
 
+@pytest.mark.unit
 def test_checkpoint_trigger_produces_video_files(tmp_path):
     """Default trigger: on_checkpoint runs eval rollouts that produce video files."""
     # Given: a callback with default trigger (checkpoint-based) and 1 eval episode
@@ -104,6 +109,7 @@ def test_checkpoint_trigger_produces_video_files(tmp_path):
     assert f"step-{mdp.total_steps}" in videos[0].name
 
 
+@pytest.mark.unit
 def test_checkpoint_is_noop_when_eval_trigger_is_set(tmp_path):
     """When eval_trigger is configured, on_checkpoint should not run rollouts."""
     # Given: a callback with an eval trigger that never fires
@@ -129,6 +135,7 @@ def test_checkpoint_is_noop_when_eval_trigger_is_set(tmp_path):
 # --- on_episode_end: custom trigger ---
 
 
+@pytest.mark.unit
 def test_eval_trigger_runs_rollouts_when_predicate_matches(tmp_path):
     """on_episode_end should run eval rollouts when eval_trigger returns True."""
     # Given: a callback triggered on episode 1 only
@@ -155,6 +162,7 @@ def test_eval_trigger_runs_rollouts_when_predicate_matches(tmp_path):
 # --- on_train_end: cleanup ---
 
 
+@pytest.mark.unit
 def test_train_end_closes_eval_env(tmp_path):
     """on_train_end should close the eval env cleanly."""
     # Given: a fully initialised callback

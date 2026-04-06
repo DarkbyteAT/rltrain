@@ -10,6 +10,7 @@ importance ratio r = π_new(a|s) / π_old(a|s) = 1, so clipping has no effect
 and the loss equals the standard A2C policy gradient.
 """
 
+import pytest
 import torch as T
 
 from rltrain.agents.actor_critic import PPO
@@ -21,6 +22,7 @@ from tests.agents.conftest import EPS_CLIP, GAMMA, LAMBDA_GAE, make_ac_agent
 EXPECTED_LOSS = 1.00101900100708
 
 
+@pytest.mark.unit
 def test_ppo_loss(batch_5):
     agent = make_ac_agent(
         PPO,

@@ -1,10 +1,12 @@
 """Tests for CSVLoggerCallback — happy and error paths."""
 
 import pandas as pd
+import pytest
 
 from rltrain.callbacks.csv_logger import CSVLoggerCallback
 
 
+@pytest.mark.unit
 def test_on_checkpoint_writes_csv(tmp_path, stub_agent, populated_env):
     cb = CSVLoggerCallback()
     cb.on_train_start(stub_agent, populated_env, tmp_path)
@@ -19,6 +21,7 @@ def test_on_checkpoint_writes_csv(tmp_path, stub_agent, populated_env):
     assert df["return"].tolist() == populated_env.return_history
 
 
+@pytest.mark.unit
 def test_on_train_end_writes_csv(tmp_path, stub_agent, populated_env):
     cb = CSVLoggerCallback()
     cb.on_train_start(stub_agent, populated_env, tmp_path)
@@ -28,6 +31,7 @@ def test_on_train_end_writes_csv(tmp_path, stub_agent, populated_env):
     assert len(df) == populated_env.episode_count
 
 
+@pytest.mark.unit
 def test_on_checkpoint_skips_when_zero_episodes(tmp_path, stub_agent, stub_env):
     """CSV should not be written when no episodes have completed."""
     cb = CSVLoggerCallback()
@@ -37,6 +41,7 @@ def test_on_checkpoint_skips_when_zero_episodes(tmp_path, stub_agent, stub_env):
     assert not (tmp_path / "metrics.csv").exists()
 
 
+@pytest.mark.unit
 def test_on_checkpoint_before_train_start_is_safe(stub_agent, populated_env, tmp_path):
     """Calling on_checkpoint before on_train_start should not crash or write files."""
     cb = CSVLoggerCallback()
@@ -44,6 +49,7 @@ def test_on_checkpoint_before_train_start_is_safe(stub_agent, populated_env, tmp
     assert list(tmp_path.iterdir()) == []
 
 
+@pytest.mark.unit
 def test_csv_overwrites_on_each_checkpoint(tmp_path, stub_agent, populated_env):
     """Each checkpoint should overwrite the CSV with the full history."""
     cb = CSVLoggerCallback()
