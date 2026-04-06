@@ -1,9 +1,11 @@
+import pytest
 import torch as T
 import torch.nn as nn
 
 from rltrain.utils.grad import get_grad, set_grad
 
 
+@pytest.mark.unit
 def test_get_grad_shape():
     layer = nn.Linear(4, 2, bias=True)
     x = T.randn(1, 4)
@@ -16,6 +18,7 @@ def test_get_grad_shape():
     assert grads.shape == (total_params,)
 
 
+@pytest.mark.unit
 def test_set_grad_overwrites():
     layer = nn.Linear(3, 2, bias=False)
     x = T.randn(1, 3)
@@ -31,6 +34,7 @@ def test_set_grad_overwrites():
         assert T.allclose(p.grad, T.ones_like(p.grad))
 
 
+@pytest.mark.unit
 def test_get_set_roundtrip():
     layer = nn.Linear(4, 3, bias=True)
     x = T.randn(1, 4)

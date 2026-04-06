@@ -10,21 +10,25 @@ from rltrain.utils.builders.load import load, resolve
 # --- load -------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_load_torch_adam():
     cls = load("torch.optim.Adam")
     assert cls is torch.optim.Adam
 
 
+@pytest.mark.unit
 def test_load_torch_relu():
     cls = load("torch.nn.ReLU")
     assert cls is torch.nn.ReLU
 
 
+@pytest.mark.unit
 def test_load_invalid_module_raises():
     with pytest.raises(ModuleNotFoundError):
         load("nonexistent.module.Class")
 
 
+@pytest.mark.unit
 def test_load_invalid_attr_raises():
     with pytest.raises(AttributeError):
         load("torch.optim.NonExistentOptimizer")
@@ -33,6 +37,7 @@ def test_load_invalid_attr_raises():
 # --- resolve: plain values --------------------------------------------------
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize("value", [42, 3.14, "hello", True, None])
 def test_resolve_plain_values_pass_through(value):
     """Scalars are returned unchanged."""
@@ -46,6 +51,7 @@ def test_resolve_plain_values_pass_through(value):
 # --- resolve: dict with fqn -------------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_dict_with_fqn_constructs_object():
     """A dict containing an 'fqn' key is resolved into a constructed object."""
     # Given
@@ -63,6 +69,7 @@ def test_resolve_dict_with_fqn_constructs_object():
 # --- resolve: list of fqn dicts ---------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_list_of_fqn_dicts():
     """A list of fqn dicts resolves to a list of constructed objects."""
     # Given
@@ -85,6 +92,7 @@ def test_resolve_list_of_fqn_dicts():
 # --- resolve: nested fqn dicts ----------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_nested_fqn_in_kwargs():
     """An fqn dict whose kwargs contain another fqn dict resolves recursively."""
     # Given -- a dict without fqn whose values contain fqn dicts (nested resolution)
@@ -104,6 +112,7 @@ def test_resolve_nested_fqn_in_kwargs():
 # --- resolve: deferred construction ------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_deferred_produces_partial():
     """A dict with 'deferred: true' wraps in functools.partial."""
     # Given
@@ -118,6 +127,7 @@ def test_resolve_deferred_produces_partial():
     assert factory.keywords == {"lr": 3e-4}
 
 
+@pytest.mark.unit
 def test_resolve_deferred_does_not_pass_deferred_key():
     """The 'deferred' key must not appear in the partial's kwargs."""
     # Given
@@ -133,6 +143,7 @@ def test_resolve_deferred_does_not_pass_deferred_key():
 # --- resolve: dict without fqn recurses into values -------------------------
 
 
+@pytest.mark.unit
 def test_resolve_dict_without_fqn_recurses():
     """A dict without 'fqn' has its values recursively resolved."""
     # Given
@@ -154,11 +165,13 @@ def test_resolve_dict_without_fqn_recurses():
 # --- resolve: edge cases ------------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_empty_dict():
     """An empty dict resolves to an empty dict."""
     assert resolve({}) == {}
 
 
+@pytest.mark.unit
 def test_resolve_empty_list():
     """An empty list resolves to an empty list."""
     assert resolve([]) == []
@@ -167,6 +180,7 @@ def test_resolve_empty_list():
 # --- resolve: error propagation ------------------------------------------
 
 
+@pytest.mark.unit
 def test_resolve_invalid_fqn_raises_with_context():
     """resolve() wraps FQN load errors with the failing fqn for debugging."""
     # Given
@@ -177,6 +191,7 @@ def test_resolve_invalid_fqn_raises_with_context():
         resolve(cfg)
 
 
+@pytest.mark.unit
 def test_resolve_invalid_attr_raises_with_context():
     """resolve() wraps attribute errors with the failing fqn for debugging."""
     # Given

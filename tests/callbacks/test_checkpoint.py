@@ -1,10 +1,12 @@
 """Tests for CheckpointCallback — happy and error paths."""
 
+import pytest
 import torch as T
 
 from rltrain.callbacks.checkpoint import CheckpointCallback
 
 
+@pytest.mark.unit
 def test_on_train_end_saves_final_model(tmp_path, stub_agent, stub_env):
     cb = CheckpointCallback()
     cb.on_train_start(stub_agent, stub_env, tmp_path)
@@ -17,6 +19,7 @@ def test_on_train_end_saves_final_model(tmp_path, stub_agent, stub_env):
     assert "actor.0.weight" in state_dict
 
 
+@pytest.mark.unit
 def test_on_checkpoint_saves_intermediate_when_save_all(tmp_path, stub_agent, populated_env):
     cb = CheckpointCallback(save_all=True)
     cb.on_train_start(stub_agent, populated_env, tmp_path)
@@ -26,6 +29,7 @@ def test_on_checkpoint_saves_intermediate_when_save_all(tmp_path, stub_agent, po
     assert checkpoint_path.exists()
 
 
+@pytest.mark.unit
 def test_on_checkpoint_skips_when_not_save_all(tmp_path, stub_agent, populated_env):
     cb = CheckpointCallback(save_all=False)
     cb.on_train_start(stub_agent, populated_env, tmp_path)
@@ -36,6 +40,7 @@ def test_on_checkpoint_skips_when_not_save_all(tmp_path, stub_agent, populated_e
     assert list(models_dir.iterdir()) == []
 
 
+@pytest.mark.unit
 def test_on_train_start_creates_models_dir(tmp_path, stub_agent, stub_env):
     cb = CheckpointCallback()
     models_dir = tmp_path / "models"
@@ -45,6 +50,7 @@ def test_on_train_start_creates_models_dir(tmp_path, stub_agent, stub_env):
     assert models_dir.exists()
 
 
+@pytest.mark.unit
 def test_on_checkpoint_before_train_start_is_safe(stub_agent, populated_env, tmp_path):
     """Calling on_checkpoint before on_train_start should not crash or write files."""
     cb = CheckpointCallback(save_all=True)
@@ -52,6 +58,7 @@ def test_on_checkpoint_before_train_start_is_safe(stub_agent, populated_env, tmp
     assert list(tmp_path.iterdir()) == []
 
 
+@pytest.mark.unit
 def test_on_train_end_before_train_start_is_safe(stub_agent, stub_env, tmp_path):
     """Calling on_train_end before on_train_start should not crash or write files."""
     cb = CheckpointCallback()

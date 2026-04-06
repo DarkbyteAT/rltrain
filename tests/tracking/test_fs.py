@@ -13,6 +13,7 @@ def jsonl_path(tmp_path):
     return tmp_path / "metrics.jsonl"
 
 
+@pytest.mark.unit
 def test_writes_jsonl_records(jsonl_path):
     fsspec = pytest.importorskip("fsspec")  # noqa: F841
     from rltrain.tracking.backends.fs import FSLogger
@@ -34,6 +35,7 @@ def test_writes_jsonl_records(jsonl_path):
     assert record_2 == {"step": 2, "return": 20.1, "length": 130.0}
 
 
+@pytest.mark.unit
 def test_finish_closes_file(jsonl_path):
     fsspec = pytest.importorskip("fsspec")  # noqa: F841
     from rltrain.tracking.backends.fs import FSLogger
@@ -46,6 +48,7 @@ def test_finish_closes_file(jsonl_path):
     assert logger._file is None
 
 
+@pytest.mark.unit
 def test_import_error_without_fsspec(monkeypatch):
     """FSLogger constructor raises ImportError when fsspec is missing."""
     import sys

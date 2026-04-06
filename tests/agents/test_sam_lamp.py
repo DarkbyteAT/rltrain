@@ -12,6 +12,7 @@ noise scaled by parameter magnitude after each update, then periodically rolling
 back to the moving average of noisy parameters.
 """
 
+import pytest
 import torch as T
 import torch.nn.functional as F
 from torch.nn.utils import parameters_to_vector
@@ -27,6 +28,7 @@ from tests.agents.conftest import make_pg_agent
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_sam_gradients_differ_from_vanilla(batch_5):
     """SAM-mode gradients must differ from vanilla gradients.
 
@@ -64,6 +66,7 @@ def test_sam_gradients_differ_from_vanilla(batch_5):
     )
 
 
+@pytest.mark.unit
 def test_sam_parameters_restored_after_perturbation(batch_5):
     """After learn(), parameters should reflect the optimiser step only.
 
@@ -87,6 +90,7 @@ def test_sam_parameters_restored_after_perturbation(batch_5):
     assert delta < 0.1, f"Parameter change too large ({delta}) — SAM perturbation may not have been undone"
 
 
+@pytest.mark.unit
 def test_sam_gradient_shape_preserved(batch_5):
     """get_grad/set_grad round-trip in learn() must preserve gradient vector shape.
 
@@ -115,6 +119,7 @@ def test_sam_gradient_shape_preserved(batch_5):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_lamp_differs_from_sam(batch_5):
     """LAMP adds noise after the SAM update, so parameters must differ from pure SAM."""
     T.manual_seed(42)
@@ -132,6 +137,7 @@ def test_lamp_differs_from_sam(batch_5):
     )
 
 
+@pytest.mark.unit
 def test_lamp_rollback_to_moving_average(batch_5):
     """After rollback_len+1 updates, LAMP rolls back to the moving average."""
     rollback_len = 2
@@ -155,6 +161,7 @@ def test_lamp_rollback_to_moving_average(batch_5):
     )
 
 
+@pytest.mark.unit
 def test_lamp_rollback_isolation(batch_5):
     """LAMPRollback in isolation (no SAM) still injects noise and rolls back.
 
@@ -187,6 +194,7 @@ def test_lamp_rollback_isolation(batch_5):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_asam_gradients_differ_from_vanilla(batch_5):
     """ASAM-mode gradients must differ from vanilla gradients."""
     vanilla_grad = None
@@ -217,6 +225,7 @@ def test_asam_gradients_differ_from_vanilla(batch_5):
     )
 
 
+@pytest.mark.unit
 def test_asam_gradients_differ_from_sam(batch_5):
     """ASAM and SAM should produce different gradients (different perturbation scaling)."""
     sam_grad = None
@@ -248,6 +257,7 @@ def test_asam_gradients_differ_from_sam(batch_5):
     )
 
 
+@pytest.mark.unit
 def test_asam_perturbation_scales_with_parameter_magnitude(batch_5):
     """ASAM perturbation direction is |theta|^2 * grad -- larger params get larger perturbations."""
     agent = make_pg_agent(VanillaPG, grad_transforms=[ASAM(rho=0.1)])
@@ -283,6 +293,7 @@ def test_asam_perturbation_scales_with_parameter_magnitude(batch_5):
         )
 
 
+@pytest.mark.unit
 def test_asam_parameters_restored_after_perturbation(batch_5):
     """After learn(), ASAM parameters should reflect only the optimiser step."""
     agent = make_pg_agent(VanillaPG, grad_transforms=[ASAM(rho=1e-2)])

@@ -7,6 +7,7 @@ for the actor loss (psi) but not for the critic loss, so the critic gradient
 flows through the value predictions.
 """
 
+import pytest
 import torch as T
 
 from rltrain.agents.actor_critic import VanillaAC
@@ -17,6 +18,7 @@ from tests.agents.conftest import make_ac_agent
 EXPECTED_LOSS = 0.22458896040916443
 
 
+@pytest.mark.unit
 def test_vanilla_ac_loss(batch_5):
     agent = make_ac_agent(VanillaAC)
     loss = agent.loss(*batch_5)

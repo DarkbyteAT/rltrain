@@ -68,6 +68,7 @@ def stub_env():
     )
 
 
+@pytest.mark.unit
 def test_on_train_start_calls_start_and_log_hyperparams(spy_logger, config, stub_agent, stub_env):
     cb = TrackingCallback(spy_logger, config)
     run_dir = Path("/tmp/run_1")
@@ -79,6 +80,7 @@ def test_on_train_start_calls_start_and_log_hyperparams(spy_logger, config, stub
     assert len(spy_logger.calls) == 2
 
 
+@pytest.mark.unit
 def test_on_episode_end_logs_scalars(spy_logger, config, stub_agent, stub_env):
     cb = TrackingCallback(spy_logger, config)
 
@@ -91,6 +93,7 @@ def test_on_episode_end_logs_scalars(spy_logger, config, stub_agent, stub_env):
     assert metrics == {"return": 42.0, "length": 100, "running_return": 38.5}
 
 
+@pytest.mark.unit
 def test_on_train_end_calls_finish(spy_logger, config, stub_agent, stub_env):
     cb = TrackingCallback(spy_logger, config)
 
@@ -99,6 +102,7 @@ def test_on_train_end_calls_finish(spy_logger, config, stub_agent, stub_env):
     assert spy_logger.calls == [("finish", ())]
 
 
+@pytest.mark.unit
 def test_on_step_is_noop(spy_logger, config, stub_agent, stub_env):
     cb = TrackingCallback(spy_logger, config)
 
@@ -107,6 +111,7 @@ def test_on_step_is_noop(spy_logger, config, stub_agent, stub_env):
     assert spy_logger.calls == []
 
 
+@pytest.mark.unit
 def test_on_checkpoint_is_noop(spy_logger, config, stub_agent, stub_env):
     cb = TrackingCallback(spy_logger, config)
 

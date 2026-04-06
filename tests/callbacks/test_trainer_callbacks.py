@@ -1,5 +1,7 @@
 """Tests that the Trainer calls callback hooks in the correct order."""
 
+import pytest
+
 from rltrain.trainer import Trainer
 
 
@@ -25,6 +27,7 @@ class RecordingCallback:
         self.calls.append("train_end")
 
 
+@pytest.mark.unit
 def test_callback_lifecycle_order(tmp_path, cartpole_agent, cartpole_env):
     """Verify train_start is first, train_end is last, and episodes happen."""
     recorder = RecordingCallback()
@@ -46,6 +49,7 @@ def test_callback_lifecycle_order(tmp_path, cartpole_agent, cartpole_env):
     assert "checkpoint" in recorder.calls
 
 
+@pytest.mark.unit
 def test_multiple_callbacks_all_called(tmp_path, cartpole_agent, cartpole_env):
     """Verify every callback in the list receives hooks."""
     r1 = RecordingCallback()
@@ -64,6 +68,7 @@ def test_multiple_callbacks_all_called(tmp_path, cartpole_agent, cartpole_env):
     assert r1.calls == r2.calls
 
 
+@pytest.mark.unit
 def test_empty_callbacks_list_runs_without_error(tmp_path, cartpole_agent, cartpole_env):
     """Trainer with callbacks=[] should train without crashing."""
     trainer = Trainer(

@@ -5,6 +5,7 @@ rather than testing internal implementation details.
 """
 
 import numpy as np
+import pytest
 import torch as T
 
 import rltrain.utils.builders as mk
@@ -21,6 +22,7 @@ def _random_policy(state: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_multi_env_collects_num_envs_steps_per_call():
     """With num_envs=4, one MDP.step() call advances 4 environment steps."""
     # Given
@@ -40,6 +42,7 @@ def test_multi_env_collects_num_envs_steps_per_call():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_multi_env_tracks_all_completed_episodes():
     """Every episode that completes in any sub-env is recorded in the history."""
     # Given
@@ -78,6 +81,7 @@ class EpisodeCounter:
         self.episodes.append(episode)
 
 
+@pytest.mark.integration
 def test_trainer_fires_episode_end_per_episode_with_multi_env(tmp_path):
     """With num_envs=4, each completed episode gets its own on_episode_end call."""
     # Given
@@ -134,6 +138,7 @@ def test_trainer_fires_episode_end_per_episode_with_multi_env(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_single_env_trainer_still_works(tmp_path):
     """num_envs=1 (default) produces the same behaviour as before multi-env."""
     # Given — standard single-env setup
@@ -191,6 +196,7 @@ def test_single_env_trainer_still_works(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_env_builder_creates_requested_envs():
     """mk.env(num_envs=N) creates a SyncVectorEnv with N sub-environments."""
     # Given / When
@@ -200,6 +206,7 @@ def test_env_builder_creates_requested_envs():
     assert vec_env.num_envs == 8
 
 
+@pytest.mark.integration
 def test_env_builder_default_is_single_env():
     """mk.env() without num_envs defaults to 1."""
     # Given / When

@@ -1,5 +1,6 @@
 """Smoke tests for the Trainer."""
 
+import pytest
 import torch as T
 
 import rltrain.utils.builders as mk
@@ -10,6 +11,7 @@ from rltrain.env import MDP
 from rltrain.trainer import Trainer
 
 
+@pytest.mark.e2e
 def test_ppo_cartpole_smoke(tmp_path, cartpole_agent, cartpole_env):
     """PPO trains on CartPole for 1000 steps without crashing."""
     trainer = Trainer(
@@ -28,6 +30,7 @@ def test_ppo_cartpole_smoke(tmp_path, cartpole_agent, cartpole_env):
     assert len(cartpole_env.return_history) == cartpole_env.episode_count
 
 
+@pytest.mark.e2e
 def test_trainer_default_callbacks(tmp_path, cartpole_agent, cartpole_env):
     """Trainer with callbacks=None should use the 3 built-in defaults."""
     trainer = Trainer(
@@ -45,6 +48,7 @@ def test_trainer_default_callbacks(tmp_path, cartpole_agent, cartpole_env):
     assert any(isinstance(cb, CheckpointCallback) for cb in trainer.callbacks)
 
 
+@pytest.mark.e2e
 def test_ppo_multi_env_cartpole_e2e(tmp_path):
     """PPO trains on CartPole with 4 parallel envs end-to-end."""
     # Given — 4-env vectorised setup

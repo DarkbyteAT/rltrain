@@ -5,9 +5,12 @@ from __future__ import annotations
 import io
 from pathlib import Path
 
+import pytest
+
 from rltrain.tracking.backends.stream import StreamLogger
 
 
+@pytest.mark.unit
 def test_log_scalars_writes_formatted_line():
     buf = io.StringIO()
     logger = StreamLogger(stream=buf)
@@ -23,6 +26,7 @@ def test_log_scalars_writes_formatted_line():
     assert output.endswith("\n")
 
 
+@pytest.mark.unit
 def test_log_scalars_multiple_steps():
     buf = io.StringIO()
     logger = StreamLogger(stream=buf)
@@ -36,6 +40,7 @@ def test_log_scalars_multiple_steps():
     assert "[step 2]" in lines[1]
 
 
+@pytest.mark.unit
 def test_defaults_to_stdout(capsys):
     logger = StreamLogger()
 
@@ -45,6 +50,7 @@ def test_defaults_to_stdout(capsys):
     assert "[step 0] val=3.14" in captured.out
 
 
+@pytest.mark.unit
 def test_start_and_finish_are_noops():
     buf = io.StringIO()
     logger = StreamLogger(stream=buf)
@@ -55,6 +61,7 @@ def test_start_and_finish_are_noops():
     assert buf.getvalue() == ""
 
 
+@pytest.mark.unit
 def test_log_hyperparams_is_noop():
     buf = io.StringIO()
     logger = StreamLogger(stream=buf)

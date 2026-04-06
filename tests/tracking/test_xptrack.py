@@ -14,6 +14,7 @@ from xptrack.store.memory import InMemoryStore  # noqa: E402
 from rltrain.tracking.backends.xptrack import XptrackLogger  # noqa: E402
 
 
+@pytest.mark.unit
 def test_lifecycle_start_log_finish() -> None:
     """Given an XptrackLogger, when start/log/finish, then metrics appear in the store."""
     # Given
@@ -39,6 +40,7 @@ def test_lifecycle_start_log_finish() -> None:
     assert returns["step"].to_list() == [1, 2]
 
 
+@pytest.mark.unit
 def test_log_hyperparams_writes_tags() -> None:
     """Given a started run, when log_hyperparams, then tags are persisted."""
     # Given
@@ -58,6 +60,7 @@ def test_log_hyperparams_writes_tags() -> None:
     assert tags["algorithm"] == "PPO"
 
 
+@pytest.mark.unit
 def test_config_persisted_on_start() -> None:
     """Given config passed to start, then it appears in the run record."""
     # Given
@@ -74,6 +77,7 @@ def test_config_persisted_on_start() -> None:
     assert config["gamma"] == 0.99
 
 
+@pytest.mark.unit
 def test_run_dir_stored_as_tag() -> None:
     """Given a run_dir, then it is stored as a tag on the run."""
     # Given
@@ -90,6 +94,7 @@ def test_run_dir_stored_as_tag() -> None:
     assert tags["run_dir"] == "results/dir-test/run-42"
 
 
+@pytest.mark.unit
 def test_finish_idempotent() -> None:
     """Given a finished run, calling finish again is a no-op."""
     # Given
@@ -105,6 +110,7 @@ def test_finish_idempotent() -> None:
     assert logger._run is None
 
 
+@pytest.mark.unit
 def test_log_before_start_is_noop() -> None:
     """Given no active run, log_scalars and log_hyperparams are silent no-ops."""
     # Given
@@ -115,6 +121,7 @@ def test_log_before_start_is_noop() -> None:
     logger.log_hyperparams({"y": 2})
 
 
+@pytest.mark.unit
 def test_tracking_callback_integration() -> None:
     """Given an XptrackLogger wired to TrackingCallback, the full pipeline works."""
     from rltrain.tracking.callback import TrackingCallback
