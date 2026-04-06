@@ -33,11 +33,11 @@ graph LR
     end
 
     subgraph samgria
-        A -.->|"GradientTransform\napply + post_step"| GT["SAM / ASAM / LAMP"]
+        A -.->|"GradientTransform\napply + post_step"| GT["Transforms"]
     end
 
     subgraph toblox
-        B -.->|"FQN resolve"| NN["SkipMLP / RFF / mlp / cnn"]
+        B -.->|"FQN resolve"| NN["Network Modules"]
     end
 
     subgraph xptrack
@@ -143,7 +143,7 @@ pip install xptrack[ui]
 xptrack ui --store experiments.duckdb
 ```
 
-To log metrics to xptrack during training, add a `TrackingCallback` with `XptrackLogger` to your training script or JSON config. See [rltrain/tracking/README.md](../rltrain/tracking/README.md) for backend setup.
+To log metrics to xptrack during training, add a `TrackingCallback` with `XptrackLogger` to your training script or JSON config. See the [experiment tracking guide](../rltrain/tracking/README.md) for backend setup.
 
 ### Add gradient transforms or custom networks
 
