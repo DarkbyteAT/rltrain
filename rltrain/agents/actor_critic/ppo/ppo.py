@@ -52,10 +52,9 @@ class PPO(AdvantageAC):
                         approx_kl = self._approx_kl(mini_batch)
 
                 # Check epoch terminators
-                stop = any(t.should_stop(approx_kl) for t in self.epoch_terminators)
-                if stop:
-                    # Rollback if any triggered terminator requests it
-                    if any(t.rollback for t in self.epoch_terminators if t.should_stop(approx_kl)):
+                triggered = [t for t in self.epoch_terminators if t.should_stop(approx_kl)]
+                if triggered:
+                    if any(t.rollback for t in triggered):
                         vector_to_parameters(pre_epoch_params, self.model.parameters())
                     break
 
@@ -73,7 +72,7 @@ class PPO(AdvantageAC):
         """
         states, actions, _r, _ns, _d, policy_old, _adv, _ret = mini_batch
         action_dst = self.act(states)
-        old_dst = self.policy(policy_old.detach().squeeze())
+        old_dst = self.policy(policy_old)
         log_ratio = self.log_probs(action_dst, actions) - self.log_probs(old_dst, actions)
         ratio = log_ratio.exp()
         return float(((ratio - 1) - log_ratio).mean())
