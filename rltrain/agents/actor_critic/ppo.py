@@ -1,4 +1,3 @@
-import random
 import time
 
 import numpy as np
@@ -29,12 +28,12 @@ class PPO(AdvantageAC):
             epoch_time = -time.time()
             backtrack_params = parameters_to_vector(self.model.parameters()).detach()
             dataset = self.load()
-            batch_idx = np.arange(0, self.horizon, self.batch_size)
+            batch_idx = np.arange(0, len(dataset[0]), self.batch_size)
             stop = False
 
             for _ in range(self.num_epochs):
                 # Shuffle starting indices for mini-batches
-                random.shuffle(batch_idx)
+                np.random.shuffle(batch_idx)
 
                 for i in batch_idx:
                     self.learn(*[x[i : i + self.batch_size] for x in dataset])

@@ -1,10 +1,8 @@
 """Train PPO on CartPole-v1 with video recording until it hits a score of 500."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import torch as T
 
 import rltrain.utils.builders as mk
 from rltrain.callbacks.checkpoint import CheckpointCallback
@@ -13,19 +11,20 @@ from rltrain.callbacks.plot import PlotCallback
 from rltrain.callbacks.video_recorder import VideoRecorderCallback
 from rltrain.env import MDP
 from rltrain.trainer import Trainer
+from rltrain.utils.device import resolve_device
 
 
 # --- Config ---
 EXAMPLES_DIR = Path(__file__).parent
-AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo-sam.json").read_text())
+AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo.json").read_text())
 ENV_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "env.json").read_text())
-RUN_DIR = Path("results/cartpole_video_demo") / datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+RUN_DIR = Path("results/cartpole_video_demo") / datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
 NUM_STEPS = 500_000
 CHECKPOINT_STEPS = 25_000
 SEED = 42
 
 # --- Build ---
-agent = mk.agent(device=T.device("cpu"), **AGENT_CFG)
+agent = mk.agent(device=resolve_device("auto"), **AGENT_CFG)
 env = MDP(mk.env(**ENV_CFG), run_beta=0.05, log_freq=10, swap_channels=False)
 
 # --- Train with video recording ---

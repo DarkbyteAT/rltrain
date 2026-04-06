@@ -212,6 +212,26 @@ Networks are composed sequentially — each entry in the model list becomes a la
 
 Wrappers are applied in order. Any `gymnasium.Wrapper` subclass works, including custom wrappers.
 
+### Multi-Environment Training
+
+Train with multiple environment copies to collect more transitions per step:
+
+```json
+{
+    "id": "CartPole-v1",
+    "num_envs": 8,
+    "wrappers": []
+}
+```
+
+Or programmatically:
+
+```python
+env = MDP(mk.env(num_envs=8, **env_cfg), run_beta=0.05, log_freq=10, swap_channels=False)
+```
+
+Each `step()` call advances all `num_envs` environments simultaneously, returning a batch of transitions. See [Multi-Environment Training](docs/multi-env.md) for an in-depth guide, and [`examples/cartpole_multi_env_demo.py`](examples/cartpole_multi_env_demo.py) for a working example.
+
 ### Gradient Transforms (SAM / ASAM / LAMP)
 
 Add composable gradient transforms to any agent via the `grad_transforms` key:
