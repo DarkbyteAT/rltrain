@@ -74,7 +74,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), nn (network modules), transforms (provided by samgria: SAM/ASAM/LAMP), utils (builders, device, math helpers), and `trainer.py`
+- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), utils (builders, device, math helpers), and `trainer.py`. Network modules are provided by [toblox](https://github.com/DarkbyteAT/toblox). Gradient transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria).
 - **`examples/`** — experiment configs (env.json + agent variants per environment)
 - **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
 - **`run.py`** — thin CLI wrapper
@@ -92,7 +92,7 @@ PRs must not be merged with unresolved automated review comments. The Gemini rev
 
 ### FQN Builder System
 
-The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `rltrain.nn.SkipMLP`, not `rltrain.nn.d2rl.SkipMLP`).
+The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `toblox.SkipMLP` for nn modules, `rltrain.transforms.SAM` for gradient transforms).
 
 ### Agent Template Method
 

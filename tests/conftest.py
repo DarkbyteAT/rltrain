@@ -19,7 +19,7 @@ DQN_AGENT_CFG = {
     "eps_min": 0.01,
     "eps_decay": 0.995,
     "model": {
-        "qnet": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 2}],
+        "qnet": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 2}],
     },
     "opt": {
         "qnet": {"fqn": "torch.optim.Adam", "lr": 0.001},
@@ -42,8 +42,8 @@ CARTPOLE_AGENT_CFG = {
     "early_stop": 0.2,
     "eps_clip": 0.2,
     "model": {
-        "actor": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 2}],
-        "critic": [{"fqn": "rltrain.nn.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 1}],
+        "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 2}],
+        "critic": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [32, 32], "outputs": 1}],
     },
     "opt": {
         "actor": {"fqn": "torch.optim.Adam", "lr": 0.0003},

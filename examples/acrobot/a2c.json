@@ -9,7 +9,7 @@
   "model": {
     "actor": [
       {
-        "fqn": "rltrain.nn.SkipMLP",
+        "fqn": "toblox.SkipMLP",
         "inputs": 6,
         "hiddens": [
           256,
@@ -22,7 +22,7 @@
     ],
     "critic": [
       {
-        "fqn": "rltrain.nn.SkipMLP",
+        "fqn": "toblox.SkipMLP",
         "inputs": 6,
         "hiddens": [
           256,
