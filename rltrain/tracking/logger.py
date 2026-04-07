@@ -18,34 +18,26 @@ class MetricsLogger(Protocol):
     def start(self, config: dict[str, Any], run_dir: Path) -> None:
         """Called once at the beginning of training.
 
-        Parameters
-        ----------
-        `config`
-            Full experiment configuration dictionary.
-        `run_dir`
-            Filesystem path where the run's artefacts are stored.
+        Args:
+            config: Full experiment configuration dictionary.
+            run_dir: Filesystem path where the run's artefacts are stored.
         """
         ...
 
     def log_scalars(self, metrics: dict[str, float], step: int) -> None:
         """Log a batch of scalar metrics at a given step.
 
-        Parameters
-        ----------
-        `metrics`
-            Mapping of metric name to value.
-        `step`
-            The global step (typically episode number).
+        Args:
+            metrics: Mapping of metric name to value.
+            step: The global step (typically episode number).
         """
         ...
 
     def log_hyperparams(self, params: dict[str, Any]) -> None:
         """Record hyperparameters for the run.
 
-        Parameters
-        ----------
-        `params`
-            Arbitrary hyperparameter dictionary.
+        Args:
+            params: Arbitrary hyperparameter dictionary.
         """
         ...
 

@@ -23,11 +23,9 @@ log = logging.getLogger(__name__)
 class PlotCallback:
     """Renders per-episode and per-sample return SVG plots at each checkpoint.
 
-    Parameters
-    ----------
-    `num_steps` : `int`
-        Total number of training steps (used for x-axis scaling on the
-        per-sample plot).
+    Args:
+        num_steps: Total number of training steps (used for x-axis scaling on the
+            per-sample plot).
     """
 
     def __init__(self, *, num_steps: int) -> None:

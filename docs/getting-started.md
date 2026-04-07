@@ -2,7 +2,7 @@
 
 ## Installation
 
-=== "uv (recommended)"
+### uv (recommended)
 
     ```bash
     git clone https://github.com/DarkbyteAT/rltrain.git
@@ -10,7 +10,7 @@
     uv sync
     ```
 
-=== "pip"
+### pip
 
     ```bash
     git clone https://github.com/DarkbyteAT/rltrain.git

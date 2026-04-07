@@ -10,10 +10,8 @@ from typing import IO, Any
 class StreamLogger:
     """Writes human-readable metric lines to a text stream.
 
-    Parameters
-    ----------
-    `stream`
-        Writable text stream.  Defaults to ``sys.stdout``.
+    Args:
+        stream: Writable text stream.  Defaults to ``sys.stdout``.
     """
 
     def __init__(self, stream: IO[str] | None = None) -> None:

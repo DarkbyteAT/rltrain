@@ -20,12 +20,9 @@ class TrackingCallback:
     ``Callback.on_train_start`` receives ``(agent, env, run_dir)`` but not the
     raw configuration dictionary.
 
-    Parameters
-    ----------
-    `logger`
-        Any object satisfying the ``MetricsLogger`` protocol.
-    `config`
-        Full experiment configuration dictionary.
+    Args:
+        logger: Any object satisfying the ``MetricsLogger`` protocol.
+        config: Full experiment configuration dictionary.
     """
 
     def __init__(self, logger: MetricsLogger, config: dict[str, Any]) -> None:

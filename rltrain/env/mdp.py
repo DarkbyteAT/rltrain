@@ -43,14 +43,10 @@ class MDP:
     def preprocess_obs(self, obs: np.ndarray) -> np.ndarray:
         """Apply observation preprocessing (e.g. channel swap for image envs).
 
-        Parameters
-        ----------
-        `obs` : `np.ndarray`
-            Raw observation from the gymnasium environment.
+        Args:
+            obs: Raw observation from the gymnasium environment.
 
-        Returns
-        -------
-        `np.ndarray`
+        Returns:
             Preprocessed observation ready for the agent.
         """
         if self.swap_channels:
@@ -89,15 +85,11 @@ class MDP:
         the *new* episode.  Episode statistics are recorded per-env before the internal
         counters are zeroed.
 
-        Parameters
-        ----------
-        ``policy`` : ``(ndarray) -> ndarray``
-            Policy function for the agent(s), i.e. mapping states to actions.
+        Args:
+            policy: Policy function for the agent(s), i.e. mapping states to actions.
 
-        Returns
-        -------
-        ``Trajectory[ndarray]``
-            ``(state, action, reward, next_state, done)``
+        Returns:
+            ``Trajectory[ndarray]`` — ``(state, action, reward, next_state, done)``
         """
         state = self.state
         action = policy(state)

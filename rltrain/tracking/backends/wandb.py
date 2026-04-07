@@ -9,12 +9,9 @@ from typing import Any
 class WandbLogger:
     """Wraps ``wandb.init``, ``wandb.log``, ``wandb.config.update``, and ``wandb.finish``.
 
-    Parameters
-    ----------
-    `project`
-        W&B project name.
-    `wandb_kwargs`
-        Extra keyword arguments forwarded to ``wandb.init``.
+    Args:
+        project: W&B project name.
+        wandb_kwargs: Extra keyword arguments forwarded to ``wandb.init``.
     """
 
     def __init__(self, project: str, **wandb_kwargs: Any) -> None:

@@ -24,8 +24,26 @@ pip install -e ".[dev]"
 
 - **Python 3.11+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - **PyTorch aliases** — `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
-- **NumPy-style docstrings** with backtick-wrapped parameter names
+- **Google-style docstrings**
 - **Orthogonal weight init** on all linear and conv layers
+
+## Docstring Style
+
+Google-style docstrings with LaTeX math support:
+
+```python
+"""Compute the discounted return $G_t = \sum_{k=0}^{T} \gamma^k r_{t+k}$.
+
+Args:
+    rewards: Tensor of rewards per timestep.
+    gamma: Discount factor $\gamma \in [0, 1]$.
+
+Returns:
+    Discounted cumulative return.
+"""
+```
+
+Use `$...$` for inline math and `$$...$$` for display math in docstrings.
 
 ## Testing & Documentation
 

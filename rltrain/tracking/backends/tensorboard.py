@@ -9,11 +9,9 @@ from typing import Any
 class TensorBoardLogger:
     """Wraps ``torch.utils.tensorboard.SummaryWriter``.
 
-    Parameters
-    ----------
-    `log_dir`
-        Directory for TensorBoard event files.  If ``None``, defaults to
-        ``run_dir / "tb"`` when ``start`` is called.
+    Args:
+        log_dir: Directory for TensorBoard event files.  If ``None``, defaults to
+            ``run_dir / "tb"`` when ``start`` is called.
     """
 
     def __init__(self, log_dir: str | Path | None = None) -> None:

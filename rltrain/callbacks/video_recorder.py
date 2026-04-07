@@ -31,26 +31,19 @@ class VideoRecorderCallback:
     each checkpoint; optionally configure ``eval_trigger`` to record at
     specific training episodes instead.
 
-    Parameters
-    ----------
-    `env_fn` : `Callable[[], gym.Env] | None`
-        Zero-arg callable returning a ``gym.Env`` with ``render_mode="rgb_array"``.
-        If None, auto-detects from the training MDP's env spec. The auto-detection
-        creates a bare env without user-applied wrappers; pass ``env_fn`` explicitly
-        when wrappers matter for the recording.
-    `num_episodes` : `int`
-        Number of evaluation episodes to record at each trigger point.
-    `eval_trigger` : `Callable[[int], bool] | None`
-        When set, controls when eval rollouts happen during training based on the
-        training episode count. Rollouts trigger in ``on_episode_end`` instead of
-        the default ``on_checkpoint``. For example, ``lambda ep: ep % 50 == 0``
-        records every 50th training episode.
-    `video_length` : `int`
-        Maximum video length in frames per episode. 0 means record full episodes.
-    `name_prefix` : `str`
-        Filename prefix for recorded videos.
-    `fps` : `int`
-        Frames per second for the output video.
+    Args:
+        env_fn: Zero-arg callable returning a ``gym.Env`` with ``render_mode="rgb_array"``.
+            If None, auto-detects from the training MDP's env spec. The auto-detection
+            creates a bare env without user-applied wrappers; pass ``env_fn`` explicitly
+            when wrappers matter for the recording.
+        num_episodes: Number of evaluation episodes to record at each trigger point.
+        eval_trigger: When set, controls when eval rollouts happen during training based on the
+            training episode count. Rollouts trigger in ``on_episode_end`` instead of
+            the default ``on_checkpoint``. For example, ``lambda ep: ep % 50 == 0``
+            records every 50th training episode.
+        video_length: Maximum video length in frames per episode. 0 means record full episodes.
+        name_prefix: Filename prefix for recorded videos.
+        fps: Frames per second for the output video.
     """
 
     def __init__(
@@ -140,7 +133,7 @@ class VideoRecorderCallback:
             while not (terminated or truncated):
                 frame = self._eval_env.render()
                 if frame is not None:
-                    frames.append(frame)
+                    frames.append(np.asarray(frame))
                 if 0 < self._video_length <= len(frames):
                     break
                 processed = self._preprocess_obs(obs[np.newaxis, ...])

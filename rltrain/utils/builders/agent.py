@@ -14,22 +14,16 @@ def agent(
 ) -> Agent:
     """Build an `Agent` from a JSON config.
 
-    Parameters
-    ----------
-    `fqn`
-        Fully-qualified name of the agent class.
-    `model`
-        Mapping of network name to a list of module configs (each with an
-        ``"fqn"`` key plus constructor kwargs).
-    `opt`
-        Mapping of optimiser name to an optimiser config (``"fqn"`` key
-        plus constructor kwargs). Automatically resolved as deferred
-        (``functools.partial``) since optimisers need ``model.parameters()``
-        at ``setup()`` time, not at build time.
-    `device`
-        Torch device to place the agent on.
-    `**kwargs`
-        Extra keyword arguments forwarded to the agent constructor.
+    Args:
+        fqn: Fully-qualified name of the agent class.
+        model: Mapping of network name to a list of module configs (each with an
+            ``"fqn"`` key plus constructor kwargs).
+        opt: Mapping of optimiser name to an optimiser config (``"fqn"`` key
+            plus constructor kwargs). Automatically resolved as deferred
+            (``functools.partial``) since optimisers need ``model.parameters()``
+            at ``setup()`` time, not at build time.
+        device: Torch device to place the agent on.
+        **kwargs: Extra keyword arguments forwarded to the agent constructor.
     """
     agent_type = load(fqn)
 

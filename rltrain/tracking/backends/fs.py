@@ -10,13 +10,10 @@ from typing import Any
 class FSLogger:
     """Writes one JSON object per ``log_scalars`` call to a JSONL file.
 
-    Parameters
-    ----------
-    `url`
-        An fsspec-compatible URL (e.g. ``"s3://bucket/metrics.jsonl"``,
-        ``"file:///tmp/metrics.jsonl"``, or a plain local path).
-    `fs_kwargs`
-        Extra keyword arguments forwarded to ``fsspec.open``.
+    Args:
+        url: An fsspec-compatible URL (e.g. ``"s3://bucket/metrics.jsonl"``,
+            ``"file:///tmp/metrics.jsonl"``, or a plain local path).
+        fs_kwargs: Extra keyword arguments forwarded to ``fsspec.open``.
     """
 
     def __init__(self, url: str, **fs_kwargs: Any) -> None:

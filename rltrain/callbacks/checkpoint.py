@@ -20,11 +20,9 @@ log = logging.getLogger(__name__)
 class CheckpointCallback:
     """Saves model ``state_dict`` at each checkpoint and a final model at train end.
 
-    Parameters
-    ----------
-    `save_all` : `bool`
-        If True, save an intermediate checkpoint at every checkpoint interval.
-        If False, only save the final model at train end.
+    Args:
+        save_all: If True, save an intermediate checkpoint at every checkpoint interval.
+            If False, only save the final model at train end.
     """
 
     def __init__(self, *, save_all: bool = False) -> None:

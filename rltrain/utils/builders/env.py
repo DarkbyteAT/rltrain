@@ -26,18 +26,12 @@ def _make_env_fn(id: str, wrappers: list[dict[str, Any]], **kwargs) -> Callable[
 def env(id: str, wrappers: list[dict[str, Any]], num_envs: int = 1, **kwargs) -> vgym.VectorEnv:
     """Build a vectorised gymnasium environment.
 
-    Parameters
-    ----------
-    `id` : `str`
-        Gymnasium environment ID.
-    `wrappers` : `list[dict[str, Any]]`
-        Wrapper specifications, each with an ``fqn`` key and optional kwargs.
-    `num_envs` : `int`
-        Number of parallel environments in the ``SyncVectorEnv``.
+    Args:
+        id: Gymnasium environment ID.
+        wrappers: Wrapper specifications, each with an ``fqn`` key and optional kwargs.
+        num_envs: Number of parallel environments in the ``SyncVectorEnv``.
 
-    Returns
-    -------
-    `vgym.VectorEnv`
+    Returns:
         A vectorised environment wrapping ``num_envs`` copies.
     """
     return vgym.SyncVectorEnv([_make_env_fn(id, wrappers, **kwargs) for _ in range(num_envs)])

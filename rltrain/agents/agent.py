@@ -20,7 +20,7 @@ class Agent(abc.ABC):
     def __init__(
         self,
         *,
-        name: str = None,
+        name: str | None = None,
         model: nn.ModuleDict,
         opt: dict[str, Callable[[Iterable[nn.Parameter]], optim.Optimizer]],
         device: T.device,
@@ -59,14 +59,10 @@ class Agent(abc.ABC):
     def act(self, states: T.Tensor) -> dst.Distribution:
         """Returns the distribution representing the policy of the agent.
 
-        Parameters
-        ----------
-        ``states`` : ``Tensor``
-            A batch of states to obtain the policy over.
+        Args:
+            states: A batch of states to obtain the policy over.
 
-        Returns
-        -------
-        ``Distribution``
+        Returns:
             A PyTorch ``Distribution``, which abstracts the implementation of the policy.
         """
         pass
@@ -76,10 +72,8 @@ class Agent(abc.ABC):
         """Performs a single step in the given environment, using the policy of this agent. This
         also updates the agent's policy if its conditions for performing the update are satisfied.
 
-        Parameters
-        ----------
-        ``env`` : ``MDP``
-            The environment to perform the step in.
+        Args:
+            env: The environment to perform the step in.
         """
         pass
 
@@ -87,9 +81,7 @@ class Agent(abc.ABC):
     def load(self) -> tuple[T.Tensor, ...]:
         """Loads a batch of data from memory, with each datapoint as a batched ``Tensor``.
 
-        Returns
-        -------
-        ``tuple[Tensor, ...]``
+        Returns:
             A batch of data to train upon for the given agent, however, not loaded onto the training
             device to avoid memory usage when applying minibatches over training data.
         """
@@ -98,14 +90,10 @@ class Agent(abc.ABC):
     def loss(self, *batch: T.Tensor) -> T.Tensor:
         """Computes the loss function for the policy, over the given batch.
 
-        Parameters
-        ----------
-        ``*batch``
-            Batch of experiences to update the agent over.
+        Args:
+            *batch: Batch of experiences to update the agent over.
 
-        Returns
-        -------
-        ``Tensor``
+        Returns:
             A single-element tensor containing the mean loss over the given batch.
         """
         pass
@@ -126,10 +114,8 @@ class Agent(abc.ABC):
         3. Call ``descend()`` (optimiser step).
         4. Apply each ``GradientTransform.post_step()`` in order (post-descent).
 
-        Parameters
-        ----------
-        ``*batch``
-            Batch of experiences to update the agent over.
+        Args:
+            *batch: Batch of experiences to update the agent over.
         """
         loss = self.loss(*batch)
         loss.backward()

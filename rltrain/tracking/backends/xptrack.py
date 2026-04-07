@@ -12,15 +12,11 @@ class XptrackLogger:
     Creates an xptrack ``Run`` on ``start()`` and logs metrics/hyperparams
     through the Run's API.  The Run is finalised on ``finish()``.
 
-    Parameters
-    ----------
-    store : str | Store
-        Path to the DuckDB store file, ``":memory:"`` for testing, or a
-        pre-built ``xptrack.Store`` instance (e.g. ``InMemoryStore``).
-    project : str
-        xptrack project name.  Defaults to ``"rltrain"``.
-    hooks : list[Hook] | None
-        Optional xptrack lifecycle hooks forwarded to the ``Run``.
+    Args:
+        store: Path to the DuckDB store file, ``":memory:"`` for testing, or a
+            pre-built ``xptrack.Store`` instance (e.g. ``InMemoryStore``).
+        project: xptrack project name.  Defaults to ``"rltrain"``.
+        hooks: Optional xptrack lifecycle hooks forwarded to the ``Run``.
     """
 
     def __init__(

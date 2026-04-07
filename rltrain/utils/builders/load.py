@@ -1,16 +1,13 @@
 from collections.abc import Callable
 from functools import partial
-from types import ModuleType
 from typing import Any
 
 
-def load(fqn: str) -> ModuleType | type | Callable:
+def load(fqn: str) -> type | Callable[..., Any]:
     """Returns a module/class/function from the given fully-qualified name.
 
-    Parameters
-    ----------
-    `fqn`
-        The fully-qualified name of the module/class/function to import.
+    Args:
+        fqn: The fully-qualified name of the module/class/function to import.
     """
     parts = fqn.split(".")
     module = ".".join(parts[:-1])
@@ -34,14 +31,11 @@ def resolve(cfg: Any) -> Any:
     - **Dict without** ``"fqn"`` -- recurse into each value.
     - **List** -- recurse into each element.
 
-    Parameters
-    ----------
-    `cfg`
-        A JSON-deserialised config value (dict, list, or scalar).
+    Args:
+        cfg: A JSON-deserialised config value (dict, list, or scalar).
 
-    Returns
-    -------
-    The resolved object tree.
+    Returns:
+        The resolved object tree.
     """
     if isinstance(cfg, dict):
         if "fqn" in cfg:

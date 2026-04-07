@@ -59,12 +59,9 @@ class PPO(AdvantageAC):
     def check_kl(self, states: T.Tensor, policy_old: T.Tensor) -> bool:
         """Returns ``True`` if the updated policy's KL-divergence exceeds ``early_stop``.
 
-        Parameters
-        ----------
-        ``states`` : ``Tensor``
-            States over which the mean KL-divergence is to be compared over.
-        ``policy_old`` : ``Tensor``
-            Output layer of the original policy's actor network at the given states.
+        Args:
+            states: States over which the mean KL-divergence is to be compared over.
+            policy_old: Output layer of the original policy's actor network at the given states.
         """
 
         new_dst = self.act(states)
