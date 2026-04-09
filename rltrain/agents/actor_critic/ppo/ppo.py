@@ -73,8 +73,9 @@ class PPO(AdvantageAC):
                 # (matches Dossa et al.) and skip the check entirely when no
                 # terminators are configured.
                 if self.epoch_terminators:
+                    states, actions, _, _, _, policy_old, _, _ = mini_batch
                     with T.no_grad():
-                        approx_kl = self._approx_kl(mini_batch)
+                        approx_kl = self._approx_kl(states, actions, policy_old)
                     if self._handle_epoch_termination(approx_kl, pre_epoch_params):
                         break
 
@@ -107,21 +108,24 @@ class PPO(AdvantageAC):
             vector_to_parameters(pre_epoch_params, self.model.parameters())
         return True
 
-    def _approx_kl(self, mini_batch: list[T.Tensor]) -> float:
-        """Compute approximate KL divergence from the last mini-batch's log ratios.
+    def _approx_kl(self, states: T.Tensor, actions: T.Tensor, policy_old: T.Tensor) -> float:
+        """Compute approximate KL divergence between the current and old policy.
 
         Uses the improved estimator from Schulman's blog:
         ``mean((ratio - 1) - log(ratio))``, which is always non-negative.
 
+        Takes explicit arguments rather than unpacking a mini-batch tuple so the
+        helper is decoupled from the index layout that ``load`` happens to use.
+
         Args:
-            mini_batch: The standard PPO batch tuple ``(states, actions, rewards,
-                next_states, dones, policy_old, advantages, returns)``. Only
-                ``states``, ``actions``, and ``policy_old`` are used here.
+            states: Observations from the most recent mini-batch, shape ``(B, *obs)``.
+            actions: Actions taken at those observations, shape ``(B,)`` (discrete)
+                or ``(B, *act)`` (continuous).
+            policy_old: The actor's output on ``states`` at the time of collection.
 
         Returns:
             Scalar approximate KL divergence between the current and old policy.
         """
-        states, actions, _r, _ns, _d, policy_old, _adv, _ret = mini_batch
         action_dst = self.act(states)
         old_dst = self.policy(policy_old)
         log_ratio = self.log_probs(action_dst, actions) - self.log_probs(old_dst, actions)

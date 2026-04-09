@@ -156,9 +156,9 @@ def _install_approx_kl_spy(agent: PPO) -> list[int]:
     counter = [0]
     original = agent._approx_kl
 
-    def spy(mini_batch):
+    def spy(states, actions, policy_old):
         counter[0] += 1
-        return original(mini_batch)
+        return original(states, actions, policy_old)
 
     agent._approx_kl = spy  # type: ignore[method-assign]
     return counter
