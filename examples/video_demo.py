@@ -7,7 +7,7 @@ Usage:
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -53,7 +53,7 @@ def main(
     env_cfg = json.loads(env_str)
 
     dev = resolve_device(device)
-    run_dir = output / datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+    run_dir = output / datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
 
     rl_agent = mk.agent(device=dev, **agent_cfg)
     mdp = MDP(mk.env(**env_cfg), run_beta=0.05, log_freq=10, swap_channels=False)

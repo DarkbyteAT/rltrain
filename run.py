@@ -11,7 +11,7 @@ import logging
 import os
 import sys
 import time
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -32,7 +32,9 @@ LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 app = typer.Typer(add_completion=False)
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
+    """Log level choices for the CLI ``--log-level`` option."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
