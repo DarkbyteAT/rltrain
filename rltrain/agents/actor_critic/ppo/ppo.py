@@ -47,22 +47,22 @@ class PPO(AdvantageAC):
 
             for _ in range(self.num_epochs):
                 np.random.shuffle(batch_idx)
-                approx_kl = 0.0
 
                 for i in batch_idx:
                     mini_batch = [x[i : i + self.batch_size] for x in dataset]
                     self.learn(*mini_batch)
 
-                    # Approximate KL from log ratios — cheap, no extra forward pass
+                # Epoch terminator check — compute approx KL once per epoch from
+                # the final mini-batch, not once per mini-batch (matches Dossa et
+                # al. and skips the work entirely when no terminators are set).
+                if self.epoch_terminators:
                     with T.no_grad():
                         approx_kl = self._approx_kl(mini_batch)
-
-                # Check epoch terminators
-                triggered = [t for t in self.epoch_terminators if t.should_stop(approx_kl)]
-                if triggered:
-                    if any(t.rollback for t in triggered):
-                        vector_to_parameters(pre_epoch_params, self.model.parameters())
-                    break
+                    triggered = [t for t in self.epoch_terminators if t.should_stop(approx_kl)]
+                    if triggered:
+                        if any(t.rollback for t in triggered):
+                            vector_to_parameters(pre_epoch_params, self.model.parameters())
+                        break
 
                 pre_epoch_params = parameters_to_vector(self.model.parameters()).detach()
 

@@ -1,8 +1,14 @@
 """Unit tests for EpochTerminator protocol and KLEarlyStop."""
 
+from typing import cast
+
+import numpy as np
 import pytest
 
-from rltrain.agents.actor_critic import EpochTerminator, KLEarlyStop
+from rltrain.agents.actor_critic import PPO, EpochTerminator, KLEarlyStop
+from rltrain.env import MDP
+from rltrain.env.trajectory import Trajectory
+from tests.agents.conftest import EPS_CLIP, LAMBDA_GAE, make_ac_agent
 
 
 # --- KLEarlyStop ---
@@ -96,3 +102,109 @@ def test_incomplete_class_does_not_satisfy_protocol():
 
     # Then it should not satisfy the protocol
     assert not isinstance(MissingRollback(), EpochTerminator)
+
+
+# --- PPO epoch loop integration ---
+#
+# These tests catch the lie of "KL is computed once per epoch, not once per
+# mini-batch". They instrument PPO's step() loop with a spy on _approx_kl and
+# assert the call count matches the claim. If a regression reintroduces the
+# per-mini-batch call pattern, call_count jumps from num_epochs to
+# num_epochs × num_minibatches and the test fails loudly.
+
+
+class _StubMDP:
+    """Minimal MDP stand-in that yields one trivial transition per ``step`` call."""
+
+    @staticmethod
+    def _trajectory() -> Trajectory:
+        return Trajectory(
+            state=np.zeros((1, 2), dtype=np.float32),
+            action=np.zeros(1, dtype=np.int64),
+            reward=np.zeros(1, dtype=np.float32),
+            next_state=np.zeros((1, 2), dtype=np.float32),
+            done=np.zeros(1, dtype=bool),
+        )
+
+    def step(self, _agent):
+        return self._trajectory()
+
+
+def _make_ppo(num_epochs: int, horizon: int, batch_size: int, **extra) -> PPO:
+    return make_ac_agent(
+        PPO,
+        horizon=horizon,
+        lambda_gae=LAMBDA_GAE,
+        num_epochs=num_epochs,
+        batch_size=batch_size,
+        eps_clip=EPS_CLIP,
+        **extra,
+    )
+
+
+def _prefill_memory(agent: PPO, n: int) -> None:
+    for _ in range(n):
+        agent.memory.append(_StubMDP._trajectory())
+
+
+def _install_approx_kl_spy(agent: PPO) -> list[int]:
+    """Replace ``agent._approx_kl`` with a counter-delegating wrapper.
+
+    Returns a one-element list that will hold the running call count, so
+    callers can read it after ``step()`` returns.
+    """
+    counter = [0]
+    original = agent._approx_kl
+
+    def spy(mini_batch):
+        counter[0] += 1
+        return original(mini_batch)
+
+    agent._approx_kl = spy  # type: ignore[method-assign]
+    return counter
+
+
+@pytest.mark.unit
+def test_approx_kl_called_once_per_epoch_not_once_per_minibatch():
+    # Given a PPO agent with 2 epochs, 3 mini-batches per epoch, and a harmless terminator
+    horizon, batch_size, num_epochs = 6, 2, 2
+    agent = _make_ppo(
+        num_epochs=num_epochs,
+        horizon=horizon,
+        batch_size=batch_size,
+        # target_kl=1e9 guarantees the terminator never triggers, so all epochs run
+        epoch_terminators=[KLEarlyStop(target_kl=1e9, rollback=False)],
+    )
+    _prefill_memory(agent, horizon - 1)
+    counter = _install_approx_kl_spy(agent)
+
+    # When step() triggers the full epoch loop (adds one trajectory, hits the horizon)
+    agent.step(cast(MDP, _StubMDP()))
+
+    # Then _approx_kl is called exactly once per epoch, not once per mini-batch.
+    # Per-mini-batch would be num_epochs * 3 = 6; per-epoch is num_epochs = 2.
+    assert counter[0] == num_epochs, (
+        f"Expected {num_epochs} _approx_kl calls (once per epoch), got {counter[0]} "
+        f"(per-mini-batch regression would give {num_epochs * 3})"
+    )
+
+
+@pytest.mark.unit
+def test_approx_kl_not_called_when_no_epoch_terminators():
+    # Given a PPO agent with no epoch terminators (the default, vanilla PPO)
+    horizon, batch_size, num_epochs = 6, 2, 2
+    agent = _make_ppo(
+        num_epochs=num_epochs,
+        horizon=horizon,
+        batch_size=batch_size,
+        epoch_terminators=(),
+    )
+    _prefill_memory(agent, horizon - 1)
+    counter = _install_approx_kl_spy(agent)
+
+    # When step() triggers the full epoch loop
+    agent.step(cast(MDP, _StubMDP()))
+
+    # Then _approx_kl is never called — there is nothing to check KL against,
+    # so computing it would be pure waste. Vanilla PPO pays no KL overhead.
+    assert counter[0] == 0, f"Expected 0 _approx_kl calls with no terminators, got {counter[0]}"
