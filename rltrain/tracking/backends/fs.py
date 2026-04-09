@@ -17,6 +17,12 @@ class FSLogger:
     """
 
     def __init__(self, url: str, **fs_kwargs: Any) -> None:
+        """Validate that fsspec is installed and store the target URL.
+
+        Args:
+            url: fsspec-compatible URL for the output JSONL file.
+            **fs_kwargs: Extra keyword arguments forwarded to ``fsspec.open``.
+        """
         try:
             import fsspec as _fsspec  # noqa: F401
         except ImportError as exc:
@@ -27,21 +33,26 @@ class FSLogger:
         self._fh: Any | None = None
 
     def start(self, config: dict[str, Any], run_dir: Path) -> None:
+        """Open the JSONL file via fsspec, creating it if it does not exist."""
         import fsspec
 
         self._file = fsspec.open(self._url, mode="w", **self._fs_kwargs)
         self._fh = self._file.open()
 
     def log_scalars(self, metrics: dict[str, float], step: int) -> None:
+        """Append a JSONL record of ``{"step": step, **metrics}`` to the file."""
         if self._fh is None:
             return
         record = {"step": step, **metrics}
         self._fh.write(json.dumps(record) + "\n")
         self._fh.flush()
 
-    def log_hyperparams(self, params: dict[str, Any]) -> None: ...
+    def log_hyperparams(self, params: dict[str, Any]) -> None:
+        """See ``MetricsLogger.log_hyperparams``; not implemented for JSONL."""
+        ...
 
     def finish(self) -> None:
+        """Close the fsspec file handle and flush any buffered data."""
         if self._fh is not None:
             self._fh.close()
             self._file = None

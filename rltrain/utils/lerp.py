@@ -1,3 +1,5 @@
+"""Linear interpolation utility for scalar and tensor values."""
+
 from typing import TypeVar
 
 import torch as T

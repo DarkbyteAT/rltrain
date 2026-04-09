@@ -25,6 +25,7 @@ class XptrackLogger:
         project: str = "rltrain",
         hooks: list[Any] | None = None,
     ) -> None:
+        """Validate that xptrack is installed and store the store/project configuration."""
         try:
             import xptrack  # noqa: F401
         except ImportError as exc:

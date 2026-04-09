@@ -1,3 +1,5 @@
+"""Builder for constructing Agent instances from JSON config dicts."""
+
 from types import ModuleType
 
 import torch as T

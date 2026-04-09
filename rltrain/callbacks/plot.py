@@ -29,22 +29,32 @@ class PlotCallback:
     """
 
     def __init__(self, *, num_steps: int) -> None:
+        """Initialise the callback with the total step count for x-axis scaling."""
         self._num_steps = num_steps
         self._run_dir: Path | None = None
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Record the run directory so plots can be written there."""
         self._run_dir = run_dir
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None: ...
+    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
+        """See ``Callback.on_step``."""
+        ...
+
+    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        """See ``Callback.on_episode_end``."""
+        ...
 
     def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Render and save per-episode and per-sample SVG plots."""
         if self._run_dir is None or env.episode_count == 0:
             return
         self._plot_episodes(agent, env)
         self._plot_samples(agent, env)
 
-    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None: ...
+    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """See ``Callback.on_train_end``."""
+        ...
 
     def _plot_episodes(self, agent: Agent, env: MDP) -> None:
         """Render return-over-episodes SVG."""

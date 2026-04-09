@@ -1,3 +1,5 @@
+"""MDP wrapper around ``gymnasium.vector.SyncVectorEnv`` with episode tracking."""
+
 import logging
 from collections.abc import Callable
 
@@ -9,8 +11,7 @@ from rltrain.utils import lerp
 
 
 class MDP:
-    """Simple wrapper around the ``gymnasium`` framework that automatically resets environments, as
-    well as tracking several statistics, and handling (minimal) input-preprocessing.
+    """Gymnasium wrapper providing automatic resets, episode statistics, and observation preprocessing.
 
     Supports both single-env (``num_envs=1``) and multi-env vectorised operation.
     ``SyncVectorEnv`` auto-resets done environments, so the MDP only calls ``reset()``
@@ -33,6 +34,14 @@ class MDP:
     _reward_sums: np.ndarray
 
     def __init__(self, env: vgym.VectorEnv, run_beta: float, log_freq: int, swap_channels: bool):
+        """Store the vectorised env and configuration; call ``setup()`` before training.
+
+        Args:
+            env: A ``SyncVectorEnv`` wrapping one or more gymnasium environments.
+            run_beta: EMA beta for the running average return.
+            log_freq: Log episode stats every this many episodes.
+            swap_channels: If True, transpose image observations to channel-first format.
+        """
         self.log = logging.getLogger("Environment")
         self.env = env
         self.num_envs: int = env.num_envs
@@ -54,6 +63,11 @@ class MDP:
         return obs
 
     def setup(self, seed: int | None):
+        """Reset and initialise all episode statistics; must be called before training.
+
+        Args:
+            seed: RNG seed forwarded to ``env.reset()``. Pass ``None`` for unseeded runs.
+        """
         self.seed = seed
         self.target_reward = self.env.envs[0].spec.reward_threshold  # type: ignore[reportAttributeAccessIssue]  # gymnasium stub gap: SyncVectorEnv.envs exists at runtime
         self.log.info(f"{self.env.envs[0].observation_space.shape=}")  # type: ignore[reportAttributeAccessIssue]

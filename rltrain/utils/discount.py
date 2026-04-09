@@ -1,3 +1,5 @@
+"""Discounted cumulative sum utility for computing returns and GAE."""
+
 import torch as T
 
 
@@ -13,7 +15,6 @@ def discount(xs: T.Tensor, dones: T.Tensor, factor: float) -> T.Tensor:
     Returns:
         1D-array of discounted rewards for each timestep.
     """
-
     xs_disc = T.zeros_like(xs)
     acc = T.zeros(1).to(xs.device)
 

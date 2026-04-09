@@ -47,6 +47,7 @@ class Trainer:
         callbacks: list[Callback] | None = None,
         seed: int | None = None,
     ) -> None:
+        """Store training configuration and apply default callbacks when none are provided."""
         self.agent = agent
         self.env = env
         self.num_steps = num_steps

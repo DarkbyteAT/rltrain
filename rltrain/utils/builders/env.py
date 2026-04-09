@@ -1,3 +1,5 @@
+"""Builder functions for constructing gymnasium environments from JSON config dicts."""
+
 from collections.abc import Callable
 from types import ModuleType
 from typing import Any
@@ -9,6 +11,7 @@ from rltrain.utils.builders.load import load
 
 
 def wrap(fqn: str, env_fn: Callable[[], gym.Env], **kwargs) -> Callable[[], gym.Env]:
+    """Wrap an env factory with a gymnasium wrapper resolved by FQN."""
     wrapper_type = load(fqn)
     if isinstance(wrapper_type, ModuleType):
         raise TypeError(f"fqn={fqn!r} resolved to a module, expected a gym.Wrapper class")
@@ -33,6 +36,7 @@ def env(id: str, wrappers: list[dict[str, Any]], num_envs: int = 1, **kwargs) ->
         id: Gymnasium environment ID.
         wrappers: Wrapper specifications, each with an ``fqn`` key and optional kwargs.
         num_envs: Number of parallel environments in the ``SyncVectorEnv``.
+        **kwargs: Extra keyword arguments forwarded to ``gym.make``.
 
     Returns:
         A vectorised environment wrapping ``num_envs`` copies.

@@ -1,9 +1,12 @@
+"""Tensor whitening utility — zero mean, unit variance."""
+
 import torch as T
 
 
 def center(x: T.Tensor) -> T.Tensor:
-    """Centers a tensor of values by subtracting its mean and dividing by its standard deviation +
-    a very-small value for numerical stability.
+    """Centers a tensor by subtracting the mean and dividing by std + epsilon.
+
+    A very-small epsilon is added to the standard deviation for numerical stability.
 
     Args:
         x: The tensor of values to normalise.

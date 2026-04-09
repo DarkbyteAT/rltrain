@@ -1,3 +1,5 @@
+"""FQN loader and recursive config resolver for the builder system."""
+
 from collections.abc import Callable
 from functools import partial
 from types import ModuleType

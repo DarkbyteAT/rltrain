@@ -56,6 +56,7 @@ class VideoRecorderCallback:
         name_prefix: str = "rl-video",
         fps: int = 30,
     ) -> None:
+        """Initialise the callback; the eval env is created in ``on_train_start``."""
         self._env_fn = env_fn
         self._num_episodes = num_episodes
         self._eval_trigger = eval_trigger
@@ -69,6 +70,7 @@ class VideoRecorderCallback:
         self._enabled: bool = True
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Create the eval env and the ``videos/`` output directory."""
         self._preprocess_obs = env.preprocess_obs
 
         try:
@@ -92,17 +94,22 @@ class VideoRecorderCallback:
         self._video_dir.mkdir(parents=True, exist_ok=True)
         log.info("VideoRecorderCallback: recording to '%s'", self._video_dir)
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
+    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
+        """See ``Callback.on_step``."""
+        ...
 
     def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        """Trigger eval rollouts when ``eval_trigger`` fires for this episode."""
         if self._eval_trigger is not None and self._eval_trigger(episode):
             self._run_eval_rollouts(agent, env.total_steps)
 
     def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Trigger eval rollouts at each checkpoint when no ``eval_trigger`` is set."""
         if self._eval_trigger is None:
             self._run_eval_rollouts(agent, env.total_steps)
 
     def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Close the eval env when training finishes."""
         if self._eval_env is not None:
             self._eval_env.close()
             log.info("VideoRecorderCallback: eval env closed")
