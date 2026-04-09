@@ -25,10 +25,12 @@ class EpochTerminator(Protocol):
     def should_stop(self, approx_kl: float) -> bool:
         """Return ``True`` if the epoch loop should terminate.
 
-        Parameters
-        ----------
-        `approx_kl` : `float`
-            Approximate KL divergence between the collection policy and the
-            current policy, computed from the last mini-batch's log ratios.
+        Args:
+            approx_kl: Approximate KL divergence between the collection policy
+                and the current policy, computed from the last mini-batch's
+                log ratios.
+
+        Returns:
+            ``True`` if the caller should stop iterating; ``False`` otherwise.
         """
         ...
