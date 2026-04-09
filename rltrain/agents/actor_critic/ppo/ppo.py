@@ -1,3 +1,5 @@
+"""Proximal Policy Optimisation (PPO) — clipped surrogate with mini-batch epochs."""
+
 import time
 from collections.abc import Sequence
 
@@ -12,6 +14,8 @@ from rltrain.utils import center, discount
 
 
 class PPO(AdvantageAC):
+    """PPO agent — clipped surrogate objective with mini-batch epochs and KL early stop."""
+
     name: str = "Proximal Policy Optimisation"
 
     def __init__(
@@ -23,6 +27,7 @@ class PPO(AdvantageAC):
         epoch_terminators: Sequence[EpochTerminator] = (),
         **kwargs,
     ):
+        """Initialize PPO with mini-batch epoch, clipping, and terminator configuration."""
         super().__init__(**kwargs)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -30,6 +35,7 @@ class PPO(AdvantageAC):
         self.epoch_terminators = epoch_terminators
 
     def step(self, env: MDP):
+        """Collect a transition, run mini-batch epochs with KL backtracking when the horizon fills."""
         trajectory = env.step(self)
         self.memory.append(trajectory)
 
@@ -69,6 +75,14 @@ class PPO(AdvantageAC):
 
         Uses the improved estimator from Schulman's blog:
         ``mean((ratio - 1) - log(ratio))``, which is always non-negative.
+
+        Args:
+            mini_batch: The standard PPO batch tuple ``(states, actions, rewards,
+                next_states, dones, policy_old, advantages, returns)``. Only
+                ``states``, ``actions``, and ``policy_old`` are used here.
+
+        Returns:
+            Scalar approximate KL divergence between the current and old policy.
         """
         states, actions, _r, _ns, _d, policy_old, _adv, _ret = mini_batch
         action_dst = self.act(states)
@@ -78,6 +92,7 @@ class PPO(AdvantageAC):
         return float(((ratio - 1) - log_ratio).mean())
 
     def load(self) -> tuple[T.Tensor, ...]:
+        """Return the standard batch plus pre-computed policy outputs, advantages, and returns."""
         states, actions, rewards, next_states, dones = super().load()
 
         # Compute advantages before epochs, gives value function a stationary target
@@ -99,6 +114,7 @@ class PPO(AdvantageAC):
         return states, actions, rewards, next_states, dones, policy_old, advantages, returns
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute the clipped PPO surrogate loss with critic and entropy terms."""
         states, actions, rewards, next_states, dones, policy_old, advantages, returns = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)

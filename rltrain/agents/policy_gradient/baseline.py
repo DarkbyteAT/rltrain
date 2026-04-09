@@ -1,3 +1,5 @@
+"""REINFORCE with a learned value baseline."""
+
 import torch as T
 from torch.nn.utils import clip_grad_norm_
 
@@ -6,18 +8,23 @@ from rltrain.utils import center, discount
 
 
 class REINFORCE(VanillaPG):
+    """Policy-gradient agent with a learned value baseline for variance reduction."""
+
     name: str = "REINFORCE"
 
     def __init__(self, beta_critic: float, **kwargs):
+        """Initialize with a ``beta_critic`` coefficient for the critic loss term."""
         super().__init__(**kwargs)
         self.beta_critic = beta_critic
 
     def setup(self):
+        """Initialise the actor (via parent) plus the critic network and optimiser."""
         super().setup()
         self.critic = self.model["critic"].to(self.device)
         self.critic_opt = self.opt["critic"](self.critic.parameters())
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute the baselined policy-gradient loss plus critic and entropy terms."""
         states, actions, rewards, _, dones = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)
@@ -41,6 +48,7 @@ class REINFORCE(VanillaPG):
         return actor_loss + critic_loss + entropy_loss
 
     def descend(self):
+        """Step the actor and critic optimisers, applying gradient clipping if configured."""
         if self.grad_clip is not None:
             clip_grad_norm_(self.model.parameters(), self.grad_clip)
 

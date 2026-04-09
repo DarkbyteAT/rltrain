@@ -18,14 +18,14 @@ classifiers = [
 ]
 dependencies = [
     "torch>=2.0",
-    "toblox @ git+https://github.com/DarkbyteAT/toblox.git",
+    "toblox",
     "numpy",
     "matplotlib",
     "pandas",
     "seaborn",
     "gymnasium",
     "typer",
-    "samgria @ git+https://github.com/DarkbyteAT/samgria.git",
+    "samgria",
 ]
 
 [project.optional-dependencies]
@@ -57,6 +57,10 @@ docs = [
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv.sources]
+samgria = { git = "https://github.com/DarkbyteAT/samgria" }
+toblox = { git = "https://github.com/DarkbyteAT/toblox" }
 
 [build-system]
 requires = ["hatchling"]

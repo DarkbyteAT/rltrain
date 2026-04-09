@@ -26,22 +26,14 @@ class Trainer:
     The Trainer owns ONLY the training loop and callback orchestration.
     It does NOT own arg parsing, config loading, or object instantiation.
 
-    Parameters
-    ----------
-    `agent` : `Agent`
-        The RL agent to train.
-    `env` : `MDP`
-        The environment to train in.
-    `num_steps` : `int`
-        Total number of environment steps to train for.
-    `checkpoint_steps` : `int`
-        Number of steps between checkpoint callbacks.
-    `run_dir` : `Path`
-        Directory for saving outputs (models, metrics, plots).
-    `callbacks` : `list[Callback] | None`
-        List of callbacks. Defaults to CSV + Plot + Checkpoint if None.
-    `seed` : `int | None`
-        RNG seed for reproducibility. If None, no seeding is performed.
+    Args:
+        agent: The RL agent to train.
+        env: The environment to train in.
+        num_steps: Total number of environment steps to train for.
+        checkpoint_steps: Number of steps between checkpoint callbacks.
+        run_dir: Directory for saving outputs (models, metrics, plots).
+        callbacks: List of callbacks. Defaults to CSV + Plot + Checkpoint if None.
+        seed: RNG seed for reproducibility. If None, no seeding is performed.
     """
 
     def __init__(
@@ -55,6 +47,7 @@ class Trainer:
         callbacks: list[Callback] | None = None,
         seed: int | None = None,
     ) -> None:
+        """Store training configuration and apply default callbacks when none are provided."""
         self.agent = agent
         self.env = env
         self.num_steps = num_steps

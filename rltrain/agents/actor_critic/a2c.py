@@ -1,3 +1,5 @@
+"""Advantage Actor-Critic (A2C) — GAE with horizon-based collection."""
+
 import time
 
 import torch as T
@@ -8,14 +10,18 @@ from rltrain.utils import center, discount
 
 
 class AdvantageAC(VanillaAC):
+    """A2C agent — GAE-based advantages over fixed-horizon rollouts."""
+
     name: str = "Advantage Actor-Critic"
 
     def __init__(self, *, horizon: int, lambda_gae: float, **kwargs):
+        """Initialize A2C with a rollout ``horizon`` and GAE ``lambda_gae``."""
         super().__init__(**kwargs)
         self.horizon = horizon
         self.lambda_gae = lambda_gae
 
     def step(self, env: MDP):
+        """Collect a transition, learn once the horizon fills."""
         trajectory = env.step(self)
         self.memory.append(trajectory)
 
@@ -28,6 +34,7 @@ class AdvantageAC(VanillaAC):
             self.memory.clear()
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute the actor, critic, and entropy losses with GAE advantages."""
         states, actions, rewards, next_states, dones = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)

@@ -67,7 +67,7 @@ Before working in a module, read its README for architecture, protocols, and how
 
 - Python 3.11+ — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
 - PyTorch aliases: `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
-- NumPy-style docstrings
+- Google-style docstrings
 
 ## Common Pitfalls
 
