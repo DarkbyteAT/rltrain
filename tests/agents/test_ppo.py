@@ -13,7 +13,7 @@ and the loss equals the standard A2C policy gradient.
 import pytest
 import torch as T
 
-from rltrain.agents.actor_critic import PPO
+from rltrain.agents.actor_critic import PPO, KLEarlyStop
 from rltrain.utils import discount
 from tests.agents.conftest import EPS_CLIP, GAMMA, LAMBDA_GAE, make_ac_agent
 
@@ -30,7 +30,7 @@ def test_ppo_loss(batch_5):
         lambda_gae=LAMBDA_GAE,
         num_epochs=4,
         batch_size=32,
-        early_stop=0.2,
+        epoch_terminators=[KLEarlyStop(target_kl=0.2, rollback=True)],
         eps_clip=EPS_CLIP,
     )
 

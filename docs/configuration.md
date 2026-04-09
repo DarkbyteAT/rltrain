@@ -28,7 +28,9 @@ An agent config file has three sections: algorithm hyperparameters, model archit
     "lambda_gae": 0.95,
     "num_epochs": 8,
     "batch_size": 128,
-    "early_stop": 0.05,
+    "epoch_terminators": [
+        {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+    ],
     "eps_clip": 0.2,
     "model": {
         "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
