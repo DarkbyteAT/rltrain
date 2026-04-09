@@ -133,6 +133,9 @@ class VideoRecorderCallback:
             while not (terminated or truncated):
                 frame = self._eval_env.render()
                 if frame is not None:
+                    # np.asarray narrows Env.render()'s RenderFrame | list[RenderFrame]
+                    # union to ndarray. gym rgb_array envs already return ndarray;
+                    # this is a no-op at runtime for well-behaved envs.
                     frames.append(np.asarray(frame))
                 if 0 < self._video_length <= len(frames):
                     break

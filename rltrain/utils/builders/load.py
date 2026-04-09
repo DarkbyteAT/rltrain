@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from functools import partial
+from types import ModuleType
 from typing import Any
 
 
-def load(fqn: str) -> type | Callable[..., Any]:
+def load(fqn: str) -> ModuleType | type | Callable[..., Any]:
     """Returns a module/class/function from the given fully-qualified name.
 
     Args:
@@ -44,6 +45,8 @@ def resolve(cfg: Any) -> Any:
                 cls = load(fqn)
             except (ModuleNotFoundError, AttributeError) as e:
                 raise type(e)(f"Failed to resolve fqn={fqn!r}: {e}") from e
+            if isinstance(cls, ModuleType):
+                raise TypeError(f"fqn={fqn!r} resolved to a module, expected a class or callable")
             deferred = cfg.get("deferred", False)
             kwargs = {k: resolve(v) for k, v in cfg.items() if k not in ("fqn", "deferred")}
             if deferred:

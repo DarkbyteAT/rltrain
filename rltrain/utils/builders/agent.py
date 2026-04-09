@@ -1,3 +1,5 @@
+from types import ModuleType
+
 import torch as T
 import torch.nn as nn
 
@@ -26,6 +28,8 @@ def agent(
         **kwargs: Extra keyword arguments forwarded to the agent constructor.
     """
     agent_type = load(fqn)
+    if isinstance(agent_type, ModuleType):
+        raise TypeError(f"fqn={fqn!r} resolved to a module, expected an Agent class")
 
     _model = nn.ModuleDict({name: nn.Sequential(*resolve(modules)) for name, modules in model.items()})
 

@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from types import ModuleType
 from typing import Any
 
 import gymnasium as gym
@@ -9,6 +10,8 @@ from rltrain.utils.builders.load import load
 
 def wrap(fqn: str, env_fn: Callable[[], gym.Env], **kwargs) -> Callable[[], gym.Env]:
     wrapper_type = load(fqn)
+    if isinstance(wrapper_type, ModuleType):
+        raise TypeError(f"fqn={fqn!r} resolved to a module, expected a gym.Wrapper class")
     return lambda: wrapper_type(env_fn(), **kwargs)
 
 

@@ -32,7 +32,7 @@ pip install -e ".[dev]"
 Google-style docstrings with LaTeX math support:
 
 ```python
-"""Compute the discounted return $G_t = \sum_{k=0}^{T} \gamma^k r_{t+k}$.
+r"""Compute the discounted return $G_t = \sum_{k=0}^{T} \gamma^k r_{t+k}$.
 
 Args:
     rewards: Tensor of rewards per timestep.
@@ -43,7 +43,7 @@ Returns:
 """
 ```
 
-Use `$...$` for inline math and `$$...$$` for display math in docstrings.
+Use `$...$` for inline math and `$$...$$` for display math in docstrings. Prefix docstrings containing LaTeX backslash sequences with `r"""..."""` to avoid `SyntaxWarning: invalid escape sequence` on Python 3.12+.
 
 ## Testing & Documentation
 
