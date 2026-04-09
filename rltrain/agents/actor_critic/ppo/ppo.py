@@ -73,9 +73,11 @@ class PPO(AdvantageAC):
                 # (matches Dossa et al.) and skip the check entirely when no
                 # terminators are configured.
                 if self.epoch_terminators:
-                    states, actions, _, _, _, policy_old, _, _ = mini_batch
+                    # load() returns (states, actions, rewards, next_states,
+                    # dones, policy_old, advantages, returns); only indices
+                    # 0, 1, and 5 are needed for the KL estimator.
                     with T.no_grad():
-                        approx_kl = self._approx_kl(states, actions, policy_old)
+                        approx_kl = self._approx_kl(mini_batch[0], mini_batch[1], mini_batch[5])
                     if self._handle_epoch_termination(approx_kl, pre_epoch_params):
                         break
 
