@@ -12,15 +12,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: lint
-            command: ruff check rltrain/ && ruff format --check rltrain/
-          - name: typecheck
-            command: pyright rltrain/
-          - name: test
-            command: pytest tests/ -v
+        target: [format-check, lint, typecheck, test]
 
-    name: ${{ matrix.name }}
+    name: ${{ matrix.target }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,5 +28,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      - name: ${{ matrix.name }}
-        run: uv run ${{ matrix.command }}
+      - name: Run ${{ matrix.target }}
+        env:
+          TARGET: ${{ matrix.target }}
+        run: make "$TARGET"
