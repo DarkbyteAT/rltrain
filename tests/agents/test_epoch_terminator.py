@@ -190,6 +190,35 @@ def test_approx_kl_called_once_per_epoch_not_once_per_minibatch():
 
 
 @pytest.mark.unit
+def test_ppo_rejects_batch_size_larger_than_horizon():
+    # Given a PPO configuration where batch_size exceeds horizon
+    # Then construction should raise a clear ValueError, not silently
+    # degenerate into a truncated single-batch rollout.
+    with pytest.raises(ValueError, match="batch_size <= horizon"):
+        _make_ppo(
+            num_epochs=2,
+            horizon=4,
+            batch_size=8,
+            epoch_terminators=(),
+        )
+
+
+@pytest.mark.unit
+def test_ppo_accepts_batch_size_equal_to_horizon():
+    # Given a PPO configuration where batch_size == horizon (one mini-batch per epoch)
+    # Then construction should succeed — this is a valid degenerate case,
+    # equivalent to full-batch PPO with epoch-level KL early stopping still possible.
+    agent = _make_ppo(
+        num_epochs=2,
+        horizon=4,
+        batch_size=4,
+        epoch_terminators=(),
+    )
+    assert agent.horizon == 4
+    assert agent.batch_size == 4
+
+
+@pytest.mark.unit
 def test_approx_kl_not_called_when_no_epoch_terminators():
     # Given a PPO agent with no epoch terminators (the default, vanilla PPO)
     horizon, batch_size, num_epochs = 6, 2, 2

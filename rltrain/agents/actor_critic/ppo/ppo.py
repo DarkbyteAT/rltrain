@@ -27,8 +27,25 @@ class PPO(AdvantageAC):
         epoch_terminators: Sequence[EpochTerminator] = (),
         **kwargs,
     ):
-        """Initialize PPO with mini-batch epoch, clipping, and terminator configuration."""
+        """Initialize PPO with mini-batch epoch, clipping, and terminator configuration.
+
+        Raises:
+            ValueError: If ``batch_size > horizon``. PPO's mini-batch loop is
+                designed to iterate over a fixed-horizon rollout in chunks of
+                ``batch_size``; when ``batch_size`` exceeds ``horizon``, the
+                rollout silently degenerates into a single truncated batch
+                with effective size ``horizon``, not the requested
+                ``batch_size``. Rejecting the configuration at construction
+                gives a clearer error than letting the user discover the
+                discrepancy from unexpected training dynamics.
+        """
         super().__init__(**kwargs)
+        if batch_size > self.horizon:
+            raise ValueError(
+                f"PPO requires batch_size <= horizon, got batch_size={batch_size} "
+                f"and horizon={self.horizon}. The mini-batch loop chunks a rollout "
+                f"of length `horizon` into pieces of size `batch_size`."
+            )
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.eps_clip = eps_clip
