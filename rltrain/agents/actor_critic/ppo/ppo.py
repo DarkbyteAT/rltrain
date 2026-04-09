@@ -52,16 +52,13 @@ class PPO(AdvantageAC):
                     mini_batch = [x[i : i + self.batch_size] for x in dataset]
                     self.learn(*mini_batch)
 
-                # Epoch terminator check — compute approx KL once per epoch from
-                # the final mini-batch, not once per mini-batch (matches Dossa et
-                # al. and skips the work entirely when no terminators are set).
+                # Compute approx KL once per epoch from the final mini-batch
+                # (matches Dossa et al.) and skip the check entirely when no
+                # terminators are configured.
                 if self.epoch_terminators:
                     with T.no_grad():
                         approx_kl = self._approx_kl(mini_batch)
-                    triggered = [t for t in self.epoch_terminators if t.should_stop(approx_kl)]
-                    if triggered:
-                        if any(t.rollback for t in triggered):
-                            vector_to_parameters(pre_epoch_params, self.model.parameters())
+                    if self._handle_epoch_termination(approx_kl, pre_epoch_params):
                         break
 
                 pre_epoch_params = parameters_to_vector(self.model.parameters()).detach()
@@ -69,6 +66,29 @@ class PPO(AdvantageAC):
             epoch_time += time.time()
             self.log.debug(f"{epoch_time=:.3f}s")
             self.memory.clear()
+
+    def _handle_epoch_termination(self, approx_kl: float, pre_epoch_params: T.Tensor) -> bool:
+        """Check epoch terminators and roll back parameters if any request it.
+
+        Precondition: ``self.epoch_terminators`` is non-empty. Callers should
+        skip calling this helper entirely in the vanilla-PPO fast path.
+
+        Args:
+            approx_kl: Approximate KL divergence from the most recent mini-batch.
+            pre_epoch_params: Snapshot of model parameters taken *before* the
+                current epoch began. Restored in-place when any triggered
+                terminator has ``rollback=True``.
+
+        Returns:
+            ``True`` if the epoch loop should stop; ``False`` to continue.
+        """
+        triggered = [t for t in self.epoch_terminators if t.should_stop(approx_kl)]
+        if not triggered:
+            return False
+
+        if any(t.rollback for t in triggered):
+            vector_to_parameters(pre_epoch_params, self.model.parameters())
+        return True
 
     def _approx_kl(self, mini_batch: list[T.Tensor]) -> float:
         """Compute approximate KL divergence from the last mini-batch's log ratios.
