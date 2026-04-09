@@ -20,27 +20,29 @@ class TrackingCallback:
     ``Callback.on_train_start`` receives ``(agent, env, run_dir)`` but not the
     raw configuration dictionary.
 
-    Parameters
-    ----------
-    `logger`
-        Any object satisfying the ``MetricsLogger`` protocol.
-    `config`
-        Full experiment configuration dictionary.
+    Args:
+        logger: Any object satisfying the ``MetricsLogger`` protocol.
+        config: Full experiment configuration dictionary.
     """
 
     def __init__(self, logger: MetricsLogger, config: dict[str, Any]) -> None:
+        """Store the logger and experiment config for later use during training hooks."""
         self._logger = logger
         self._config = config
 
     # -- Callback hooks -------------------------------------------------------
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Start the logger backend and record experiment hyperparameters."""
         self._logger.start(self._config, run_dir)
         self._logger.log_hyperparams(self._config)
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
+    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
+        """See ``Callback.on_step``."""
+        ...
 
     def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        """Log episode return, length, and running return to the backend."""
         self._logger.log_scalars(
             {
                 "return": env.return_history[-1],
@@ -50,7 +52,10 @@ class TrackingCallback:
             step=episode,
         )
 
-    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None: ...
+    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """See ``Callback.on_checkpoint``."""
+        ...
 
     def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Finalise and close the logger backend."""
         self._logger.finish()

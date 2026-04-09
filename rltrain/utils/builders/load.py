@@ -1,16 +1,16 @@
+"""FQN loader and recursive config resolver for the builder system."""
+
 from collections.abc import Callable
 from functools import partial
 from types import ModuleType
 from typing import Any
 
 
-def load(fqn: str) -> ModuleType | type | Callable:
+def load(fqn: str) -> ModuleType | type | Callable[..., Any]:
     """Returns a module/class/function from the given fully-qualified name.
 
-    Parameters
-    ----------
-    `fqn`
-        The fully-qualified name of the module/class/function to import.
+    Args:
+        fqn: The fully-qualified name of the module/class/function to import.
     """
     parts = fqn.split(".")
     module = ".".join(parts[:-1])
@@ -34,14 +34,11 @@ def resolve(cfg: Any) -> Any:
     - **Dict without** ``"fqn"`` -- recurse into each value.
     - **List** -- recurse into each element.
 
-    Parameters
-    ----------
-    `cfg`
-        A JSON-deserialised config value (dict, list, or scalar).
+    Args:
+        cfg: A JSON-deserialised config value (dict, list, or scalar).
 
-    Returns
-    -------
-    The resolved object tree.
+    Returns:
+        The resolved object tree.
     """
     if isinstance(cfg, dict):
         if "fqn" in cfg:
@@ -50,6 +47,8 @@ def resolve(cfg: Any) -> Any:
                 cls = load(fqn)
             except (ModuleNotFoundError, AttributeError) as e:
                 raise type(e)(f"Failed to resolve fqn={fqn!r}: {e}") from e
+            if isinstance(cls, ModuleType):
+                raise TypeError(f"fqn={fqn!r} resolved to a module, expected a class or callable")
             deferred = cfg.get("deferred", False)
             kwargs = {k: resolve(v) for k, v in cfg.items() if k not in ("fqn", "deferred")}
             if deferred:

@@ -1,3 +1,5 @@
+"""Vanilla Actor-Critic — TD error advantages, optional shared feature embedding."""
+
 import torch as T
 import torch.nn as nn
 
@@ -6,13 +8,17 @@ from rltrain.utils import center
 
 
 class VanillaAC(REINFORCE):
+    """Actor-critic agent using one-step TD error as the advantage."""
+
     name: str = "Vanilla Actor-Critic"
 
     def __init__(self, *, shared_features: bool = False, **kwargs):
+        """Initialize with an optional shared-feature embedding between actor and critic."""
         super().__init__(**kwargs)
         self.shared_features = shared_features
 
     def setup(self):
+        """Build actor, critic, and (optionally) shared embedding networks and optimisers."""
         if self.shared_features:
             self.embedding = self.model["embedding"].to(self.device)
             self.actor = nn.Sequential(self.embedding, self.model["actor"].to(self.device))
@@ -23,6 +29,7 @@ class VanillaAC(REINFORCE):
             super().setup()
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute the actor, critic, and entropy losses using TD error advantages."""
         states, actions, rewards, next_states, dones = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)

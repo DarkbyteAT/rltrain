@@ -1,7 +1,6 @@
-__doc__ = """# RLTrain (Created for COMP3200: Individual Project)
-Contains pretty much all of the utilities necessary to create and train DRL agents with PyTorch,
-that lie within the scope of this dissertation. Primarly uses JSON-files to separate the models
-agents are trained with, the environments they are trained in, and the algorithm used to train them.
+"""RLTrain — modular PyTorch deep reinforcement learning framework.
+
+JSON-driven configuration with composable agents, callbacks, and gradient transforms.
 """
 
 __author__ = "Ammar Tarajia"

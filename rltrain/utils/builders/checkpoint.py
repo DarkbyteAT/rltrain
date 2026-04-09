@@ -30,30 +30,21 @@ def load_agent(
     to sample actions) but **not** for continued training — optimizer
     state and replay buffers are not restored.
 
-    Parameters
-    ----------
-    ``run_dir``
-        Path to the run directory (the one containing ``config/`` and
-        ``models/`` subdirectories).
-    ``checkpoint``
-        Which checkpoint to load. ``"FINAL"`` loads ``model_FINAL.pt``;
-        an integer string like ``"2500"`` loads ``model_2500.pt``.
-    ``device``
-        Device to place the agent on. Accepts any string recognised by
-        ``resolve_device`` (``"auto"``, ``"cpu"``, ``"cuda"``, ``"mps"``)
-        or a ``torch.device`` instance.
+    Args:
+        run_dir: Path to the run directory (the one containing ``config/`` and
+            ``models/`` subdirectories).
+        checkpoint: Which checkpoint to load. ``"FINAL"`` loads ``model_FINAL.pt``;
+            an integer string like ``"2500"`` loads ``model_2500.pt``.
+        device: Device to place the agent on. Accepts any string recognised by
+            ``resolve_device`` (``"auto"``, ``"cpu"``, ``"cuda"``, ``"mps"``)
+            or a ``torch.device`` instance.
 
-    Returns
-    -------
-    ``Agent``
+    Returns:
         The loaded agent in evaluation mode.
 
-    Raises
-    ------
-    ``FileNotFoundError``
-        If the agent config or checkpoint file does not exist.
-    ``ValueError``
-        If ``checkpoint`` is not ``"FINAL"`` or a numeric string.
+    Raises:
+        FileNotFoundError: If the agent config or checkpoint file does not exist.
+        ValueError: If ``checkpoint`` is not ``"FINAL"`` or a numeric string.
     """
     run_dir = Path(run_dir)
 

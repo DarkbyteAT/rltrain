@@ -18,21 +18,15 @@ import torch as T
 def resolve_device(device: str) -> T.device:
     """Resolve a device string to a concrete ``torch.device``.
 
-    Parameters
-    ----------
-    ``device`` : ``str``
-        One of ``"cpu"``, ``"cuda"``, ``"mps"``, or ``"auto"``.
-        ``"auto"`` selects the best available backend.
+    Args:
+        device: One of ``"cpu"``, ``"cuda"``, ``"mps"``, or ``"auto"``.
+            ``"auto"`` selects the best available backend.
 
-    Returns
-    -------
-    ``torch.device``
+    Returns:
         The resolved device.
 
-    Raises
-    ------
-    ``ValueError``
-        If the requested device is not available.
+    Raises:
+        ValueError: If the requested device is not available.
     """
     if device == "auto":
         if T.cuda.is_available():

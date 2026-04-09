@@ -1,3 +1,5 @@
+"""Shared type aliases used across the rltrain package."""
+
 from collections.abc import Container, Iterable
 from pathlib import Path
 from typing import TypeVar

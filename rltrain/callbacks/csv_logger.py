@@ -26,18 +26,27 @@ class CSVLoggerCallback:
     """
 
     def __init__(self) -> None:
+        """Initialise the callback; the CSV path is resolved in ``on_train_start``."""
         self._csv_path: Path | None = None
 
     def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Record the output path for ``metrics.csv`` inside ``run_dir``."""
         self._csv_path = run_dir / "metrics.csv"
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None: ...
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None: ...
+    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
+        """See ``Callback.on_step``."""
+        ...
+
+    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
+        """See ``Callback.on_episode_end``."""
+        ...
 
     def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Write the episode metrics CSV at each checkpoint."""
         self._write(env)
 
     def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+        """Write the final episode metrics CSV after training completes."""
         self._write(env)
 
     def _write(self, env: MDP) -> None:

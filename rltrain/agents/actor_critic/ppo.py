@@ -1,3 +1,5 @@
+"""Proximal Policy Optimisation (PPO) — clipped surrogate with mini-batch epochs."""
+
 import time
 
 import numpy as np
@@ -11,9 +13,12 @@ from rltrain.utils import center, discount
 
 
 class PPO(AdvantageAC):
+    """PPO agent — clipped surrogate objective with mini-batch epochs and KL early stop."""
+
     name: str = "Proximal Policy Optimisation"
 
     def __init__(self, *, num_epochs: int, batch_size: int, early_stop: float, eps_clip: float, **kwargs):
+        """Initialize PPO with the given hyperparameters."""
         super().__init__(**kwargs)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
@@ -21,6 +26,7 @@ class PPO(AdvantageAC):
         self.eps_clip = eps_clip
 
     def step(self, env: MDP):
+        """Collect a transition, run mini-batch epochs with KL backtracking when the horizon fills."""
         trajectory = env.step(self)
         self.memory.append(trajectory)
 
@@ -59,19 +65,16 @@ class PPO(AdvantageAC):
     def check_kl(self, states: T.Tensor, policy_old: T.Tensor) -> bool:
         """Returns ``True`` if the updated policy's KL-divergence exceeds ``early_stop``.
 
-        Parameters
-        ----------
-        ``states`` : ``Tensor``
-            States over which the mean KL-divergence is to be compared over.
-        ``policy_old`` : ``Tensor``
-            Output layer of the original policy's actor network at the given states.
+        Args:
+            states: States over which the mean KL-divergence is to be compared over.
+            policy_old: Output layer of the original policy's actor network at the given states.
         """
-
         new_dst = self.act(states)
         old_dst = self.policy(policy_old)
         return bool(kl_divergence(old_dst, new_dst).mean() >= self.early_stop)
 
     def load(self) -> tuple[T.Tensor, ...]:
+        """Return the standard batch plus pre-computed policy outputs, advantages, and returns."""
         states, actions, rewards, next_states, dones = super().load()
 
         # Compute advantages before epochs, gives value function a stationary target
@@ -93,6 +96,7 @@ class PPO(AdvantageAC):
         return states, actions, rewards, next_states, dones, policy_old, advantages, returns
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute the clipped PPO surrogate loss with critic and entropy terms."""
         states, actions, rewards, next_states, dones, policy_old, advantages, returns = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)

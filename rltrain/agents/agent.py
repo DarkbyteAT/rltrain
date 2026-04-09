@@ -1,3 +1,5 @@
+"""Abstract base ``Agent`` — template-method orchestration for RL algorithms."""
+
 import abc
 import logging
 from collections.abc import Callable, Iterable, Sequence
@@ -13,6 +15,8 @@ from rltrain.env import MDP, Trajectory
 
 
 class Agent(abc.ABC):
+    """Abstract RL agent — subclasses implement ``setup``, ``act``, ``step``, ``load``, ``loss``, ``descend``."""
+
     name: str
     log: logging.Logger
     memory: list[Trajectory]
@@ -20,7 +24,7 @@ class Agent(abc.ABC):
     def __init__(
         self,
         *,
-        name: str = None,
+        name: str | None = None,
         model: nn.ModuleDict,
         opt: dict[str, Callable[[Iterable[nn.Parameter]], optim.Optimizer]],
         device: T.device,
@@ -28,6 +32,7 @@ class Agent(abc.ABC):
         grad_clip: float | None = None,
         grad_transforms: Sequence[GradientTransform] = (),
     ):
+        """Initialize the agent with model, optimiser factories, and hyperparameters."""
         if name is not None:
             self.name = name
         elif self.name is None:
@@ -47,6 +52,7 @@ class Agent(abc.ABC):
 
     @T.inference_mode()
     def __call__(self, states: np.ndarray) -> np.ndarray:
+        """Sample actions from the agent's policy for a batch of states."""
         action_dst = self.act(T.as_tensor(states).float().to(self.device))
         return action_dst.sample().detach().cpu().numpy()
 
@@ -59,27 +65,23 @@ class Agent(abc.ABC):
     def act(self, states: T.Tensor) -> dst.Distribution:
         """Returns the distribution representing the policy of the agent.
 
-        Parameters
-        ----------
-        ``states`` : ``Tensor``
-            A batch of states to obtain the policy over.
+        Args:
+            states: A batch of states to obtain the policy over.
 
-        Returns
-        -------
-        ``Distribution``
+        Returns:
             A PyTorch ``Distribution``, which abstracts the implementation of the policy.
         """
         pass
 
     @abc.abstractmethod
     def step(self, env: MDP):
-        """Performs a single step in the given environment, using the policy of this agent. This
-        also updates the agent's policy if its conditions for performing the update are satisfied.
+        """Perform a single step in the environment and update the policy when conditions allow.
 
-        Parameters
-        ----------
-        ``env`` : ``MDP``
-            The environment to perform the step in.
+        This also updates the agent's policy if its conditions for performing
+        the update are satisfied.
+
+        Args:
+            env: The environment to perform the step in.
         """
         pass
 
@@ -87,9 +89,7 @@ class Agent(abc.ABC):
     def load(self) -> tuple[T.Tensor, ...]:
         """Loads a batch of data from memory, with each datapoint as a batched ``Tensor``.
 
-        Returns
-        -------
-        ``tuple[Tensor, ...]``
+        Returns:
             A batch of data to train upon for the given agent, however, not loaded onto the training
             device to avoid memory usage when applying minibatches over training data.
         """
@@ -98,22 +98,20 @@ class Agent(abc.ABC):
     def loss(self, *batch: T.Tensor) -> T.Tensor:
         """Computes the loss function for the policy, over the given batch.
 
-        Parameters
-        ----------
-        ``*batch``
-            Batch of experiences to update the agent over.
+        Args:
+            *batch: Batch of experiences to update the agent over.
 
-        Returns
-        -------
-        ``Tensor``
+        Returns:
             A single-element tensor containing the mean loss over the given batch.
         """
         pass
 
     @abc.abstractmethod
     def descend(self):
-        """Performs a gradient descent step over the parameters of the model, assuming any losses
-        have already been backpropagated."""
+        """Perform a gradient descent step over the model parameters.
+
+        Assumes any losses have already been backpropagated.
+        """
         pass
 
     def learn(self, *batch: T.Tensor):
@@ -126,10 +124,8 @@ class Agent(abc.ABC):
         3. Call ``descend()`` (optimiser step).
         4. Apply each ``GradientTransform.post_step()`` in order (post-descent).
 
-        Parameters
-        ----------
-        ``*batch``
-            Batch of experiences to update the agent over.
+        Args:
+            *batch: Batch of experiences to update the agent over.
         """
         loss = self.loss(*batch)
         loss.backward()

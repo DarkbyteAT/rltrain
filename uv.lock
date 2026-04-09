@@ -1754,9 +1754,9 @@ requires-dist = [
     { name = "moviepy", marker = "extra == 'video'" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "samgria", git = "https://github.com/DarkbyteAT/samgria.git" },
+    { name = "samgria", git = "https://github.com/DarkbyteAT/samgria" },
     { name = "seaborn" },
-    { name = "toblox", git = "https://github.com/DarkbyteAT/toblox.git" },
+    { name = "toblox", git = "https://github.com/DarkbyteAT/toblox" },
     { name = "torch", specifier = ">=2.0" },
     { name = "typer" },
 ]
@@ -1807,7 +1807,7 @@ wheels = [
 [[package]]
 name = "samgria"
 version = "0.1.0"
-source = { git = "https://github.com/DarkbyteAT/samgria.git#236c7f4ca006e27d2dfd3ee4a13816bfc58d10bf" }
+source = { git = "https://github.com/DarkbyteAT/samgria#d32b41357339d6b0519b24018ebd89cb29456073" }
 dependencies = [
     { name = "torch" },
 ]
@@ -1868,7 +1868,7 @@ wheels = [
 [[package]]
 name = "toblox"
 version = "0.1.0"
-source = { git = "https://github.com/DarkbyteAT/toblox.git#aa69567d00705490d33476614ae6c3618ed9a5fd" }
+source = { git = "https://github.com/DarkbyteAT/toblox#384ce47d1142cd7da8e1c29d3a512846430a9b33" }
 dependencies = [
     { name = "torch" },
 ]

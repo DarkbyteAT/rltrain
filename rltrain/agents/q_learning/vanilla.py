@@ -1,3 +1,5 @@
+"""Vanilla Deep Q-Network (DQN) with replay buffer and soft target updates."""
+
 import random
 import time
 from copy import deepcopy
@@ -14,6 +16,12 @@ from rltrain.utils import lerp
 
 
 class VanillaDQN(Agent):
+    """Q-learning agent with experience replay, epsilon-greedy exploration, and soft target updates.
+
+    Uses a replay buffer, a periodically-updated target network, and epsilon decay to
+    stabilise Q-value learning for discrete action spaces.
+    """
+
     name: str = "Vanilla Deep Q-Network"
 
     def __init__(
@@ -29,6 +37,7 @@ class VanillaDQN(Agent):
         target_rate: float = 1e-3,
         **kwargs,
     ):
+        """Initialise DQN hyperparameters; networks are built lazily in ``setup()``."""
         super().__init__(**kwargs)
         self.eps_greedy = eps_max
         self.eps_max = eps_max
@@ -41,12 +50,14 @@ class VanillaDQN(Agent):
         self.target_rate = target_rate
 
     def setup(self):
+        """Instantiate the online Q-network, its optimiser, and the frozen target network."""
         self.step_counter = 0
         self.qnet = self.model["qnet"].to(self.device)
         self.qnet_opt = self.opt["qnet"](self.qnet.parameters())
         self.target = deepcopy(self.model["qnet"])
 
     def act(self, states: T.Tensor) -> dst.Distribution:
+        """Return an epsilon-greedy ``Categorical`` distribution over actions."""
         q_values = self.qnet(states)
         opt_actions = q_values.argmax(dim=1).long()
         action_space = q_values.shape[1]
@@ -61,6 +72,7 @@ class VanillaDQN(Agent):
         )
 
     def step(self, env: MDP):
+        """Collect one transition, add it to the replay buffer, and learn every ``steps_per_epoch`` steps."""
         trajectory = env.step(self)
         self.memory.append(trajectory)
         self.step_counter += 1
@@ -77,6 +89,7 @@ class VanillaDQN(Agent):
                 self.log.debug(f"{epoch_time=:.3f}s")
 
     def load(self) -> tuple[T.Tensor, ...]:
+        """Sample a random minibatch from the replay buffer and convert to tensors."""
         # Sample random batch from replay memory.
         # Trajectory order: state, action, reward, next_state, done.
         # Actions stay long (discrete indices), done stays bool for bitwise ~.
@@ -94,6 +107,7 @@ class VanillaDQN(Agent):
         return tuple(result)
 
     def loss(self, *batch: T.Tensor) -> T.Tensor:
+        """Compute MSE Bellman loss using the target network's max Q-value."""
         states, actions, rewards, next_states, dones = batch
         states = states.float().to(self.device)
         actions = actions.to(self.device)
@@ -108,6 +122,7 @@ class VanillaDQN(Agent):
         return T.mean((q_max - q_values) ** 2)
 
     def descend(self):
+        """Apply the Q-net gradient step, decay epsilon, and soft-update the target network."""
         if self.grad_clip is not None:
             clip_grad_norm_(self.model.parameters(), self.grad_clip)
 
