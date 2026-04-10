@@ -19,9 +19,11 @@ class DiscreteHead(eqx.Module):
     linear: eqx.nn.Linear
 
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
+        """Initialise with a single linear layer projecting to action logits."""
         self.linear = eqx.nn.Linear(feature_dim, action_dim, key=key)
 
     def __call__(self, features: Float[Array, " d"]) -> Categorical:
+        """Map features to a Categorical distribution."""
         logits = self.linear(features)
         return Categorical(logits=logits)
 
@@ -39,11 +41,13 @@ class GaussianHead(eqx.Module):
     log_sigma_max: float = eqx.field(static=True, default=2.0)
 
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
+        """Initialise mean and log-std linear layers."""
         k1, k2 = jax.random.split(key)
         self.mu_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.log_sigma_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
 
     def __call__(self, features: Float[Array, " d"]) -> Normal:
+        """Map features to a diagonal Normal distribution."""
         mu = self.mu_linear(features)
         log_sigma = jnp.clip(self.log_sigma_linear(features), self.log_sigma_min, self.log_sigma_max)
         return Normal(loc=mu, scale=jnp.exp(log_sigma))
@@ -59,9 +63,11 @@ class SquashedGaussianHead(eqx.Module):
     gaussian: GaussianHead
 
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
+        """Initialise the underlying Gaussian head."""
         self.gaussian = GaussianHead(feature_dim, action_dim, key=key)
 
     def __call__(self, features: Float[Array, " d"]) -> Transformed:
+        """Map features to a tanh-squashed Normal distribution."""
         base_dist = self.gaussian(features)
         return Transformed(distribution=base_dist, bijector=Tanh())
 
@@ -77,12 +83,13 @@ class GammaHead(eqx.Module):
     beta_linear: eqx.nn.Linear
 
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
+        """Initialise concentration and rate linear layers."""
         k1, k2 = jax.random.split(key)
         self.alpha_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.beta_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
 
     def __call__(self, features: Float[Array, " d"]):
-        # Defer Gamma import — not all distreqx builds include it
+        """Map features to a Gamma distribution with positive parameters."""
         from distreqx.distributions import Gamma
 
         alpha = jax.nn.softplus(self.alpha_linear(features))
@@ -101,11 +108,13 @@ class BetaHead(eqx.Module):
     beta_linear: eqx.nn.Linear
 
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
+        """Initialise alpha and beta linear layers."""
         k1, k2 = jax.random.split(key)
         self.alpha_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.beta_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
 
     def __call__(self, features: Float[Array, " d"]):
+        """Map features to a Beta distribution with unimodal parameters."""
         from distreqx.distributions import Beta
 
         alpha = jax.nn.softplus(self.alpha_linear(features)) + 1.0

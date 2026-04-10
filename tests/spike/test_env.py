@@ -76,7 +76,7 @@ def test_gymnasium_env_reset(key):
 def test_gymnasium_env_step(key):
     """Given a gymnasium env, step returns JAX arrays."""
     env = GymnasiumEnv("CartPole-v1")
-    obs = env.reset(key)
+    env.reset(key)
     action = jnp.array(0)
 
     next_obs, reward, done, info = env.step(action)

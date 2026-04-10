@@ -182,3 +182,4 @@ Thumbs.db
 # Claude Code ephemeral state
 .claude/worktrees/
 .superpowers/
+.venv-spike/

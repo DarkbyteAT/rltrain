@@ -51,7 +51,7 @@ def test_squashed_gaussian_head_bounded(key, features):
     head = SquashedGaussianHead(feature_dim=64, action_dim=2, key=key)
     dist = head(features)
     action = dist.sample(key)
-    log_prob = dist.log_prob(action)
+    _ = dist.log_prob(action)  # verify log_prob computes without error
 
     assert action.shape == (2,)
     assert jnp.all(action > -1.0) and jnp.all(action < 1.0)
@@ -94,9 +94,9 @@ def test_heads_are_jittable(key, features):
         head = HeadClass(feature_dim=64, action_dim=2, key=key)
 
         @jax.jit
-        def forward(features, key):
-            dist = head(features)
+        def forward(features, key, h=head):
+            dist = h(features)
             return dist.sample_and_log_prob(key)
 
-        action, log_prob = forward(features, key)
+        action, _ = forward(features, key)
         assert action.shape is not None

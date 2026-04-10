@@ -22,6 +22,7 @@ class MLP(eqx.Module):
         *,
         key: PRNGKeyArray,
     ):
+        """Initialise MLP with given dimensions."""
         self.net = eqx.nn.MLP(
             in_size=in_size,
             out_size=out_size,
@@ -31,4 +32,5 @@ class MLP(eqx.Module):
         )
 
     def __call__(self, x: Float[Array, " d"]) -> Float[Array, " out"]:
+        """Forward pass through the MLP."""
         return self.net(x)

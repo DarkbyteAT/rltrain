@@ -45,6 +45,7 @@ class GymnaxEnv:
     capabilities = EnvCapabilities(pure_step=True, vmap_batch=True, scan_rollout=True)
 
     def __init__(self, env_name: str):
+        """Initialise from a gymnax environment name (e.g. ``'CartPole-v1'``)."""
         self.env, self.env_params = gymnax.make(env_name)
         self.obs_shape: tuple[int, ...] = self.env.obs_shape
         self.num_actions: int = self.env.num_actions
@@ -96,6 +97,7 @@ class GymnasiumEnv:
     capabilities = EnvCapabilities(pure_step=False, vmap_batch=False, scan_rollout=False)
 
     def __init__(self, env_id: str, num_envs: int = 1):
+        """Initialise with a gymnasium environment ID."""
         self.env_id = env_id
         self.num_envs = num_envs
         self._env: gymnasium.Env | None = None

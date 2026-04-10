@@ -239,11 +239,11 @@ def test_trains_cartpole():
 
     # Evaluate: run 20 greedy episodes
     eval_returns: list[float] = []
-    for ep in range(20):
+    for _ep in range(20):
         key, k_reset = jax.random.split(key)
         es = env.reset(k_reset)
         ep_return = 0.0
-        for t in range(500):
+        for _t in range(500):
             key, k_act, k_step = jax.random.split(key, 3)
             action = agent.act(es.obs, k_act, epsilon=0.0)
             es = env.step(es, action, k_step)

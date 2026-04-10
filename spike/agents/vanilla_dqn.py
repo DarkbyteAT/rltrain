@@ -1,6 +1,6 @@
 r"""Vanilla DQN agent — pure-functional JAX implementation.
 
-Implements the Bellman MSE loss $L = \mathbb{E}[(r + \gamma \max_{a'} Q_{\theta^-}(s',a') \cdot (1 - d) - Q_\theta(s,a))^2]$
+Implements the Bellman MSE loss with epsilon-greedy exploration
 with epsilon-greedy exploration, target network Polyak averaging, and a fully
 external training state (target params, optimizer state, epsilon).
 
@@ -49,6 +49,7 @@ class VanillaDQN(eqx.Module):
         *,
         key: PRNGKeyArray,
     ):
+        """Initialise Q-network with given architecture and hyperparameters."""
         self.q_net = MLP(in_size=obs_size, out_size=num_actions, width=width, depth=depth, key=key)
         self.gamma = gamma
         self.num_actions = num_actions
@@ -71,7 +72,8 @@ class VanillaDQN(eqx.Module):
     def loss(self, target_params: "VanillaDQN", batch: Transition) -> Float[Array, ""]:
         r"""Bellman MSE loss.
 
-        $$L = \frac{1}{B}\sum_i \bigl(r_i + \gamma \max_{a'} Q_{\theta^-}(s'_i, a') \cdot (1 - d_i) - Q_\theta(s_i, a_i)\bigr)^2$$
+        $$L = \frac{1}{B}\sum_i (r_i + \gamma \max_{a'} Q_{target}(s'_i, a')
+        \cdot (1 - d_i) - Q(s_i, a_i))^2$$
 
         Args:
             target_params: Dynamic parameters of the target network (combined

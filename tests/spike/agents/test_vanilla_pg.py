@@ -81,7 +81,7 @@ def test_discount_resets_at_done():
 
     # Then — the return at index 0 should NOT see rewards past the done at index 1
     # G_0 = r_0 + gamma * 0 (because done[1]=1 resets) = ... actually:
-    # scan reverse: t=3: acc=1.0; t=2: acc=1+0.99*1=1.99; t=1: acc=1+0.99*1.99*0=1.0 (done resets); t=0: acc=1+0.99*1=1.99
+    # Reverse scan: t=3→1.0, t=2→1.99, t=1→1.0 (done resets), t=0→1.99
     assert jnp.allclose(returns[0], 1.99, atol=1e-5)
     assert jnp.allclose(returns[1], 1.0, atol=1e-5)
     assert jnp.allclose(returns[2], 1.0 + 0.99 * 1.0, atol=1e-5)
