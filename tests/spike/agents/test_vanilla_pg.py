@@ -9,18 +9,15 @@ import pytest
 from spike.agents.vanilla_pg import VanillaPG
 from spike.env import GymnaxEnv
 from spike.heads import DiscreteHead
-from spike.math import discount
 from spike.networks import MLP
 from spike.transitions import Transition, make_transition
+from tests.spike.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
+from tests.spike.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-OBS_DIM = 4
-NUM_ACTIONS = 2
-HIDDEN = 32
 
 
 def _make_agent(key: jax.Array) -> VanillaPG:
@@ -36,57 +33,9 @@ def _make_agent(key: jax.Array) -> VanillaPG:
     )
 
 
-def _make_transitions(key: jax.Array, n: int = 16) -> Transition:
-    """Fabricate a batch of random transitions."""
-    k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n, 1), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k1, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
-    )
-
-
 # ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-def test_discount_basic():
-    """Given constant rewards with no episode boundaries, discount produces
-    the geometric series."""
-    # Given
-    rewards = jnp.ones(5)
-    dones = jnp.zeros(5)
-    gamma = 0.5
-
-    # When
-    returns = discount(rewards, dones, gamma)
-
-    # Then — G_0 = 1 + 0.5 + 0.25 + 0.125 + 0.0625 = 1.9375
-    assert jnp.allclose(returns[0], 1.9375, atol=1e-5)
-    assert jnp.allclose(returns[-1], 1.0, atol=1e-5)
-
-
-@pytest.mark.unit
-def test_discount_resets_at_done():
-    """Given a done flag mid-sequence, discount resets the accumulator."""
-    # Given
-    rewards = jnp.array([1.0, 1.0, 1.0, 1.0])
-    dones = jnp.array([0.0, 1.0, 0.0, 0.0])
-    gamma = 0.99
-
-    # When
-    returns = discount(rewards, dones, gamma)
-
-    # Then — reverse scan: t=3→1.0, t=2→1.99, t=1→1.0 (done resets), t=0→1.99
-    assert jnp.allclose(returns[0], 1.99, atol=1e-5)
-    assert jnp.allclose(returns[1], 1.0, atol=1e-5)
-    assert jnp.allclose(returns[2], 1.0 + 0.99 * 1.0, atol=1e-5)
 
 
 @pytest.mark.unit
@@ -149,7 +98,7 @@ def test_learn_updates_params():
     transitions = _make_transitions(jax.random.PRNGKey(3))
 
     # When
-    new_state, metrics = agent.learn(state, transitions)
+    new_state, metrics = agent.learn(state, transitions, jax.random.PRNGKey(0))
 
     # Then
     assert jnp.isfinite(metrics["loss"])
@@ -211,7 +160,7 @@ def test_trains_cartpole():
             ep_transitions.append(
                 make_transition(
                     obs=prev_obs,
-                    action=action.reshape(1),
+                    action=action,
                     reward=env_state.reward,
                     next_obs=env_state.obs,
                     done=env_state.done,
@@ -227,7 +176,7 @@ def test_trains_cartpole():
 
         # Stack individual transitions into a batched Transition
         transitions = jax.tree.map(lambda *xs: jnp.stack(xs), *ep_transitions)
-        state, _metrics = jit_learn(state, transitions)
+        state, _metrics = jit_learn(state, transitions, jax.random.PRNGKey(0))
 
     # Then
     recent = episode_returns[-20:]

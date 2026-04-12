@@ -1,9 +1,9 @@
-r"""Agent protocol and shared training state for pure-functional RL agents.
+r"""Agent protocol, shared training state, and base classes for pure-functional RL agents.
 
 The Agent contract has three methods:
 
 - ``init(key) \to S``: construct the initial training state
-- ``learn(state, batch) \to (state, metrics)``: one optimisation step
+- ``learn(state, batch, key) \to (state, metrics)``: one optimisation step
 - ``act(state, obs, key) \to action``: action selection for environment interaction
 
 The Agent module itself is **static** — it holds hyperparameters, network
@@ -25,6 +25,7 @@ from typing import Protocol, TypeVar, runtime_checkable
 import chex
 import equinox as eqx
 import jax
+import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
@@ -80,7 +81,12 @@ class Agent(Protocol[S]):
         """Construct the initial training state (params, opt_state, etc.)."""
         ...
 
-    def learn(self, state: S, batch: Transition) -> tuple[S, dict[str, Float[Array, ""]]]:
+    def learn(
+        self,
+        state: S,
+        batch: Transition,
+        key: PRNGKeyArray,
+    ) -> tuple[S, dict[str, Float[Array, ""]]]:
         """One optimisation step: compute loss, update params, return new state."""
         ...
 
@@ -90,7 +96,7 @@ class Agent(Protocol[S]):
 
 
 # ---------------------------------------------------------------------------
-# Shared utility: gradient step
+# Shared utilities
 # ---------------------------------------------------------------------------
 
 
@@ -123,10 +129,127 @@ def gradient_step(
 
 
 def init_target_params(params: PyTree[Array]) -> PyTree[Array]:
-    """Create target parameters as a copy of the online parameters."""
-    return jax.tree.map(lambda p: p.copy(), params)
+    """Create target parameters as a copy of the online parameters.
+
+    JAX arrays are immutable, so this is structurally an identity — but it
+    documents the intent that target and online start identical.
+    """
+    return jax.tree.map(lambda p: p, params)
 
 
 def zero_target_params(params: PyTree[Array]) -> PyTree[Array]:
     """Create zero-filled sentinel target parameters (for on-policy agents)."""
-    return jax.tree.map(jax.numpy.zeros_like, params)
+    return jax.tree.map(jnp.zeros_like, params)
+
+
+def dqn_learn_step(
+    loss_fn,
+    state,
+    optimizer: optax.GradientTransformation,
+    target_rate: float,
+    eps_end: float,
+    eps_decay: float,
+):
+    """Shared DQN learn step: gradient descent + Polyak + epsilon decay.
+
+    Used by VanillaDQN, DoubleDQN, and DistributionalDQN to avoid
+    duplicating the Polyak averaging and epsilon decay logic.
+    """
+    from spike.agents.vanilla_dqn import DQNState
+
+    new_params, new_opt_state, loss_val = gradient_step(
+        loss_fn,
+        state.params,
+        state.opt_state,
+        optimizer,
+    )
+    new_target = optax.incremental_update(
+        new_params,
+        state.target_params,
+        target_rate,
+    )
+    new_eps = jnp.maximum(
+        jnp.array(eps_end),
+        state.epsilon - jnp.array(eps_decay),
+    )
+    new_state = DQNState(
+        params=new_params,
+        opt_state=new_opt_state,
+        target_params=new_target,
+        epsilon=new_eps,
+    )
+    return new_state, {"loss": loss_val}
+
+
+# ---------------------------------------------------------------------------
+# On-policy base class
+# ---------------------------------------------------------------------------
+
+
+class OnPolicyAgent(eqx.Module):
+    """Base class for on-policy agents with shared init/learn/act.
+
+    Subclasses define their own fields (critic, hyperparameters) and
+    override ``_loss``.  PPO/SPO override ``learn`` for their epoch loop
+    but inherit ``init`` and ``act``.
+
+    The ``action_head`` field is typed as ``eqx.Module`` (not
+    ``DiscreteHead``) to support both discrete and continuous heads.
+    """
+
+    actor: eqx.Module
+    action_head: eqx.Module
+    optimizer: optax.GradientTransformation = eqx.field(static=True)
+
+    def init(self, key: PRNGKeyArray) -> TrainState:
+        """Construct the initial training state."""
+        params, _static = eqx.partition(self, eqx.is_array)
+        opt_state = self.optimizer.init(params)
+        target_params = zero_target_params(params)
+        return TrainState(
+            params=params,
+            opt_state=opt_state,
+            target_params=target_params,
+        )
+
+    def learn(
+        self,
+        state: TrainState,
+        batch: Transition,
+        _key: PRNGKeyArray,
+    ) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
+        r"""One gradient step on the loss."""
+        static = eqx.partition(self, eqx.is_array)[1]
+
+        def loss_fn(params):
+            agent = eqx.combine(params, static)
+            return agent._loss(batch)
+
+        new_params, new_opt_state, loss_val = gradient_step(
+            loss_fn,
+            state.params,
+            state.opt_state,
+            self.optimizer,
+        )
+        return TrainState(
+            params=new_params,
+            opt_state=new_opt_state,
+            target_params=state.target_params,
+        ), {"loss": loss_val}
+
+    def act(
+        self,
+        state: TrainState,
+        obs: Float[Array, " d"],
+        key: PRNGKeyArray,
+    ) -> Array:
+        """Sample an action from the policy."""
+        static = eqx.partition(self, eqx.is_array)[1]
+        agent = eqx.combine(state.params, static)
+        features = agent.actor(obs)
+        dist = agent.action_head(features)
+        return dist.sample(key)
+
+    def _loss(self, batch: Transition) -> Float[Array, ""]:
+        """Compute the scalar loss. Override in subclasses."""
+        raise NotImplementedError

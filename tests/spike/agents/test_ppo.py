@@ -10,18 +10,13 @@ from spike.agents.agent import Agent
 from spike.agents.ppo import PPO
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.transitions import Transition
+from tests.spike.agents._helpers import HIDDEN, MINIBATCH, NUM_ACTIONS, OBS_DIM
+from tests.spike.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-OBS_DIM = 4
-NUM_ACTIONS = 2
-HIDDEN = 32
-HORIZON = 32
-MINIBATCH = 16
 
 
 def _make_agent(key: jax.Array) -> PPO:
@@ -42,20 +37,6 @@ def _make_agent(key: jax.Array) -> PPO:
     )
 
 
-def _make_transitions(key: jax.Array, n: int = HORIZON) -> Transition:
-    """Fabricate a horizon batch of random transitions."""
-    k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n, 1), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k1, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
-    )
-
-
 # ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
@@ -71,7 +52,7 @@ def test_loss_is_scalar():
     # Compute old log-probs
     features = jax.vmap(agent.actor)(transitions.obs)
     dists = jax.vmap(agent.action_head)(features)
-    old_log_probs = dists.log_prob(transitions.action.squeeze(-1))
+    old_log_probs = dists.log_prob(transitions.action)
     advantages = jnp.ones(MINIBATCH)
     returns = jnp.ones(MINIBATCH)
 
@@ -92,7 +73,7 @@ def test_gradients_flow():
 
     features = jax.vmap(agent.actor)(transitions.obs)
     dists = jax.vmap(agent.action_head)(features)
-    old_log_probs = jax.lax.stop_gradient(dists.log_prob(transitions.action.squeeze(-1)))
+    old_log_probs = jax.lax.stop_gradient(dists.log_prob(transitions.action))
     advantages = jnp.ones(MINIBATCH)
     returns = jnp.ones(MINIBATCH)
 
@@ -116,7 +97,7 @@ def test_learn_updates_params():
     transitions = _make_transitions(jax.random.PRNGKey(3))
 
     # When
-    new_state, metrics = agent.learn(state, transitions)
+    new_state, metrics = agent.learn(state, transitions, jax.random.PRNGKey(0))
 
     # Then
     assert jnp.isfinite(metrics["loss"])
@@ -176,7 +157,7 @@ def test_advantages_are_stop_gradiented():
 
     features = jax.vmap(agent.actor)(transitions.obs)
     dists = jax.vmap(agent.action_head)(features)
-    old_log_probs = jax.lax.stop_gradient(dists.log_prob(transitions.action.squeeze(-1)))
+    old_log_probs = jax.lax.stop_gradient(dists.log_prob(transitions.action))
     advantages = jax.lax.stop_gradient(jnp.ones(MINIBATCH))
     returns = jax.lax.stop_gradient(jnp.ones(MINIBATCH))
 
@@ -205,7 +186,7 @@ def test_clipped_ratio_bounds():
     # Create deliberately stale old_log_probs (shifted by a large amount)
     features = jax.vmap(agent.actor)(transitions.obs)
     dists = jax.vmap(agent.action_head)(features)
-    current_log_probs = dists.log_prob(transitions.action.squeeze(-1))
+    current_log_probs = dists.log_prob(transitions.action)
     # Shift old_log_probs so ratio = exp(current - old) is far from 1
     old_log_probs = current_log_probs - 2.0
     advantages = jnp.ones(MINIBATCH)

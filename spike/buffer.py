@@ -88,38 +88,56 @@ def buffer_sample(
 
 
 def buffer_shuffle_into_minibatches(
-    buffer: ExperienceBuffer,
+    data: Transition,
     key: chex.PRNGKey,
+    num_valid: int,
     minibatch_size: int,
 ) -> Transition:
     """Shuffle valid entries and reshape into scannable minibatches.
 
-    Returns a Transition where each field has shape
-    ``(num_minibatches, minibatch_size, ...)``, suitable for ``lax.scan``
-    over the leading axis.
+    ``num_valid`` must be a compile-time constant (which it is for
+    horizon-based PPO where the horizon is a hyperparameter).  This avoids
+    dynamic shapes under JIT.
+
+    Args:
+        data: Full-capacity Transition arrays.
+        key: PRNG key for shuffling.
+        num_valid: Number of valid entries (must be static under JIT).
+        minibatch_size: Size of each minibatch.
+
+    Returns:
+        A Transition where each field has shape
+        ``(num_minibatches, minibatch_size, ...)``, suitable for ``lax.scan``
+        over the leading axis.
     """
-    perm = jax.random.permutation(key, buffer.size)
+    perm = jax.random.permutation(key, num_valid)
 
     # Truncate to a multiple of minibatch_size
-    num_minibatches = buffer.size // minibatch_size
+    num_minibatches = num_valid // minibatch_size
     total = num_minibatches * minibatch_size
     perm = perm[:total]
 
-    shuffled = jax.tree.map(lambda x: x[perm], buffer.data)
+    shuffled = jax.tree.map(lambda x: x[perm], data)
     return jax.tree.map(
         lambda x: x.reshape(num_minibatches, minibatch_size, *x.shape[1:]),
         shuffled,
     )
 
 
-def buffer_drain(buffer: ExperienceBuffer) -> tuple[Transition, ExperienceBuffer]:
-    """Return all valid data and an empty buffer (for on-policy use-once patterns)."""
-    valid_data = jax.tree.map(lambda x: x[: buffer.size], buffer.data)
+def buffer_drain(buffer: ExperienceBuffer) -> tuple[Transition, chex.Array, ExperienceBuffer]:
+    """Return all valid data and an emptied buffer.
+
+    Returns the full capacity array — the caller uses the returned ``size``
+    to know how many entries are valid.  This avoids dynamic slicing under JIT.
+
+    Returns:
+        ``(data, size, empty_buffer)``
+    """
     empty = buffer.replace(
         write_idx=jnp.array(0, dtype=jnp.int32),
         size=jnp.array(0, dtype=jnp.int32),
     )
-    return valid_data, empty
+    return buffer.data, buffer.size, empty
 
 
 def buffer_update_priorities(

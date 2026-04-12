@@ -13,70 +13,27 @@ to prevent the actor gradient from flowing through the critic.
 
 from __future__ import annotations
 
-import equinox as eqx
 import jax
 import jax.numpy as jnp
-import optax
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float
 
-from spike.agents.agent import TrainState, gradient_step, zero_target_params
-from spike.heads import DiscreteHead
+from spike.agents.agent import OnPolicyAgent
 from spike.math import discount
 from spike.networks import MLP
 from spike.transitions import Transition
 
 
-class REINFORCE(eqx.Module):
-    r"""REINFORCE with learned value baseline as a static Equinox module.
+class REINFORCE(OnPolicyAgent):
+    r"""REINFORCE with learned value baseline.
 
-    Extends VanillaPG by adding a critic network that estimates $V(s)$.
-    The advantage $G_t - V(s_t)$ replaces raw returns in the policy gradient,
-    reducing variance.  A single optimizer updates both actor and critic
-    via the combined loss.
+    Inherits ``init``, ``learn``, and ``act`` from :class:`OnPolicyAgent`.
+    Only ``_loss`` is defined here.
     """
 
-    actor: MLP
-    action_head: DiscreteHead
     critic: MLP
-    optimizer: optax.GradientTransformation = eqx.field(static=True)
-    gamma: float = eqx.field(static=True)
-    tau: float = eqx.field(static=True)
-    beta_critic: float = eqx.field(static=True)
-
-    # --------------- Protocol methods ---------------
-
-    def init(self, key: PRNGKeyArray) -> TrainState:
-        """Construct the initial training state."""
-        params, _static = eqx.partition(self, eqx.is_array)
-        opt_state = self.optimizer.init(params)
-        target_params = zero_target_params(params)
-        return TrainState(params=params, opt_state=opt_state, target_params=target_params)
-
-    def learn(self, state: TrainState, batch: Transition) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
-        r"""One gradient step on the REINFORCE-with-baseline loss."""
-        static = eqx.partition(self, eqx.is_array)[1]
-
-        def loss_fn(params):
-            agent = eqx.combine(params, static)
-            return agent._loss(batch)
-
-        new_params, new_opt_state, loss_val = gradient_step(loss_fn, state.params, state.opt_state, self.optimizer)
-        new_state = TrainState(
-            params=new_params,
-            opt_state=new_opt_state,
-            target_params=state.target_params,
-        )
-        return new_state, {"loss": loss_val}
-
-    def act(self, state: TrainState, obs: Float[Array, " d"], key: PRNGKeyArray) -> Array:
-        """Sample an action from the policy."""
-        static = eqx.partition(self, eqx.is_array)[1]
-        agent = eqx.combine(state.params, static)
-        features = agent.actor(obs)
-        dist = agent.action_head(features)
-        return dist.sample(key)
-
-    # --------------- Internal ---------------
+    gamma: float
+    tau: float
+    beta_critic: float
 
     def _loss(self, transitions: Transition) -> Float[Array, ""]:
         r"""Combined actor + critic loss with value baseline.
@@ -96,7 +53,7 @@ class REINFORCE(eqx.Module):
         # Actor
         features = jax.vmap(self.actor)(transitions.obs)
         dists = jax.vmap(self.action_head)(features)
-        log_probs = dists.log_prob(transitions.action.squeeze(-1))
+        log_probs = dists.log_prob(transitions.action)
         entropy = dists.entropy()
 
         actor_loss = -jnp.mean(log_probs * advantages)

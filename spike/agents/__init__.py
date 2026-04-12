@@ -1,7 +1,7 @@
 """Agent implementations — pure-functional RL agents as Equinox modules."""
 
 from spike.agents.advantage_ac import AdvantageAC
-from spike.agents.agent import Agent, TrainState, gradient_step
+from spike.agents.agent import Agent, OnPolicyAgent, TrainState, gradient_step
 from spike.agents.distributional_dqn import DistributionalDQN
 from spike.agents.double_dqn import DoubleDQN
 from spike.agents.ppo import PPO
@@ -16,6 +16,7 @@ __all__ = [
     "AdvantageAC",
     "Agent",
     "DQNState",
+    "OnPolicyAgent",
     "DistributionalDQN",
     "DoubleDQN",
     "PPO",

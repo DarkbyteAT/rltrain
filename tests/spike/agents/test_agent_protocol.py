@@ -20,17 +20,14 @@ from spike.agents.vanilla_dqn import VanillaDQN
 from spike.agents.vanilla_pg import VanillaPG
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.transitions import Transition
+from tests.spike.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
+from tests.spike.agents._helpers import _make_off_policy_batch as _make_batch
+from tests.spike.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-OBS_DIM = 4
-NUM_ACTIONS = 2
-HIDDEN = 32
 
 
 def _make_pg(key: jax.Array) -> VanillaPG:
@@ -55,32 +52,6 @@ def _make_dqn(key: jax.Array) -> VanillaDQN:
         eps_start=1.0,
         eps_end=0.05,
         eps_decay=0.01,
-    )
-
-
-def _make_transitions(key: jax.Array, n: int = 16) -> Transition:
-    k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n, 1), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k1, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
-    )
-
-
-def _make_batch(key: jax.Array, n: int = 32) -> Transition:
-    k1, k2, k3, k4 = jax.random.split(key, 4)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n,), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k4, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
     )
 
 
@@ -122,7 +93,7 @@ def test_pg_learn_updates_params_not_targets():
     batch = _make_transitions(jax.random.PRNGKey(2))
 
     # When
-    new_state, metrics = agent.learn(state, batch)
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(0))
 
     # Then — params changed
     old_leaves = jax.tree.leaves(state.params)
@@ -184,7 +155,7 @@ def test_dqn_learn_applies_polyak_update():
     old_target_leaves = jax.tree.leaves(state.target_params)
 
     # When
-    new_state, metrics = agent.learn(state, batch)
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(0))
     new_target_leaves = jax.tree.leaves(new_state.target_params)
     new_param_leaves = jax.tree.leaves(new_state.params)
 
@@ -210,7 +181,7 @@ def test_dqn_learn_decays_epsilon():
     batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    new_state, _ = agent.learn(state, batch)
+    new_state, _ = agent.learn(state, batch, jax.random.PRNGKey(0))
 
     # Then
     expected_eps = max(agent.eps_end, float(state.epsilon) - agent.eps_decay)
@@ -248,7 +219,7 @@ def test_dqn_act_epsilon_greedy():
 @pytest.mark.unit
 def test_uniform_learn_interface():
     """Both VanillaPG and VanillaDQN respond to the same learn() call pattern.
-    A generic function can call agent.learn(state, batch) for either."""
+    A generic function can call agent.learn(state, batch, key) for either."""
     # Given
     pg = _make_pg(jax.random.PRNGKey(0))
     dqn = _make_dqn(jax.random.PRNGKey(1))
@@ -259,7 +230,7 @@ def test_uniform_learn_interface():
 
     # When — same calling pattern for both
     def do_learn(agent, state, batch):
-        return agent.learn(state, batch)
+        return agent.learn(state, batch, jax.random.PRNGKey(0))
 
     pg_new, pg_metrics = do_learn(pg, pg_state, pg_batch)
     dqn_new, dqn_metrics = do_learn(dqn, dqn_state, dqn_batch)
@@ -301,7 +272,7 @@ def test_grad_through_learn_produces_nonzero_gradients():
     # When — differentiate through learn
     def meta_loss(params):
         s = TrainState(params=params, opt_state=state.opt_state, target_params=state.target_params)
-        new_state, _ = agent.learn(s, batch)
+        new_state, _ = agent.learn(s, batch, jax.random.PRNGKey(0))
         # Evaluate updated params on a different batch
         updated_agent = eqx.combine(new_state.params, static)
         return updated_agent._loss(eval_batch)
@@ -334,7 +305,7 @@ def test_second_order_gradients_differ_from_first_order():
     # Meta-gradient (second-order, through learn)
     def meta_loss(params):
         s = TrainState(params=params, opt_state=state.opt_state, target_params=state.target_params)
-        new_state, _ = agent.learn(s, batch)
+        new_state, _ = agent.learn(s, batch, jax.random.PRNGKey(0))
         updated_agent = eqx.combine(new_state.params, static)
         return updated_agent._loss(batch)
 
@@ -366,7 +337,7 @@ def test_scan_over_learn_steps():
 
     # When
     def step(state, batch):
-        return agent.learn(state, batch)
+        return agent.learn(state, batch, jax.random.PRNGKey(0))
 
     final_state, all_metrics = jax.lax.scan(step, state, batched)
 
@@ -394,7 +365,7 @@ def test_scan_matches_python_loop():
 
     # When — scan
     def step(state, batch):
-        return agent.learn(state, batch)
+        return agent.learn(state, batch, jax.random.PRNGKey(0))
 
     scan_state, scan_metrics = jax.lax.scan(step, state, batched)
 
@@ -403,7 +374,7 @@ def test_scan_matches_python_loop():
     loop_losses = []
     for i in range(K):
         batch_i = jax.tree.map(lambda x, idx=i: x[idx], batched)
-        loop_state, m = agent.learn(loop_state, batch_i)
+        loop_state, m = agent.learn(loop_state, batch_i, jax.random.PRNGKey(0))
         loop_losses.append(m["loss"])
 
     # Then — numerically equivalent (XLA may fuse differently under scan vs

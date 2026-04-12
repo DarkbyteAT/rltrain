@@ -17,18 +17,19 @@ from __future__ import annotations
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import optax
 from jaxtyping import Array, Float, PRNGKeyArray
 
-from spike.agents.agent import TrainState, gradient_step, zero_target_params
-from spike.heads import DiscreteHead
+from spike.agents.agent import OnPolicyAgent, TrainState, gradient_step
 from spike.math import gae
 from spike.networks import MLP
 from spike.transitions import Transition
 
 
-class PPO(eqx.Module):
+class PPO(OnPolicyAgent):
     r"""PPO agent with clipped surrogate objective and mini-batch epochs.
+
+    Inherits ``init`` and ``act`` from :class:`OnPolicyAgent`.
+    Overrides ``learn`` for the multi-epoch mini-batch loop.
 
     Extends AdvantageAC by:
     1. Computing old log-probs before the epoch loop (then stop-gradienting).
@@ -36,10 +37,7 @@ class PPO(eqx.Module):
     3. Running multiple epochs of mini-batch gradient steps over the horizon.
     """
 
-    actor: MLP
-    action_head: DiscreteHead
     critic: MLP
-    optimizer: optax.GradientTransformation = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)
@@ -50,19 +48,15 @@ class PPO(eqx.Module):
 
     # --------------- Protocol methods ---------------
 
-    def init(self, key: PRNGKeyArray) -> TrainState:
-        """Construct the initial training state."""
-        params, _static = eqx.partition(self, eqx.is_array)
-        opt_state = self.optimizer.init(params)
-        target_params = zero_target_params(params)
-        return TrainState(params=params, opt_state=opt_state, target_params=target_params)
-
-    def learn(self, state: TrainState, batch: Transition) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
+    def learn(
+        self, state: TrainState, batch: Transition, key: PRNGKeyArray
+    ) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
         r"""PPO learning step: GAE, then multiple epochs of mini-batch clipped updates.
 
         Args:
             state: Current training state.
             batch: Horizon batch of transitions.
+            key: PRNG key for mini-batch shuffling.
 
         Returns:
             Updated state and metrics dict.
@@ -73,7 +67,7 @@ class PPO(eqx.Module):
         agent_old = eqx.combine(state.params, static)
         old_features = jax.vmap(agent_old.actor)(batch.obs)
         old_dists = jax.vmap(agent_old.action_head)(old_features)
-        old_log_probs = jax.lax.stop_gradient(old_dists.log_prob(batch.action.squeeze(-1)))
+        old_log_probs = jax.lax.stop_gradient(old_dists.log_prob(batch.action))
 
         # 2. Compute values and GAE
         values = jax.vmap(lambda o: agent_old.critic(o).squeeze(-1))(batch.obs)
@@ -102,9 +96,8 @@ class PPO(eqx.Module):
         num_minibatches = horizon_size // self.minibatch_size
 
         for _epoch in range(self.num_epochs):
-            # Shuffle indices
-            # Use a deterministic key derived from params to avoid needing a PRNG argument
-            perm = jnp.arange(horizon_size)
+            key, epoch_key = jax.random.split(key)
+            perm = jax.random.permutation(epoch_key, horizon_size)
 
             for mb_idx in range(num_minibatches):
                 start = mb_idx * self.minibatch_size
@@ -131,14 +124,6 @@ class PPO(eqx.Module):
         n_steps = jnp.array(self.num_epochs * num_minibatches, dtype=jnp.float32)
         return new_state, {"loss": total_loss / jnp.maximum(n_steps, 1.0)}
 
-    def act(self, state: TrainState, obs: Float[Array, " d"], key: PRNGKeyArray) -> Array:
-        """Sample an action from the policy."""
-        static = eqx.partition(self, eqx.is_array)[1]
-        agent = eqx.combine(state.params, static)
-        features = agent.actor(obs)
-        dist = agent.action_head(features)
-        return dist.sample(key)
-
     # --------------- Internal ---------------
 
     def _ppo_loss(
@@ -156,7 +141,7 @@ class PPO(eqx.Module):
         # Current policy
         features = jax.vmap(self.actor)(transitions.obs)
         dists = jax.vmap(self.action_head)(features)
-        log_probs = dists.log_prob(transitions.action.squeeze(-1))
+        log_probs = dists.log_prob(transitions.action)
         entropy = dists.entropy()
 
         # Probability ratio

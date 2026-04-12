@@ -130,7 +130,7 @@ def test_target_update():
     batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    new_state, _ = agent.learn(state, batch)
+    new_state, _ = agent.learn(state, batch, jax.random.PRNGKey(0))
 
     # Then — target differs from both old and new
     for old_t, new_t, new_p in zip(
@@ -153,7 +153,7 @@ def test_learn_updates_params():
     batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    new_state, metrics = agent.learn(state, batch)
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(0))
 
     # Then — params changed
     old_flat = jax.tree.leaves(state.params)
@@ -222,7 +222,7 @@ def test_trains_cartpole():
 
         if step >= warmup_steps and int(buffer.size) >= batch_size:
             batch = buffer_sample(buffer, k_sample, batch_size)
-            state, _metrics = learn_jit(state, batch)
+            state, _metrics = learn_jit(state, batch, jax.random.PRNGKey(0))
 
     # Evaluate: run 20 greedy episodes
     eval_returns: list[float] = []

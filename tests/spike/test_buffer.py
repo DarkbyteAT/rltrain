@@ -82,7 +82,7 @@ def test_buffer_shuffle_into_minibatches(buffer, sample_transition, key):
     for _ in range(8):
         buffer = buffer_add(buffer, sample_transition)
 
-    batches = buffer_shuffle_into_minibatches(buffer, key, minibatch_size=4)
+    batches = buffer_shuffle_into_minibatches(buffer.data, key, num_valid=8, minibatch_size=4)
     chex.assert_shape(batches.obs, (2, 4, 4))  # 8 / 4 = 2 minibatches
 
 
@@ -91,8 +91,10 @@ def test_buffer_drain_returns_all_and_empties(buffer, sample_transition):
     for _ in range(5):
         buffer = buffer_add(buffer, sample_transition)
 
-    data, empty = buffer_drain(buffer)
-    chex.assert_shape(data.obs, (5, 4))
+    data, size, empty = buffer_drain(buffer)
+    # Full capacity arrays returned; size tells how many are valid
+    chex.assert_shape(data.obs, (16, 4))  # full capacity, not just valid
+    assert int(size) == 5
     assert empty.size == 0
     assert empty.write_idx == 0
 

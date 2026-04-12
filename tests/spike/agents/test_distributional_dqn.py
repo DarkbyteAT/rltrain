@@ -113,7 +113,7 @@ def test_learn_updates_params():
     batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    new_state, metrics = agent.learn(state, batch)
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(0))
 
     # Then
     old_flat = jax.tree.leaves(state.params)

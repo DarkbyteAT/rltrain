@@ -14,65 +14,30 @@ from __future__ import annotations
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import optax
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float
 
-from spike.agents.agent import TrainState, gradient_step, zero_target_params
-from spike.heads import DiscreteHead
+from spike.agents.agent import OnPolicyAgent
 from spike.math import gae
 from spike.networks import MLP
 from spike.transitions import Transition
 
 
-class AdvantageAC(eqx.Module):
+class AdvantageAC(OnPolicyAgent):
     r"""Advantage Actor-Critic with GAE and horizon-based collection.
+
+    Inherits ``init``, ``learn``, and ``act`` from :class:`OnPolicyAgent`.
+    Only ``_loss`` (and helper ``_compute_gae``) are defined here.
 
     Uses Generalised Advantage Estimation for lower-variance advantage
     signals.  The $\lambda$ parameter controls the bias-variance trade-off
     between TD(0) ($\lambda=0$) and Monte Carlo ($\lambda=1$).
     """
 
-    actor: MLP
-    action_head: DiscreteHead
     critic: MLP
-    optimizer: optax.GradientTransformation = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)
     lambda_gae: float = eqx.field(static=True)
-
-    # --------------- Protocol methods ---------------
-
-    def init(self, key: PRNGKeyArray) -> TrainState:
-        """Construct the initial training state."""
-        params, _static = eqx.partition(self, eqx.is_array)
-        opt_state = self.optimizer.init(params)
-        target_params = zero_target_params(params)
-        return TrainState(params=params, opt_state=opt_state, target_params=target_params)
-
-    def learn(self, state: TrainState, batch: Transition) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
-        r"""One gradient step on the A2C loss with GAE advantages."""
-        static = eqx.partition(self, eqx.is_array)[1]
-
-        def loss_fn(params):
-            agent = eqx.combine(params, static)
-            return agent._loss(batch)
-
-        new_params, new_opt_state, loss_val = gradient_step(loss_fn, state.params, state.opt_state, self.optimizer)
-        new_state = TrainState(
-            params=new_params,
-            opt_state=new_opt_state,
-            target_params=state.target_params,
-        )
-        return new_state, {"loss": loss_val}
-
-    def act(self, state: TrainState, obs: Float[Array, " d"], key: PRNGKeyArray) -> Array:
-        """Sample an action from the policy."""
-        static = eqx.partition(self, eqx.is_array)[1]
-        agent = eqx.combine(state.params, static)
-        features = agent.actor(obs)
-        dist = agent.action_head(features)
-        return dist.sample(key)
 
     # --------------- Internal ---------------
 
@@ -111,7 +76,7 @@ class AdvantageAC(eqx.Module):
         # Actor
         features = jax.vmap(self.actor)(transitions.obs)
         dists = jax.vmap(self.action_head)(features)
-        log_probs = dists.log_prob(transitions.action.squeeze(-1))
+        log_probs = dists.log_prob(transitions.action)
         entropy = dists.entropy()
 
         actor_loss = -jnp.mean(log_probs * advantages)

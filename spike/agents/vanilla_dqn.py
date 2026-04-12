@@ -17,7 +17,7 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
-from spike.agents.agent import TrainState, gradient_step, init_target_params
+from spike.agents.agent import TrainState, dqn_learn_step, init_target_params
 from spike.networks import MLP
 from spike.transitions import Transition
 
@@ -84,7 +84,9 @@ class VanillaDQN(eqx.Module):
             epsilon=jnp.array(self.eps_start),
         )
 
-    def learn(self, state: DQNState, batch: Transition) -> tuple[DQNState, dict[str, Float[Array, ""]]]:
+    def learn(
+        self, state: DQNState, batch: Transition, _key: PRNGKeyArray
+    ) -> tuple[DQNState, dict[str, Float[Array, ""]]]:
         r"""One DQN learning step: gradient descent + Polyak target update.
 
         Computes the Bellman MSE loss, applies one optimizer step, soft-updates
@@ -104,24 +106,7 @@ class VanillaDQN(eqx.Module):
             agent = eqx.combine(params, static)
             return agent._loss(state.target_params, static, batch)
 
-        new_params, new_opt_state, loss_val = gradient_step(loss_fn, state.params, state.opt_state, self.optimizer)
-
-        # Polyak averaging: target ← τ·online + (1-τ)·target
-        new_target_params = optax.incremental_update(new_params, state.target_params, self.target_rate)
-
-        # Epsilon decay
-        new_epsilon = jnp.maximum(
-            jnp.array(self.eps_end),
-            state.epsilon - jnp.array(self.eps_decay),
-        )
-
-        new_state = DQNState(
-            params=new_params,
-            opt_state=new_opt_state,
-            target_params=new_target_params,
-            epsilon=new_epsilon,
-        )
-        return new_state, {"loss": loss_val}
+        return dqn_learn_step(loss_fn, state, self.optimizer, self.target_rate, self.eps_end, self.eps_decay)
 
     def act(self, state: DQNState, obs: Float[Array, " obs_dim"], key: PRNGKeyArray) -> Array:
         r"""Epsilon-greedy action selection.

@@ -10,16 +10,13 @@ from spike.agents.agent import Agent
 from spike.agents.vanilla_ac import VanillaAC
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.transitions import Transition
+from tests.spike.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
+from tests.spike.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-OBS_DIM = 4
-NUM_ACTIONS = 2
-HIDDEN = 32
 
 
 def _make_agent(key: jax.Array) -> VanillaAC:
@@ -33,20 +30,6 @@ def _make_agent(key: jax.Array) -> VanillaAC:
         gamma=0.99,
         tau=0.01,
         beta_critic=0.5,
-    )
-
-
-def _make_transitions(key: jax.Array, n: int = 16) -> Transition:
-    """Fabricate a batch of random transitions."""
-    k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n, 1), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k1, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
     )
 
 
@@ -95,7 +78,7 @@ def test_learn_updates_params():
     transitions = _make_transitions(jax.random.PRNGKey(3))
 
     # When
-    new_state, metrics = agent.learn(state, transitions)
+    new_state, metrics = agent.learn(state, transitions, jax.random.PRNGKey(0))
 
     # Then
     assert jnp.isfinite(metrics["loss"])
@@ -129,3 +112,32 @@ def test_satisfies_agent_protocol():
 
     # Then
     assert isinstance(agent, Agent)
+
+
+@pytest.mark.unit
+def test_advantages_are_stop_gradiented():
+    """With beta_critic=0, critic should receive zero gradients because
+    advantages (including the td_target) are stop-gradiented in the actor loss."""
+    # Given — agent with beta_critic=0 so critic loss is zeroed
+    key = jax.random.PRNGKey(42)
+    k1, k2, k3 = jax.random.split(key, 3)
+    agent = VanillaAC(
+        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        optimizer=optax.adam(1e-3),
+        gamma=0.99,
+        tau=0.01,
+        beta_critic=0.0,
+    )
+    transitions = _make_transitions(jax.random.PRNGKey(1))
+
+    # When
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._loss(transitions))(agent)
+
+    # Then — critic gradients should be zero (no gradient path from actor loss)
+    critic_grad_leaves = jax.tree.leaves(eqx.filter(grads.critic, eqx.is_array))
+    all_zero = all(jnp.allclose(g, 0.0) for g in critic_grad_leaves)
+    assert all_zero, (
+        "Critic has non-zero gradients with beta_critic=0, meaning advantages are not properly stop-gradiented"
+    )

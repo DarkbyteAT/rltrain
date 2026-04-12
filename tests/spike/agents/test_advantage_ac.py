@@ -10,16 +10,13 @@ from spike.agents.advantage_ac import AdvantageAC
 from spike.agents.agent import Agent
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.transitions import Transition
+from tests.spike.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
+from tests.spike.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-OBS_DIM = 4
-NUM_ACTIONS = 2
-HIDDEN = 32
 
 
 def _make_agent(key: jax.Array) -> AdvantageAC:
@@ -34,20 +31,6 @@ def _make_agent(key: jax.Array) -> AdvantageAC:
         tau=0.01,
         beta_critic=0.5,
         lambda_gae=0.95,
-    )
-
-
-def _make_transitions(key: jax.Array, n: int = 16) -> Transition:
-    """Fabricate a batch of random transitions."""
-    k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
-        obs=jax.random.normal(k1, (n, OBS_DIM)),
-        action=jax.random.randint(k2, (n, 1), 0, NUM_ACTIONS),
-        reward=jax.random.normal(k3, (n,)),
-        next_obs=jax.random.normal(k1, (n, OBS_DIM)),
-        done=jnp.zeros(n, dtype=jnp.bool_),
-        log_prob=jnp.zeros(n),
-        value=jnp.zeros(n),
     )
 
 
@@ -96,7 +79,7 @@ def test_learn_updates_params():
     transitions = _make_transitions(jax.random.PRNGKey(3))
 
     # When
-    new_state, metrics = agent.learn(state, transitions)
+    new_state, metrics = agent.learn(state, transitions, jax.random.PRNGKey(0))
 
     # Then
     assert jnp.isfinite(metrics["loss"])

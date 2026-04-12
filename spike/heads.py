@@ -9,7 +9,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 from distreqx.bijectors import Tanh
-from distreqx.distributions import Categorical, Normal, Transformed
+from distreqx.distributions import Beta, Categorical, Gamma, Normal, Transformed
 from jaxtyping import Array, Float, PRNGKeyArray
 
 
@@ -90,8 +90,6 @@ class GammaHead(eqx.Module):
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Gamma distribution with positive parameters."""
-        from distreqx.distributions import Gamma
-
         alpha = jax.nn.softplus(self.alpha_linear(features))
         beta = jax.nn.softplus(self.beta_linear(features))
         return Gamma(concentration=alpha, rate=beta)
@@ -115,8 +113,6 @@ class BetaHead(eqx.Module):
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Beta distribution with unimodal parameters."""
-        from distreqx.distributions import Beta
-
         alpha = jax.nn.softplus(self.alpha_linear(features)) + 1.0
         beta = jax.nn.softplus(self.beta_linear(features)) + 1.0
         return Beta(alpha=alpha, beta=beta)
