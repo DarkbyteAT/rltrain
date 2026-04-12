@@ -22,36 +22,9 @@ from jaxtyping import Array, Float, PRNGKeyArray
 
 from spike.agents.agent import TrainState, gradient_step, zero_target_params
 from spike.heads import DiscreteHead
+from spike.math import discount
 from spike.networks import MLP
 from spike.transitions import Transition
-
-
-# ---------------------------------------------------------------------------
-# Discounted returns via reverse lax.scan
-# ---------------------------------------------------------------------------
-
-
-def discount(rewards: Float[Array, " T"], dones: Float[Array, " T"], gamma: float) -> Float[Array, " T"]:
-    r"""Compute discounted returns $G_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k}$.
-
-    Uses ``jax.lax.scan`` in reverse so the operation is jittable.
-    Episode boundaries (``dones == 1``) reset the accumulator.
-    """
-
-    def _step(
-        acc: Float[Array, ""], xs: tuple[Float[Array, ""], Float[Array, ""]]
-    ) -> tuple[Float[Array, ""], Float[Array, ""]]:
-        r, d = xs
-        acc = r + gamma * acc * (1.0 - d)
-        return acc, acc
-
-    _, returns = jax.lax.scan(
-        _step,
-        jnp.zeros(()),
-        (rewards, dones),
-        reverse=True,
-    )
-    return returns
 
 
 # ---------------------------------------------------------------------------

@@ -6,9 +6,10 @@ import jax.numpy as jnp
 import optax
 import pytest
 
-from spike.agents.vanilla_pg import VanillaPG, discount
+from spike.agents.vanilla_pg import VanillaPG
 from spike.env import GymnaxEnv
 from spike.heads import DiscreteHead
+from spike.math import discount
 from spike.networks import MLP
 from spike.transitions import Transition, make_transition
 

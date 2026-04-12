@@ -120,3 +120,41 @@ class BetaHead(eqx.Module):
         alpha = jax.nn.softplus(self.alpha_linear(features)) + 1.0
         beta = jax.nn.softplus(self.beta_linear(features)) + 1.0
         return Beta(alpha=alpha, beta=beta)
+
+
+class CategoricalAtomHead(eqx.Module):
+    r"""Maps features to a categorical distribution over fixed value atoms (C51).
+
+    Outputs a probability mass function over ``num_atoms`` atoms spanning
+    $[V_{\min}, V_{\max}]$.  Used by distributional DQN (C51).
+
+    The atoms are stored as a static field and shared with
+    ``spike.math.project_distribution`` and ``spike.math.q_values_from_pmf``.
+    """
+
+    linear: eqx.nn.Linear
+    atoms: Float[Array, " num_atoms"] = eqx.field(static=True)
+    num_atoms: int = eqx.field(static=True)
+    num_actions: int = eqx.field(static=True)
+
+    def __init__(
+        self,
+        feature_dim: int,
+        num_actions: int,
+        num_atoms: int = 51,
+        v_min: float = -10.0,
+        v_max: float = 10.0,
+        *,
+        key: PRNGKeyArray,
+    ):
+        """Initialise with a linear layer projecting to ``num_actions * num_atoms`` logits."""
+        self.linear = eqx.nn.Linear(feature_dim, num_actions * num_atoms, key=key)
+        self.atoms = jnp.linspace(v_min, v_max, num_atoms)
+        self.num_atoms = num_atoms
+        self.num_actions = num_actions
+
+    def __call__(self, features: Float[Array, " d"]) -> Float[Array, "num_actions num_atoms"]:
+        """Map features to per-action PMFs via softmax over the atom axis."""
+        logits = self.linear(features)
+        logits = logits.reshape(self.num_actions, self.num_atoms)
+        return jax.nn.softmax(logits, axis=-1)
