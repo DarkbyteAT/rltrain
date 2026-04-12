@@ -7,11 +7,12 @@ $$\mathcal{L}(\theta) = -\mathbb{E}\!\bigl[\log \pi_\theta(a|s)\,G_t\bigr]
 
 where $G_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k}$ are the discounted returns
 and $\tau$ controls the entropy bonus.
+
+The agent module is **static** — it holds network architecture, hyperparameters,
+and the optimizer.  All trainable state lives in a ``TrainState`` pytree.
 """
 
 from __future__ import annotations
-
-from typing import Any
 
 import equinox as eqx
 import jax
@@ -19,6 +20,7 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray
 
+from spike.agents.agent import TrainState, gradient_step, zero_target_params
 from spike.heads import DiscreteHead
 from spike.networks import MLP
 from spike.transitions import Transition
@@ -53,47 +55,101 @@ def discount(rewards: Float[Array, " T"], dones: Float[Array, " T"], gamma: floa
 
 
 # ---------------------------------------------------------------------------
-# Agent module
+# Agent module (static — no trainable array leaves)
 # ---------------------------------------------------------------------------
 
 
 class VanillaPG(eqx.Module):
-    r"""Vanilla policy gradient agent as a pure Equinox module.
+    r"""Vanilla policy gradient agent as a static Equinox module.
 
-    Fields ``gamma``, ``tau``, and ``normalise`` are static (non-trainable)
-    hyperparameters. The trainable parameters live inside ``actor`` and
-    ``action_head``.
+    The module holds network architecture, hyperparameters, and the optimizer.
+    Trainable parameters live externally in a ``TrainState`` pytree, which
+    is threaded through ``learn`` and ``act`` as an explicit argument.
+
+    This separation means JIT traces the agent once (as a compile-time
+    constant) and ``jax.grad`` composes through ``learn`` because the
+    state is a pure pytree.
     """
 
+    # Network architecture (used to reconstruct model from params)
     actor: MLP
     action_head: DiscreteHead
+
+    # Optimizer (static — no array leaves)
+    optimizer: optax.GradientTransformation = eqx.field(static=True)
+
+    # Hyperparameters (all static)
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     normalise: bool = eqx.field(static=True)
 
-    def act(self, obs: Float[Array, " d"], key: PRNGKeyArray) -> tuple[Array, Float[Array, ""], Any]:
-        """Forward pass: obs -> distribution -> (action, log_prob, dist).
+    # --------------- Protocol methods ---------------
 
-        Pure function — no hidden state, no mutation.
+    def init(self, key: PRNGKeyArray) -> TrainState:
+        """Construct the initial training state.
+
+        Partitions the model into trainable params and static structure,
+        initialises the optimizer, and creates zero-sentinel target params
+        (unused by on-policy agents, but required for uniform TrainState).
         """
-        features = self.actor(obs)
-        dist = self.action_head(features)
-        action = dist.sample(key)
-        log_prob = dist.log_prob(action)
-        return action, log_prob, dist
+        params, _static = eqx.partition(self, eqx.is_array)
+        opt_state = self.optimizer.init(params)
+        target_params = zero_target_params(params)
+        return TrainState(params=params, opt_state=opt_state, target_params=target_params)
 
-    def loss(self, transitions: Transition) -> Float[Array, ""]:
+    def learn(self, state: TrainState, batch: Transition) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
+        r"""One gradient step on the REINFORCE loss.
+
+        Args:
+            state: Current training state (params, opt_state, target_params).
+            batch: Episode transitions to compute the loss over.
+
+        Returns:
+            ``(new_state, metrics)`` where target_params are unchanged
+            (on-policy agents do not use target networks).
+        """
+        static = eqx.partition(self, eqx.is_array)[1]
+
+        def loss_fn(params):
+            agent = eqx.combine(params, static)
+            return agent._loss(batch)
+
+        new_params, new_opt_state, loss_val = gradient_step(loss_fn, state.params, state.opt_state, self.optimizer)
+        new_state = TrainState(
+            params=new_params,
+            opt_state=new_opt_state,
+            target_params=state.target_params,
+        )
+        return new_state, {"loss": loss_val}
+
+    def act(self, state: TrainState, obs: Float[Array, " d"], key: PRNGKeyArray) -> Array:
+        """Sample an action from the policy.
+
+        Reconstructs the model from ``state.params`` and the agent's static
+        structure, then forward-passes through actor + action head.
+        """
+        static = eqx.partition(self, eqx.is_array)[1]
+        agent = eqx.combine(state.params, static)
+        features = agent.actor(obs)
+        dist = agent.action_head(features)
+        return dist.sample(key)
+
+    # --------------- Internal ---------------
+
+    def _loss(self, transitions: Transition) -> Float[Array, ""]:
         r"""REINFORCE loss over a batch of transitions.
 
         $$-\frac{1}{T}\sum_t \log\pi(a_t|s_t)\,G_t
           \;-\;\tau\,\frac{1}{T}\sum_t H[\pi(\cdot|s_t)]$$
+
+        Called on a reconstructed agent (with params combined), so
+        ``self.actor`` and ``self.action_head`` carry trainable weights.
         """
         returns = discount(transitions.reward, transitions.done.astype(jnp.float32), self.gamma)
 
         if self.normalise:
             returns = (returns - jnp.mean(returns)) / (jnp.std(returns) + 1e-8)
 
-        # Vectorised forward pass over the batch
         features = jax.vmap(self.actor)(transitions.obs)
         dists = jax.vmap(self.action_head)(features)
 
@@ -103,41 +159,3 @@ class VanillaPG(eqx.Module):
         actor_loss = -jnp.mean(log_probs * returns)
         entropy_loss = -self.tau * jnp.mean(entropy)
         return actor_loss + entropy_loss
-
-
-# ---------------------------------------------------------------------------
-# Module-level learn function (jittable)
-# ---------------------------------------------------------------------------
-
-
-def learn(
-    params: Any,
-    static: Any,
-    opt_state: optax.OptState,
-    optimizer: optax.GradientTransformation,
-    transitions: Transition,
-) -> tuple[Any, optax.OptState, dict[str, Float[Array, ""]]]:
-    """One gradient step: compute loss, differentiate, apply optimizer.
-
-    Args:
-        params: Trainable parameters (from ``eqx.partition``).
-        static: Static structure (from ``eqx.partition``).
-        opt_state: Current optimizer state.
-        optimizer: An optax optimizer.
-        transitions: Batch of transitions for the update.
-
-    Returns:
-        ``(new_params, new_opt_state, metrics)`` where metrics contains
-        the scalar loss.
-    """
-    agent = eqx.combine(params, static)
-
-    loss_val, grads = eqx.filter_value_and_grad(lambda m: m.loss(transitions))(agent)
-
-    # Extract only the parameter gradients (matching params structure)
-    grad_params, _ = eqx.partition(grads, eqx.is_array)
-
-    updates, new_opt_state = optimizer.update(grad_params, opt_state, params)
-    new_params = optax.apply_updates(params, updates)
-
-    return new_params, new_opt_state, {"loss": loss_val}

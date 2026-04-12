@@ -1,141 +1,170 @@
 r"""Vanilla DQN agent — pure-functional JAX implementation.
 
-Implements the Bellman MSE loss with epsilon-greedy exploration
-with epsilon-greedy exploration, target network Polyak averaging, and a fully
-external training state (target params, optimizer state, epsilon).
+Implements the Bellman MSE loss with epsilon-greedy exploration,
+target network Polyak averaging, and fully external training state.
 
 The agent module holds architecture and static hyperparameters only.
-Mutable training state lives outside as plain pytrees, keeping the
-``eqx.partition``/``eqx.combine`` boundary clean.
+Mutable training state (params, target params, optimizer state, epsilon)
+lives in a ``DQNState`` pytree, threaded through ``learn`` and ``act``.
 """
 
+from __future__ import annotations
+
+import chex
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import optax
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
+from spike.agents.agent import TrainState, gradient_step, init_target_params
 from spike.networks import MLP
 from spike.transitions import Transition
+
+
+# ---------------------------------------------------------------------------
+# DQN-specific training state
+# ---------------------------------------------------------------------------
+
+
+@chex.dataclass
+class DQNState(TrainState):
+    """Training state for DQN agents, extending TrainState with epsilon."""
+
+    epsilon: Float[Array, ""]
+
+
+# ---------------------------------------------------------------------------
+# Agent module (static — no trainable array leaves)
+# ---------------------------------------------------------------------------
 
 
 class VanillaDQN(eqx.Module):
     r"""Q-learning agent with a target network.
 
-    The module stores the online Q-network and static hyperparameters.
-    Target network parameters are maintained externally by the caller —
-    this avoids doubling the pytree size and keeps partition/combine trivial.
+    The module stores network architecture and static hyperparameters.
+    All mutable state — online params, target params, optimizer state,
+    and epsilon — lives in a ``DQNState`` pytree.
 
     Args:
-        obs_size: Dimensionality of the observation vector.
-        num_actions: Number of discrete actions.
-        width: Hidden layer width.
-        depth: Number of hidden layers.
+        q_net: Q-network architecture (MLP).
+        optimizer: Optax gradient transformation.
         gamma: Discount factor $\gamma \in [0, 1]$.
-        key: PRNG key for weight initialisation.
+        target_rate: Polyak averaging coefficient $\tau$ for target updates.
+        num_actions: Number of discrete actions.
+        eps_start: Initial exploration epsilon.
+        eps_end: Final exploration epsilon.
+        eps_decay: Epsilon decay per learn step.
     """
 
     q_net: MLP
+    optimizer: optax.GradientTransformation = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
+    target_rate: float = eqx.field(static=True)
     num_actions: int = eqx.field(static=True)
+    eps_start: float = eqx.field(static=True)
+    eps_end: float = eqx.field(static=True)
+    eps_decay: float = eqx.field(static=True)
 
-    def __init__(
-        self,
-        obs_size: int,
-        num_actions: int,
-        width: int,
-        depth: int,
-        gamma: float,
-        *,
-        key: PRNGKeyArray,
-    ):
-        """Initialise Q-network with given architecture and hyperparameters."""
-        self.q_net = MLP(in_size=obs_size, out_size=num_actions, width=width, depth=depth, key=key)
-        self.gamma = gamma
-        self.num_actions = num_actions
+    # --------------- Protocol methods ---------------
 
-    def q_values(self, obs: Float[Array, " obs_dim"]) -> Float[Array, " num_actions"]:
-        r"""Compute $Q_\theta(s, \cdot)$ for all actions."""
-        return self.q_net(obs)
+    def init(self, key: PRNGKeyArray) -> DQNState:
+        """Construct the initial training state.
 
-    def act(self, obs: Float[Array, " obs_dim"], key: PRNGKeyArray, epsilon: float) -> Array:
+        Target params are initialised as a copy of the online params.
+        Epsilon starts at ``eps_start``.
+        """
+        params, _static = eqx.partition(self, eqx.is_array)
+        opt_state = self.optimizer.init(params)
+        target_params = init_target_params(params)
+        return DQNState(
+            params=params,
+            opt_state=opt_state,
+            target_params=target_params,
+            epsilon=jnp.array(self.eps_start),
+        )
+
+    def learn(self, state: DQNState, batch: Transition) -> tuple[DQNState, dict[str, Float[Array, ""]]]:
+        r"""One DQN learning step: gradient descent + Polyak target update.
+
+        Computes the Bellman MSE loss, applies one optimizer step, soft-updates
+        the target network, and decays epsilon.
+
+        Args:
+            state: Current training state.
+            batch: Batched transitions sampled from the replay buffer.
+
+        Returns:
+            ``(new_state, metrics)`` with updated params, target, opt_state,
+            and decayed epsilon.
+        """
+        static = eqx.partition(self, eqx.is_array)[1]
+
+        def loss_fn(params):
+            agent = eqx.combine(params, static)
+            return agent._loss(state.target_params, static, batch)
+
+        new_params, new_opt_state, loss_val = gradient_step(loss_fn, state.params, state.opt_state, self.optimizer)
+
+        # Polyak averaging: target ← τ·online + (1-τ)·target
+        new_target_params = optax.incremental_update(new_params, state.target_params, self.target_rate)
+
+        # Epsilon decay
+        new_epsilon = jnp.maximum(
+            jnp.array(self.eps_end),
+            state.epsilon - jnp.array(self.eps_decay),
+        )
+
+        new_state = DQNState(
+            params=new_params,
+            opt_state=new_opt_state,
+            target_params=new_target_params,
+            epsilon=new_epsilon,
+        )
+        return new_state, {"loss": loss_val}
+
+    def act(self, state: DQNState, obs: Float[Array, " obs_dim"], key: PRNGKeyArray) -> Array:
         r"""Epsilon-greedy action selection.
 
-        With probability $\epsilon$ sample uniformly; otherwise $\arg\max_a Q(s,a)$.
+        With probability ``state.epsilon`` sample uniformly; otherwise
+        $\arg\max_a Q(s,a)$.
         """
-        q = self.q_values(obs)
+        static = eqx.partition(self, eqx.is_array)[1]
+        agent = eqx.combine(state.params, static)
+        q = agent.q_net(obs)
         best_action = jnp.argmax(q)
         key_choice, key_rand = jax.random.split(key)
         random_action = jax.random.randint(key_rand, (), 0, self.num_actions)
-        return jnp.where(jax.random.uniform(key_choice) < epsilon, random_action, best_action)
+        return jnp.where(
+            jax.random.uniform(key_choice) < state.epsilon,
+            random_action,
+            best_action,
+        )
 
-    def loss(self, target_params: "VanillaDQN", batch: Transition) -> Float[Array, ""]:
+    # --------------- Internal ---------------
+
+    def _loss(
+        self,
+        target_params: PyTree[Array],
+        static: PyTree,
+        batch: Transition,
+    ) -> Float[Array, ""]:
         r"""Bellman MSE loss.
 
-        $$L = \frac{1}{B}\sum_i (r_i + \gamma \max_{a'} Q_{target}(s'_i, a')
-        \cdot (1 - d_i) - Q(s_i, a_i))^2$$
+        $$L = \frac{1}{B}\sum_i \bigl(r_i + \gamma \max_{a'} Q_{\text{target}}(s'_i, a')
+        \cdot (1 - d_i) - Q(s_i, a_i)\bigr)^2$$
 
-        Args:
-            target_params: Dynamic parameters of the target network (combined
-                with ``self``'s static structure via ``eqx.combine``).
-            batch: Batched transition with leading dimension ``B``.
+        Called on a reconstructed agent (with online params combined), so
+        ``self.q_net`` carries the online weights.
         """
-        # Reconstruct the target network: target_params carries the learned
-        # weights, while self provides the static module structure.
-        _, static = eqx.partition(self, eqx.is_array)
-        target_net = eqx.combine(target_params, static)
+        target_net = eqx.combine(target_params, static).q_net
 
-        # Vectorise Q-value computation over the batch
-        q_all = jax.vmap(self.q_values)(batch.obs)  # (B, num_actions)
-        q_sa = q_all[jnp.arange(q_all.shape[0]), batch.action.astype(jnp.int32)]  # (B,)
+        q_all = jax.vmap(self.q_net)(batch.obs)
+        q_sa = q_all[jnp.arange(q_all.shape[0]), batch.action.astype(jnp.int32)]
 
-        target_q_all = jax.vmap(target_net.q_values)(batch.next_obs)  # (B, num_actions)
-        target_max = jnp.max(target_q_all, axis=-1)  # (B,)
+        target_q_all = jax.vmap(target_net)(batch.next_obs)
+        target_max = jnp.max(target_q_all, axis=-1)
 
         td_target = batch.reward + self.gamma * target_max * (1.0 - batch.done.astype(jnp.float32))
         td_error = td_target - q_sa
         return jnp.mean(td_error**2)
-
-
-def learn(
-    params,
-    static,
-    target_params,
-    opt_state: optax.OptState,
-    optimizer: optax.GradientTransformation,
-    batch: Transition,
-    target_rate: float,
-):
-    r"""One DQN learning step: gradient descent + Polyak target update.
-
-    Pure function suitable for ``jax.jit``. Computes the Bellman MSE loss,
-    applies one optimizer step, and soft-updates the target network via
-    ``optax.incremental_update`` with step size ``target_rate``.
-
-    Args:
-        params: Dynamic (array) leaves of the agent, from ``eqx.partition``.
-        static: Static (non-array) leaves of the agent.
-        target_params: Dynamic leaves of the target network.
-        opt_state: Current optimizer state.
-        optimizer: Optax gradient transformation.
-        batch: Batched transitions to learn from.
-        target_rate: Polyak averaging coefficient $\tau$; target is updated as
-            $\theta^- \leftarrow \tau \theta + (1-\tau) \theta^-$.
-
-    Returns:
-        Tuple of ``(new_params, new_opt_state, new_target_params, metrics)``
-        where ``metrics`` is a dict containing the scalar loss.
-    """
-
-    def loss_fn(p):
-        a = eqx.combine(p, static)
-        return a.loss(target_params, batch)
-
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params)
-
-    updates, new_opt_state = optimizer.update(grads, opt_state, params)
-    new_params = optax.apply_updates(params, updates)
-
-    new_target_params = optax.incremental_update(new_params, target_params, target_rate)
-
-    return new_params, new_opt_state, new_target_params, {"loss": loss_val}

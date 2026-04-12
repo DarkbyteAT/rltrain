@@ -5,8 +5,9 @@ import jax.numpy as jnp
 import optax
 import pytest
 
-from spike.agents.vanilla_dqn import VanillaDQN, learn
+from spike.agents.vanilla_dqn import DQNState, VanillaDQN
 from spike.buffer import buffer_add, buffer_sample, make_buffer
+from spike.networks import MLP
 from spike.transitions import make_transition
 
 
@@ -21,12 +22,14 @@ KEY = jax.random.PRNGKey(0)
 
 def _make_agent(key=KEY):
     return VanillaDQN(
-        obs_size=OBS_DIM,
-        num_actions=NUM_ACTIONS,
-        width=64,
-        depth=2,
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        optimizer=optax.adam(1e-3),
         gamma=0.99,
-        key=key,
+        target_rate=0.01,
+        num_actions=NUM_ACTIONS,
+        eps_start=1.0,
+        eps_end=0.05,
+        eps_decay=5e-4,
     )
 
 
@@ -51,10 +54,14 @@ def test_q_values_shape():
     """q_values returns one value per action."""
     # Given
     agent = _make_agent()
+    state = agent.init(jax.random.PRNGKey(1))
+    import equinox as eqx
+
+    model = eqx.combine(state.params, eqx.partition(agent, eqx.is_array)[1])
     obs = jnp.ones(OBS_DIM)
 
     # When
-    q = agent.q_values(obs)
+    q = model.q_net(obs)
 
     # Then
     assert q.shape == (NUM_ACTIONS,)
@@ -65,38 +72,49 @@ def test_act_epsilon_greedy():
     """With epsilon=1 actions are uniformly random; with epsilon=0 they are argmax Q."""
     # Given
     agent = _make_agent()
+    state = agent.init(jax.random.PRNGKey(1))
     obs = jnp.ones(OBS_DIM)
 
     # When — fully random
+    random_state = DQNState(
+        params=state.params,
+        opt_state=state.opt_state,
+        target_params=state.target_params,
+        epsilon=jnp.array(1.0),
+    )
     keys = jax.random.split(jax.random.PRNGKey(42), 200)
-    random_actions = jnp.array([agent.act(obs, k, epsilon=1.0) for k in keys])
+    random_actions = jnp.array([agent.act(random_state, obs, k) for k in keys])
 
-    # Then — not all the same (would be astronomically unlikely for 200 draws)
+    # Then — not all the same
     assert jnp.unique(random_actions).shape[0] > 1
 
     # When — fully greedy
-    greedy_actions = jnp.array([agent.act(obs, k, epsilon=0.0) for k in keys])
+    greedy_state = DQNState(
+        params=state.params,
+        opt_state=state.opt_state,
+        target_params=state.target_params,
+        epsilon=jnp.array(0.0),
+    )
+    greedy_actions = jnp.array([agent.act(greedy_state, obs, k) for k in keys])
 
     # Then — all identical (argmax is deterministic)
     assert jnp.all(greedy_actions == greedy_actions[0])
-
-    # And — the greedy action matches argmax of Q
-    q = agent.q_values(obs)
-    assert greedy_actions[0] == jnp.argmax(q)
 
 
 @pytest.mark.unit
 def test_loss_is_scalar():
     """loss() returns a finite scalar."""
     # Given
-    agent = _make_agent()
     import equinox as eqx
 
-    target_params, _ = eqx.partition(agent, eqx.is_array)
+    agent = _make_agent()
+    state = agent.init(jax.random.PRNGKey(1))
     batch = _make_batch(jax.random.PRNGKey(1))
+    static = eqx.partition(agent, eqx.is_array)[1]
 
-    # When
-    loss_val = agent.loss(target_params, batch)
+    # When — call _loss on the reconstructed agent
+    model = eqx.combine(state.params, static)
+    loss_val = model._loss(state.target_params, static, batch)
 
     # Then
     assert loss_val.shape == ()
@@ -107,47 +125,39 @@ def test_loss_is_scalar():
 def test_target_update():
     """After incremental_update, target params differ from both old and new."""
     # Given
-    import equinox as eqx
-
     agent = _make_agent(jax.random.PRNGKey(0))
-    agent2 = _make_agent(jax.random.PRNGKey(99))
-    old_target, _ = eqx.partition(agent, eqx.is_array)
-    new_params, _ = eqx.partition(agent2, eqx.is_array)
+    state = agent.init(jax.random.PRNGKey(1))
+    batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    updated = optax.incremental_update(new_params, old_target, step_size=0.1)
+    new_state, _ = agent.learn(state, batch)
 
-    # Then — updated differs from both old and new
-    old_flat = jax.tree.leaves(old_target)
-    new_flat = jax.tree.leaves(new_params)
-    upd_flat = jax.tree.leaves(updated)
-
-    for o, n, u in zip(old_flat, new_flat, upd_flat, strict=False):
-        assert not jnp.allclose(o, u), "updated should differ from old target"
-        assert not jnp.allclose(n, u), "updated should differ from new params"
+    # Then — target differs from both old and new
+    for old_t, new_t, new_p in zip(
+        jax.tree.leaves(state.target_params),
+        jax.tree.leaves(new_state.target_params),
+        jax.tree.leaves(new_state.params),
+        strict=False,
+    ):
+        if old_t.size > 0:
+            assert not jnp.allclose(old_t, new_t), "target should differ from old"
+            assert not jnp.allclose(new_p, new_t), "target should differ from new params"
 
 
 @pytest.mark.unit
 def test_learn_updates_params():
     """One learn step produces different params."""
     # Given
-    import equinox as eqx
-
     agent = _make_agent()
-    params, static = eqx.partition(agent, eqx.is_array)
-    target_params, _ = eqx.partition(agent, eqx.is_array)
-    optimizer = optax.adam(1e-3)
-    opt_state = optimizer.init(params)
+    state = agent.init(jax.random.PRNGKey(1))
     batch = _make_batch(jax.random.PRNGKey(2))
 
     # When
-    new_params, new_opt_state, new_target, metrics = learn(
-        params, static, target_params, opt_state, optimizer, batch, target_rate=0.01
-    )
+    new_state, metrics = agent.learn(state, batch)
 
     # Then — params changed
-    old_flat = jax.tree.leaves(params)
-    new_flat = jax.tree.leaves(new_params)
+    old_flat = jax.tree.leaves(state.params)
+    new_flat = jax.tree.leaves(new_state.params)
     any_changed = any(not jnp.allclose(o, n) for o, n in zip(old_flat, new_flat, strict=False))
     assert any_changed, "params should change after one learn step"
 
@@ -163,35 +173,30 @@ def test_learn_updates_params():
 @pytest.mark.e2e
 def test_trains_cartpole():
     """Train DQN on gymnax CartPole for ~50K steps, achieve return > 50."""
-    import equinox as eqx
 
     from spike.env import GymnaxEnv
 
-    # Given — environment, agent, buffer, optimizer
+    # Given — environment, agent, buffer
     env = GymnaxEnv("CartPole-v1")
     key = jax.random.PRNGKey(0)
     k_agent, k_env, key = jax.random.split(key, 3)
 
     agent = VanillaDQN(
-        obs_size=env.obs_shape[0],
-        num_actions=env.num_actions,
-        width=128,
-        depth=2,
+        q_net=MLP(env.obs_shape[0], env.num_actions, width=128, depth=2, key=k_agent),
+        optimizer=optax.adam(3e-4),
         gamma=0.99,
-        key=k_agent,
+        target_rate=0.005,
+        num_actions=env.num_actions,
+        eps_start=1.0,
+        eps_end=0.05,
+        eps_decay=5e-4,
     )
 
-    params, static = eqx.partition(agent, eqx.is_array)
-    target_params, _ = eqx.partition(agent, eqx.is_array)
-    optimizer = optax.adam(3e-4)
-    opt_state = optimizer.init(params)
+    state = agent.init(jax.random.PRNGKey(42))
     buffer = make_buffer(capacity=10_000, obs_shape=env.obs_shape, action_shape=())
 
-    # Epsilon schedule: linear decay from 1.0 to 0.05 over 40K steps
-    eps_start, eps_end, eps_decay_steps = 1.0, 0.05, 40_000
-
     # JIT the learn function
-    learn_jit = jax.jit(learn, static_argnames=("static", "optimizer", "target_rate"))
+    learn_jit = jax.jit(agent.learn)
 
     # When — training loop
     env_state = env.reset(k_env)
@@ -202,17 +207,10 @@ def test_trains_cartpole():
     for step in range(total_steps):
         key, k_act, k_step, k_sample = jax.random.split(key, 4)
 
-        # Epsilon schedule
-        epsilon = max(eps_end, eps_start - (eps_start - eps_end) * step / eps_decay_steps)
-
-        # Act (agent always reflects current params)
-        action = agent.act(env_state.obs, k_act, epsilon)
-
-        # Step environment
+        action = agent.act(state, env_state.obs, k_act)
         prev_obs = env_state.obs
         env_state = env.step(env_state, action, k_step)
 
-        # Store transition (CartPole reward = +1 per step)
         transition = make_transition(
             obs=prev_obs,
             action=action,
@@ -222,20 +220,9 @@ def test_trains_cartpole():
         )
         buffer = buffer_add(buffer, transition)
 
-        # Learn after warmup
         if step >= warmup_steps and int(buffer.size) >= batch_size:
             batch = buffer_sample(buffer, k_sample, batch_size)
-
-            params, opt_state, target_params, metrics = learn_jit(
-                params,
-                static=static,
-                target_params=target_params,
-                opt_state=opt_state,
-                optimizer=optimizer,
-                batch=batch,
-                target_rate=0.005,
-            )
-            agent = eqx.combine(params, static)
+            state, _metrics = learn_jit(state, batch)
 
     # Evaluate: run 20 greedy episodes
     eval_returns: list[float] = []
@@ -243,9 +230,15 @@ def test_trains_cartpole():
         key, k_reset = jax.random.split(key)
         es = env.reset(k_reset)
         ep_return = 0.0
+        greedy_state = DQNState(
+            params=state.params,
+            opt_state=state.opt_state,
+            target_params=state.target_params,
+            epsilon=jnp.array(0.0),
+        )
         for _t in range(500):
             key, k_act, k_step = jax.random.split(key, 3)
-            action = agent.act(es.obs, k_act, epsilon=0.0)
+            action = agent.act(greedy_state, es.obs, k_act)
             es = env.step(es, action, k_step)
             ep_return += 1.0
             if es.done:

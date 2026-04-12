@@ -6,11 +6,11 @@ import jax.numpy as jnp
 import optax
 import pytest
 
-from spike.agents.vanilla_pg import VanillaPG, discount, learn
+from spike.agents.vanilla_pg import VanillaPG, discount
 from spike.env import GymnaxEnv
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.transitions import Transition
+from spike.transitions import Transition, make_transition
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +28,7 @@ def _make_agent(key: jax.Array) -> VanillaPG:
     return VanillaPG(
         actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+        optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
         normalise=True,
@@ -53,6 +54,7 @@ def _make_transitions(key: jax.Array, n: int = 16) -> Transition:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_discount_basic():
     """Given constant rewards with no episode boundaries, discount produces
     the geometric series."""
@@ -69,6 +71,7 @@ def test_discount_basic():
     assert jnp.allclose(returns[-1], 1.0, atol=1e-5)
 
 
+@pytest.mark.unit
 def test_discount_resets_at_done():
     """Given a done flag mid-sequence, discount resets the accumulator."""
     # Given
@@ -79,31 +82,30 @@ def test_discount_resets_at_done():
     # When
     returns = discount(rewards, dones, gamma)
 
-    # Then — the return at index 0 should NOT see rewards past the done at index 1
-    # G_0 = r_0 + gamma * 0 (because done[1]=1 resets) = ... actually:
-    # Reverse scan: t=3→1.0, t=2→1.99, t=1→1.0 (done resets), t=0→1.99
+    # Then — reverse scan: t=3→1.0, t=2→1.99, t=1→1.0 (done resets), t=0→1.99
     assert jnp.allclose(returns[0], 1.99, atol=1e-5)
     assert jnp.allclose(returns[1], 1.0, atol=1e-5)
     assert jnp.allclose(returns[2], 1.0 + 0.99 * 1.0, atol=1e-5)
 
 
+@pytest.mark.unit
 def test_act_returns_valid_action():
-    """Given an observation, act produces an action in valid range and a scalar log_prob."""
+    """Given an observation, act produces an action in valid range."""
     # Given
     key = jax.random.PRNGKey(0)
     agent = _make_agent(key)
+    state = agent.init(jax.random.PRNGKey(1))
     obs = jnp.ones(OBS_DIM)
 
     # When
-    action, log_prob, dist = agent.act(obs, jax.random.PRNGKey(1))
+    action = agent.act(state, obs, jax.random.PRNGKey(2))
 
     # Then
     assert action.shape == ()
     assert 0 <= int(action) < NUM_ACTIONS
-    assert log_prob.shape == ()
-    assert jnp.isfinite(log_prob)
 
 
+@pytest.mark.unit
 def test_loss_is_scalar():
     """Given a batch of transitions, loss returns a finite scalar."""
     # Given
@@ -112,13 +114,14 @@ def test_loss_is_scalar():
     transitions = _make_transitions(jax.random.PRNGKey(1))
 
     # When
-    loss_val = agent.loss(transitions)
+    loss_val = agent._loss(transitions)
 
     # Then
     assert loss_val.shape == ()
     assert jnp.isfinite(loss_val)
 
 
+@pytest.mark.unit
 def test_gradients_flow():
     """Gradients through loss are non-zero — the loss depends on parameters."""
     # Given
@@ -127,7 +130,7 @@ def test_gradients_flow():
     transitions = _make_transitions(jax.random.PRNGKey(2))
 
     # When
-    _loss, grads = eqx.filter_value_and_grad(lambda m: m.loss(transitions))(agent)
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._loss(transitions))(agent)
 
     # Then — at least some gradient leaves are non-zero
     grad_leaves = jax.tree.leaves(eqx.filter(grads, eqx.is_array))
@@ -135,23 +138,22 @@ def test_gradients_flow():
     assert has_nonzero, "All gradients are zero — loss is disconnected from parameters"
 
 
+@pytest.mark.unit
 def test_learn_updates_params():
     """After one learn step, at least some parameters differ from the originals."""
     # Given
     key = jax.random.PRNGKey(99)
     agent = _make_agent(key)
-    optimizer = optax.adam(1e-3)
-    params, static = eqx.partition(agent, eqx.is_array)
-    opt_state = optimizer.init(params)
+    state = agent.init(jax.random.PRNGKey(1))
     transitions = _make_transitions(jax.random.PRNGKey(3))
 
     # When
-    new_params, _new_opt_state, metrics = learn(params, static, opt_state, optimizer, transitions)
+    new_state, metrics = agent.learn(state, transitions)
 
     # Then
     assert jnp.isfinite(metrics["loss"])
-    old_leaves = jax.tree.leaves(params)
-    new_leaves = jax.tree.leaves(new_params)
+    old_leaves = jax.tree.leaves(state.params)
+    new_leaves = jax.tree.leaves(new_state.params)
     any_changed = any(not jnp.allclose(o, n) for o, n in zip(old_leaves, new_leaves, strict=False))
     assert any_changed, "No parameters changed after a learn step"
 
@@ -176,15 +178,13 @@ def test_trains_cartpole():
     agent = VanillaPG(
         actor=MLP(env.obs_shape[0], 64, width=64, depth=1, key=jax.random.split(k_agent)[0]),
         action_head=DiscreteHead(64, env.num_actions, key=jax.random.split(k_agent)[1]),
+        optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,
         normalise=True,
     )
 
-    optimizer = optax.adam(3e-3)
-    params, static = eqx.partition(agent, eqx.is_array)
-    opt_state = optimizer.init(params)
-
+    state = agent.init(jax.random.PRNGKey(42))
     env_state = env.reset(k_env)
 
     episode_returns: list[float] = []
@@ -192,48 +192,41 @@ def test_trains_cartpole():
     max_steps = 50_000
 
     # When — Python collection loop, jitted learn
-    jit_learn = jax.jit(lambda p, s, os, t: learn(p, s, os, optimizer, t))
+    jit_learn = jax.jit(agent.learn)
 
     while total_steps < max_steps:
-        # Collect one episode into a Python list, then stack
         k_loop, k_ep = jax.random.split(k_loop)
-        ep_obs, ep_act, ep_rew, ep_next, ep_done, ep_lp = [], [], [], [], [], []
+        ep_transitions: list[Transition] = []
         ep_return = 0.0
 
         while True:
             k_ep, k_act, k_step = jax.random.split(k_ep, 3)
 
-            current_agent = eqx.combine(params, static)
-            action, log_prob, _dist = current_agent.act(env_state.obs, k_act)
+            action = agent.act(state, env_state.obs, k_act)
 
             prev_obs = env_state.obs
             env_state = env.step(env_state, action, k_step)
 
-            ep_obs.append(prev_obs)
-            ep_act.append(action.reshape(1))
-            ep_rew.append(env_state.reward)
-            ep_next.append(env_state.obs)
-            ep_done.append(env_state.done)
-            ep_lp.append(log_prob)
+            ep_transitions.append(
+                make_transition(
+                    obs=prev_obs,
+                    action=action.reshape(1),
+                    reward=env_state.reward,
+                    next_obs=env_state.obs,
+                    done=env_state.done,
+                )
+            )
             ep_return += float(env_state.reward)
             total_steps += 1
 
-            if bool(env_state.done) or len(ep_obs) >= 500:
+            if bool(env_state.done) or len(ep_transitions) >= 500:
                 break
 
         episode_returns.append(ep_return)
 
-        # Stack into a single Transition batch
-        transitions = Transition(
-            obs=jnp.stack(ep_obs),
-            action=jnp.stack(ep_act),
-            reward=jnp.stack(ep_rew),
-            next_obs=jnp.stack(ep_next),
-            done=jnp.stack(ep_done),
-            log_prob=jnp.stack(ep_lp),
-            value=jnp.zeros(len(ep_obs)),
-        )
-        params, opt_state, _metrics = jit_learn(params, static, opt_state, transitions)
+        # Stack individual transitions into a batched Transition
+        transitions = jax.tree.map(lambda *xs: jnp.stack(xs), *ep_transitions)
+        state, _metrics = jit_learn(state, transitions)
 
     # Then
     recent = episode_returns[-20:]
