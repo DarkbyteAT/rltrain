@@ -8,7 +8,7 @@ import pytest
 
 from spike.agents.agent import Agent, gradient_step
 from spike.agents.sac import SAC
-from spike.heads import DiscreteHead, SquashedGaussianHead
+from spike.heads import DiscreteHead, GaussianHead, SquashedGaussianHead
 from spike.networks import MLP
 from spike.transitions import Transition
 
@@ -488,17 +488,39 @@ def test_discrete_polyak_updates_target():
 
 
 @pytest.mark.unit
-def test_squashed_gaussian_numerical_stability():
-    """log_prob is finite even with extreme mu values from SquashedGaussianHead.
+@pytest.mark.xfail(reason="distreqx Transformed(Normal, Tanh) produces NaN — justifies spike/distributions.py")
+def test_distreqx_squashed_gaussian_is_unstable():
+    """Demonstrates that distreqx's Transformed(Normal, Tanh) produces NaN log_prob
+    at moderate feature magnitudes. This is the upstream limitation that motivates
+    our custom SquashedNormal implementation."""
+    from distreqx.bijectors import Tanh
+    from distreqx.distributions import Transformed
 
-    Previously xfailed due to distreqx's Transformed(Normal, Tanh) producing
-    NaN. Now passes because SquashedGaussianHead uses our custom SquashedNormal
-    with the stable identity: log(1 - tanh²(x)) = 2·(log2 - x - softplus(-2x)).
+    # Given -- moderate feature values
+    key = jax.random.PRNGKey(99)
+    head_gaussian = GaussianHead(4, ACTION_DIM, key=key)
+    features = jnp.array([5.0, -5.0, 3.0, -3.0])
+    base_dist = head_gaussian(features)
+    dist = Transformed(distribution=base_dist, bijector=Tanh())
+
+    # When
+    action = dist.sample(jax.random.PRNGKey(0))
+    log_p = dist.log_prob(action)
+
+    # Then -- distreqx produces NaN (this SHOULD fail, proving the issue)
+    assert jnp.all(jnp.isfinite(log_p)), f"distreqx log_prob is NaN: {log_p}"
+
+
+@pytest.mark.unit
+def test_custom_squashed_normal_is_stable():
+    """Our SquashedNormal produces finite log_prob where distreqx fails.
+
+    Uses the stable identity: log(1 - tanh²(x)) = 2·(log2 - x - softplus(-2x))
+    to avoid catastrophic cancellation at saturation.
     """
-    # Given -- extreme feature values that push mu toward saturation
+    # Given -- same features that break distreqx
     key = jax.random.PRNGKey(99)
     head = SquashedGaussianHead(4, ACTION_DIM, key=key)
-
     extreme_features = jnp.array([5.0, -5.0, 3.0, -3.0])
 
     # When
@@ -506,6 +528,6 @@ def test_squashed_gaussian_numerical_stability():
     action = dist.sample(jax.random.PRNGKey(0))
     log_p = dist.log_prob(action)
 
-    # Then -- log_prob should be finite despite extreme inputs
-    assert jnp.all(jnp.isfinite(log_p)), f"log_prob should be finite with extreme features, got {log_p}"
-    assert jnp.all(jnp.isfinite(action)), f"action should be finite with extreme features, got {action}"
+    # Then -- our implementation is finite
+    assert jnp.all(jnp.isfinite(log_p)), f"log_prob should be finite, got {log_p}"
+    assert jnp.all(jnp.isfinite(action)), f"action should be finite, got {action}"
