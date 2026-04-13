@@ -20,7 +20,7 @@ This separation means:
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar, runtime_checkable
+from typing import ClassVar, Protocol, TypeVar, runtime_checkable
 
 import chex
 import equinox as eqx
@@ -75,6 +75,11 @@ class Agent(Protocol[S]):
     the concrete state type ``S``.  Structural subtyping means any
     ``eqx.Module`` with matching method signatures satisfies this
     protocol — no explicit inheritance required.
+
+    The optional ``collect_size`` attribute tells the Trainer how many
+    transitions to accumulate before calling ``learn``.  On-policy agents
+    set this to their horizon size; off-policy agents default to 1.
+    The Trainer reads it via ``getattr(agent, 'collect_size', 1)``.
     """
 
     def init(self, key: PRNGKeyArray) -> S:
@@ -223,6 +228,11 @@ class OnPolicyAgent(eqx.Module):
     The ``action_head`` field is typed as ``eqx.Module`` (not
     ``DiscreteHead``) to support both discrete and continuous heads.
     """
+
+    # ClassVar is excluded from dataclass fields, so subclasses can add
+    # non-default fields without violating ordering rules. Override in
+    # subclasses to change the default collect size.
+    collect_size: ClassVar[int] = 256
 
     actor: eqx.Module
     action_head: eqx.Module
