@@ -8,8 +8,7 @@ swapping the head switches between discrete and continuous control.
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from distreqx.bijectors import Tanh
-from distreqx.distributions import Beta, Categorical, Gamma, Normal, Transformed
+from distreqx.distributions import Beta, Categorical, Gamma, Normal
 from jaxtyping import Array, Float, PRNGKeyArray
 
 
@@ -56,8 +55,10 @@ class GaussianHead(eqx.Module):
 class SquashedGaussianHead(eqx.Module):
     r"""Maps features to a tanh-squashed Normal distribution.
 
-    Used by SAC for bounded continuous actions. The ``Transformed`` distribution
-    automatically corrects ``log_prob`` for the Jacobian of the tanh bijector.
+    Used by SAC for bounded continuous actions.  Returns a
+    :class:`spike.distributions.SquashedNormal` with a numerically stable
+    ``log_prob`` that avoids the catastrophic cancellation in distreqx's
+    ``Transformed(Normal, Tanh)`` bijector at saturation.
     """
 
     gaussian: GaussianHead
@@ -66,10 +67,12 @@ class SquashedGaussianHead(eqx.Module):
         """Initialise the underlying Gaussian head."""
         self.gaussian = GaussianHead(feature_dim, action_dim, key=key)
 
-    def __call__(self, features: Float[Array, " d"]) -> Transformed:
-        """Map features to a tanh-squashed Normal distribution."""
+    def __call__(self, features: Float[Array, " d"]):
+        """Map features to a numerically stable squashed Normal distribution."""
+        from spike.distributions import SquashedNormal
+
         base_dist = self.gaussian(features)
-        return Transformed(distribution=base_dist, bijector=Tanh())
+        return SquashedNormal(loc=base_dist.loc, scale=base_dist.scale)
 
 
 class GammaHead(eqx.Module):

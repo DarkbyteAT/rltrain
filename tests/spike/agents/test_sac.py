@@ -488,16 +488,17 @@ def test_discrete_polyak_updates_target():
 
 
 @pytest.mark.unit
-@pytest.mark.xfail(
-    reason="distreqx Transformed(Normal, Tanh) produces NaN log_prob at moderate feature magnitudes — upstream issue"
-)
 def test_squashed_gaussian_numerical_stability():
-    """log_prob is finite even with extreme mu values from SquashedGaussianHead."""
-    # Given -- extreme feature values that could produce large mu
+    """log_prob is finite even with extreme mu values from SquashedGaussianHead.
+
+    Previously xfailed due to distreqx's Transformed(Normal, Tanh) producing
+    NaN. Now passes because SquashedGaussianHead uses our custom SquashedNormal
+    with the stable identity: log(1 - tanh²(x)) = 2·(log2 - x - softplus(-2x)).
+    """
+    # Given -- extreme feature values that push mu toward saturation
     key = jax.random.PRNGKey(99)
     head = SquashedGaussianHead(4, ACTION_DIM, key=key)
 
-    # Features at the edge of typical training range (not adversarial)
     extreme_features = jnp.array([5.0, -5.0, 3.0, -3.0])
 
     # When
