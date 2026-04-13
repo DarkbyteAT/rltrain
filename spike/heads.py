@@ -129,9 +129,10 @@ class CategoricalAtomHead(eqx.Module):
     """
 
     linear: eqx.nn.Linear
-    atoms: Float[Array, " num_atoms"] = eqx.field(static=True)
     num_atoms: int = eqx.field(static=True)
     num_actions: int = eqx.field(static=True)
+    v_min: float = eqx.field(static=True)
+    v_max: float = eqx.field(static=True)
 
     def __init__(
         self,
@@ -145,9 +146,15 @@ class CategoricalAtomHead(eqx.Module):
     ):
         """Initialise with a linear layer projecting to ``num_actions * num_atoms`` logits."""
         self.linear = eqx.nn.Linear(feature_dim, num_actions * num_atoms, key=key)
-        self.atoms = jnp.linspace(v_min, v_max, num_atoms)
         self.num_atoms = num_atoms
         self.num_actions = num_actions
+        self.v_min = v_min
+        self.v_max = v_max
+
+    @property
+    def atoms(self) -> Float[Array, " num_atoms"]:
+        """Fixed atom support vector, computed from static v_min/v_max/num_atoms."""
+        return jnp.linspace(self.v_min, self.v_max, self.num_atoms)
 
     def __call__(self, features: Float[Array, " d"]) -> Float[Array, "num_actions num_atoms"]:
         """Map features to per-action PMFs via softmax over the atom axis."""

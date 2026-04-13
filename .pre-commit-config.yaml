@@ -50,11 +50,13 @@ repos:
           - -c
           - pyright rltrain/
         pass_filenames: false
+      # SPIKE-ONLY: scoped to tests/spike/ with --noconftest to avoid torch imports.
+      # Revert to `pytest -m unit` when merging back to main.
       - id: pytest
         name: unit tests
         language: system
         entry: bash
         args:
           - -c
-          - pytest -m unit --tb=short -q 2>/dev/null || echo "No unit tests found (yet)"
+          - pytest tests/spike/ --noconftest -m unit --tb=short -q 2>/dev/null || echo "No unit tests found (yet)"
         pass_filenames: false
