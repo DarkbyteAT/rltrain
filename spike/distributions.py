@@ -62,10 +62,12 @@ class SquashedNormal(eqx.Module):
         return self._log_prob_from_unsquashed(u)
 
     def entropy(self) -> Float[Array, " *d"]:
-        """Approximate entropy of the squashed distribution.
+        """Upper bound on the entropy of the squashed distribution.
 
-        Uses the unsquashed Normal's entropy as an upper bound.
-        The exact entropy of a tanh-squashed Normal has no closed form.
+        Returns the entropy of the unsquashed Normal, which is strictly
+        greater than the true entropy of the tanh-squashed distribution
+        (tanh reduces support from R to (-1,1), lowering entropy).
+        No closed-form expression exists for the squashed entropy.
         """
         return 0.5 * jnp.log(2.0 * jnp.pi * jnp.e * self.scale**2)
 

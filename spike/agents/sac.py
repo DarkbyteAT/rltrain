@@ -16,6 +16,8 @@ receive gradients.
 
 from __future__ import annotations
 
+import math
+
 import chex
 import equinox as eqx
 import jax
@@ -23,10 +25,13 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
-from spike.agents.agent import gradient_step, init_target_params
+from spike.agents.agent import gradient_step, gradient_step_with_aux, init_target_params
 from spike.heads import DiscreteHead
 from spike.networks import MLP
 from spike.transitions import Transition
+
+
+LOG_EPS = 1e-8
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +124,6 @@ class SAC(eqx.Module):
         self.tau = tau
         self.discrete = isinstance(action_head, DiscreteHead)
 
-        import math
-
         if target_entropy is not None:
             self.target_entropy = float(target_entropy)
         elif self.discrete:
@@ -136,7 +139,7 @@ class SAC(eqx.Module):
 
     def init(self, key: PRNGKeyArray) -> SACState:
         """Construct the initial training state with separate param groups."""
-        actor_params, critic_params, alpha_params = self._partition_params()
+        actor_params, critic_params = self._partition_params()
         log_alpha = jnp.array(0.0)
 
         actor_opt_state = self.actor_optimizer.init(actor_params)
@@ -184,7 +187,7 @@ class SAC(eqx.Module):
                 k1,
             )
 
-        new_critic, new_critic_opt, c_loss = gradient_step(
+        new_critic, new_critic_opt, c_loss, critic_aux = gradient_step_with_aux(
             critic_loss_fn,
             state.critic_params,
             state.critic_opt_state,
@@ -243,6 +246,7 @@ class SAC(eqx.Module):
             "critic_loss": c_loss,
             "actor_loss": a_loss,
             "alpha_loss": alpha_loss,
+            **critic_aux,
         }
 
     def act(
@@ -271,7 +275,7 @@ class SAC(eqx.Module):
         critic_module = (self.critic_1, self.critic_2)
         critic_params = eqx.partition(critic_module, eqx.is_array)[0]
 
-        return actor_params, critic_params, None
+        return actor_params, critic_params
 
     def _statics(self):
         """Return static (non-array) parts for actor and critic modules."""
@@ -308,13 +312,16 @@ class SAC(eqx.Module):
         alpha,
         batch,
         key,
-    ) -> Float[Array, ""]:
+    ) -> tuple[Float[Array, ""], dict[str, Array]]:
         r"""Twin Q-network Bellman MSE loss.
 
-        $$L_Q = \frac{1}{B}\sum_i\bigl(Q_1(s,a) - y\bigr)^2
+        $$L_Q = \frac{1}{2B}\sum_i\bigl(Q_1(s,a) - y\bigr)^2
                 + \bigl(Q_2(s,a) - y\bigr)^2$$
 
         where $y = r + \gamma(1-d)\bigl(\min(Q_1', Q_2')(s', a') - \alpha \log\pi(a'|s')\bigr)$.
+
+        Returns:
+            ``(loss, {"td_errors": abs_td_errors})`` for PER integration.
         """
         q1, q2 = self._reconstruct_critics(critic_params, critic_static)
         t_q1, t_q2 = self._reconstruct_critics(target_critic_params, critic_static)
@@ -331,7 +338,7 @@ class SAC(eqx.Module):
             next_features = jax.vmap(actor)(batch.next_obs)
             next_dists = jax.vmap(head)(next_features)
             next_probs = next_dists.probs  # (B, A)
-            next_log_probs = jnp.log(next_probs + 1e-8)
+            next_log_probs = jnp.log(next_probs + LOG_EPS)
 
             t_q1_next = jax.vmap(t_q1)(batch.next_obs)  # (B, A)
             t_q2_next = jax.vmap(t_q2)(batch.next_obs)  # (B, A)
@@ -340,26 +347,27 @@ class SAC(eqx.Module):
             # V(s') = sum_a pi(a|s') * (min_Q(s',a) - alpha * log pi(a|s'))
             v_next = jnp.sum(next_probs * (min_q_next - alpha * next_log_probs), axis=-1)
         else:
-            # Continuous: Q(s, a) -> scalar
-            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])))(batch.obs, batch.action)
-            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])))(batch.obs, batch.action)
+            # Continuous: Q(s, a) -> scalar (squeeze (1,) -> ())
+            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])).squeeze())(batch.obs, batch.action)
+            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])).squeeze())(batch.obs, batch.action)
 
-            # Sample next action from current policy
+            # Sample next action from current policy using stable sample_and_log_prob
             next_features = jax.vmap(actor)(batch.next_obs)
             next_dists = jax.vmap(head)(next_features)
-            next_actions = next_dists.sample(key)
-            next_log_probs = jnp.sum(next_dists.log_prob(next_actions), axis=-1)
+            next_actions, next_per_dim_lp = next_dists.sample_and_log_prob(key)
+            next_log_probs = jnp.sum(next_per_dim_lp, axis=-1)
 
-            t_q1_next = jax.vmap(lambda o, a: t_q1(jnp.concatenate([o, a])))(batch.next_obs, next_actions)
-            t_q2_next = jax.vmap(lambda o, a: t_q2(jnp.concatenate([o, a])))(batch.next_obs, next_actions)
+            t_q1_next = jax.vmap(lambda o, a: t_q1(jnp.concatenate([o, a])).squeeze())(batch.next_obs, next_actions)
+            t_q2_next = jax.vmap(lambda o, a: t_q2(jnp.concatenate([o, a])).squeeze())(batch.next_obs, next_actions)
             min_q_next = jnp.minimum(t_q1_next, t_q2_next)
             v_next = min_q_next - alpha * next_log_probs
 
         done_mask = 1.0 - batch.done.astype(jnp.float32)
         td_target = batch.reward + self.gamma * done_mask * v_next
 
-        critic_loss = jnp.mean((q1_val - td_target) ** 2 + (q2_val - td_target) ** 2)
-        return critic_loss
+        td_errors = jnp.minimum(q1_val, q2_val) - td_target
+        critic_loss = 0.5 * jnp.mean((q1_val - td_target) ** 2 + (q2_val - td_target) ** 2)
+        return critic_loss, {"td_errors": jnp.abs(td_errors)}
 
     def _actor_loss(
         self,
@@ -386,7 +394,7 @@ class SAC(eqx.Module):
 
         if self.discrete:
             probs = dists.probs  # (B, A)
-            log_probs = jnp.log(probs + 1e-8)
+            log_probs = jnp.log(probs + LOG_EPS)
 
             q1_all = jax.vmap(q1)(batch.obs)  # (B, A)
             q2_all = jax.vmap(q2)(batch.obs)  # (B, A)
@@ -395,11 +403,11 @@ class SAC(eqx.Module):
             # Expectation over all actions
             actor_loss = jnp.mean(jnp.sum(probs * (alpha * log_probs - min_q), axis=-1))
         else:
-            actions = dists.sample(key)
-            log_probs = jnp.sum(dists.log_prob(actions), axis=-1)
+            actions, per_dim_lp = dists.sample_and_log_prob(key)
+            log_probs = jnp.sum(per_dim_lp, axis=-1)
 
-            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])))(batch.obs, actions)
-            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])))(batch.obs, actions)
+            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])).squeeze())(batch.obs, actions)
+            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])).squeeze())(batch.obs, actions)
             min_q = jnp.minimum(q1_val, q2_val)
 
             actor_loss = jnp.mean(alpha * log_probs - min_q)
@@ -427,13 +435,13 @@ class SAC(eqx.Module):
 
         if self.discrete:
             probs = dists.probs  # (B, A)
-            log_probs = jnp.log(probs + 1e-8)
+            log_probs = jnp.log(probs + LOG_EPS)
             # Per-sample entropy contribution weighted by policy
             entropy_term = jnp.sum(probs * (log_probs + self.target_entropy), axis=-1)
             alpha_loss = -alpha * jnp.mean(entropy_term)
         else:
-            actions = dists.sample(key)
-            log_probs = jnp.sum(dists.log_prob(actions), axis=-1)
+            actions, per_dim_lp = dists.sample_and_log_prob(key)
+            log_probs = jnp.sum(per_dim_lp, axis=-1)
             alpha_loss = -alpha * jnp.mean(log_probs + self.target_entropy)
 
         return alpha_loss

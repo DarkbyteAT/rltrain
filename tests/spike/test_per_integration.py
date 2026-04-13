@@ -207,19 +207,7 @@ def test_per_loop_with_dqn():
 
     def loss_fn(params):
         model = eqx.combine(params, static)
-        target_net = eqx.combine(state.target_params, static).q_net
-
-        q_all = jax.vmap(model.q_net)(batch.obs)
-        q_sa = q_all[jnp.arange(q_all.shape[0]), batch.action.astype(jnp.int32)]
-
-        target_q_all = jax.vmap(target_net)(batch.next_obs)
-        target_max = jnp.max(target_q_all, axis=-1)
-
-        td_target = batch.reward + 0.99 * target_max * (1.0 - batch.done.astype(jnp.float32))
-        td_errors = td_target - q_sa
-        per_sample_loss = td_errors**2
-        weighted_loss = jnp.mean(is_weights * per_sample_loss)
-        return weighted_loss, {"td_errors": jnp.abs(td_errors)}
+        return model._loss_weighted(state.target_params, static, batch, is_weights)
 
     new_params, new_opt_state, loss_val, aux = gradient_step_with_aux(
         loss_fn, state.params, state.opt_state, agent.optimizer

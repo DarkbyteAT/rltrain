@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import optax
 import pytest
 
-from spike.agents.agent import Agent, gradient_step
+from spike.agents.agent import Agent, gradient_step, gradient_step_with_aux
 from spike.agents.sac import SAC
 from spike.heads import DiscreteHead, GaussianHead, SquashedGaussianHead
 from spike.networks import MLP
@@ -116,8 +116,8 @@ def test_gradients_flow():
     _actor_static, _critic_static = agent._statics()
     alpha = jnp.exp(state.log_alpha)
 
-    # When -- compute gradients for each loss
-    _, critic_grads = eqx.filter_value_and_grad(
+    # When -- compute gradients for each loss (critic returns (loss, aux) so has_aux=True)
+    (_, _aux), critic_grads = eqx.filter_value_and_grad(
         lambda cp: agent._critic_loss(
             cp,
             _critic_static,
@@ -127,7 +127,8 @@ def test_gradients_flow():
             alpha,
             batch,
             jax.random.PRNGKey(3),
-        )
+        ),
+        has_aux=True,
     )(state.critic_params)
 
     _, actor_grads = eqx.filter_value_and_grad(
@@ -238,7 +239,7 @@ def test_critic_grads_dont_flow_to_actor():
             jax.random.PRNGKey(3),
         )
 
-    new_critic, _, _ = gradient_step(
+    new_critic, _, _, _aux = gradient_step_with_aux(
         critic_loss_fn,
         state.critic_params,
         state.critic_opt_state,
@@ -417,8 +418,8 @@ def test_discrete_gradients_flow():
     _actor_static, _critic_static = agent._statics()
     alpha = jnp.exp(state.log_alpha)
 
-    # When
-    _, critic_grads = eqx.filter_value_and_grad(
+    # When (critic returns (loss, aux) so has_aux=True)
+    (_, _aux), critic_grads = eqx.filter_value_and_grad(
         lambda cp: agent._critic_loss(
             cp,
             _critic_static,
@@ -428,7 +429,8 @@ def test_discrete_gradients_flow():
             alpha,
             batch,
             jax.random.PRNGKey(3),
-        )
+        ),
+        has_aux=True,
     )(state.critic_params)
 
     _, actor_grads = eqx.filter_value_and_grad(
@@ -509,6 +511,76 @@ def test_distreqx_squashed_gaussian_is_unstable():
 
     # Then -- distreqx produces NaN (this SHOULD fail, proving the issue)
     assert jnp.all(jnp.isfinite(log_p)), f"distreqx log_prob is NaN: {log_p}"
+
+
+@pytest.mark.unit
+def test_continuous_learn_jit_compatible():
+    """SAC continuous learn works under jax.jit."""
+    # Given
+    agent = _make_continuous_agent()
+    state = agent.init(KEY)
+    batch = _make_continuous_batch(jax.random.PRNGKey(1))
+
+    # When
+    jit_learn = eqx.filter_jit(agent.learn)
+    new_state, metrics = jit_learn(state, batch, jax.random.PRNGKey(2))
+
+    # Then
+    assert jnp.isfinite(metrics["critic_loss"])
+    assert jnp.isfinite(metrics["actor_loss"])
+    assert jnp.isfinite(metrics["alpha_loss"])
+
+
+@pytest.mark.unit
+def test_discrete_learn_jit_compatible():
+    """SAC discrete learn works under jax.jit."""
+    # Given
+    agent = _make_discrete_agent()
+    state = agent.init(KEY)
+    batch = _make_discrete_batch(jax.random.PRNGKey(1))
+
+    # When
+    jit_learn = eqx.filter_jit(agent.learn)
+    new_state, metrics = jit_learn(state, batch, jax.random.PRNGKey(2))
+
+    # Then
+    assert jnp.isfinite(metrics["critic_loss"])
+    assert jnp.isfinite(metrics["actor_loss"])
+    assert jnp.isfinite(metrics["alpha_loss"])
+
+
+@pytest.mark.unit
+def test_done_mask_zeros_bootstrap():
+    """With done=True transitions, the TD target does not bootstrap V(s')."""
+    # Given
+    agent = _make_continuous_agent()
+    state = agent.init(KEY)
+    batch = _make_continuous_batch(jax.random.PRNGKey(1))
+    batch = batch.replace(done=jnp.ones(batch.done.shape, dtype=jnp.bool_))
+
+    # When
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(2))
+
+    # Then
+    assert jnp.isfinite(metrics["critic_loss"])
+    assert jnp.isfinite(metrics["actor_loss"])
+
+
+@pytest.mark.unit
+def test_learn_returns_td_errors():
+    """learn() returns td_errors in metrics for PER integration."""
+    # Given
+    agent = _make_continuous_agent()
+    state = agent.init(KEY)
+    batch = _make_continuous_batch(jax.random.PRNGKey(1))
+
+    # When
+    new_state, metrics = agent.learn(state, batch, jax.random.PRNGKey(2))
+
+    # Then
+    assert "td_errors" in metrics
+    assert metrics["td_errors"].shape == (BATCH_SIZE,)
+    assert jnp.all(metrics["td_errors"] >= 0)  # absolute values
 
 
 @pytest.mark.unit
