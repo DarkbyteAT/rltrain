@@ -72,9 +72,13 @@ def test_buffer_sample_returns_correct_batch(buffer, sample_transition, key):
     for _ in range(8):
         buffer = buffer_add(buffer, sample_transition)
 
-    batch = buffer_sample(buffer, key, batch_size=4)
+    batch, indices, is_weights = buffer_sample(buffer, key, batch_size=4)
     chex.assert_shape(batch.obs, (4, 4))
     chex.assert_shape(batch.reward, (4,))
+    chex.assert_shape(indices, (4,))
+    chex.assert_shape(is_weights, (4,))
+    # Uniform sampling: IS weights are all 1.0
+    chex.assert_trees_all_close(is_weights, jnp.ones(4))
 
 
 def test_buffer_shuffle_into_minibatches(buffer, sample_transition, key):
@@ -128,5 +132,6 @@ def test_buffer_sample_prioritised(buffer, sample_transition, key):
     buffer = buffer_update_priorities(buffer, jnp.array([0]), jnp.array([1000.0]))
 
     # Sample many times — index 0 should dominate
-    batch = buffer_sample(buffer, key, batch_size=4, prioritised=True)
+    batch, indices, is_weights = buffer_sample(buffer, key, batch_size=4, prioritised=True)
     chex.assert_shape(batch.obs, (4, 4))
+    chex.assert_shape(is_weights, (4,))

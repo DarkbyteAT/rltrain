@@ -1,0 +1,242 @@
+"""Tests for Prioritised Experience Replay (PER) integration.
+
+Covers priority-weighted sampling, importance-sampling weights, and the
+full PER loop with a DQN agent.
+"""
+
+import jax
+import jax.numpy as jnp
+import optax
+import pytest
+
+from spike.agents.agent import gradient_step_with_aux
+from spike.agents.vanilla_dqn import VanillaDQN
+from spike.buffer import (
+    buffer_add,
+    buffer_sample,
+    buffer_update_priorities,
+    make_buffer,
+)
+from spike.networks import MLP
+from spike.transitions import make_transition
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+OBS_DIM = 4
+NUM_ACTIONS = 2
+
+
+def _fill_buffer_with_distinct_transitions(capacity=100, count=100):
+    """Create a buffer with `count` distinct transitions (reward = index)."""
+    buf = make_buffer(capacity=capacity, obs_shape=(OBS_DIM,), action_shape=())
+    for i in range(count):
+        t = make_transition(
+            obs=jnp.ones(OBS_DIM) * i,
+            action=jnp.array(0),
+            reward=jnp.array(float(i)),
+            next_obs=jnp.ones(OBS_DIM) * (i + 1),
+            done=jnp.array(False),
+        )
+        buf = buffer_add(buf, t)
+    return buf
+
+
+def _make_agent(key):
+    return VanillaDQN(
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        optimizer=optax.adam(1e-3),
+        gamma=0.99,
+        target_rate=0.01,
+        num_actions=NUM_ACTIONS,
+        eps_start=1.0,
+        eps_end=0.05,
+        eps_decay=5e-4,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_per_samples_high_priority_more_often():
+    """Given 10% of transitions have 100x priority, they appear disproportionately often."""
+    # Given
+    buf = _fill_buffer_with_distinct_transitions(capacity=100, count=100)
+
+    # Set first 10 transitions to high priority (100x)
+    high_indices = jnp.arange(10)
+    buf = buffer_update_priorities(buf, high_indices, jnp.ones(10) * 100.0)
+
+    # When — sample 1000 times with batch_size=32
+    key = jax.random.PRNGKey(42)
+    all_rewards = []
+    for _i in range(1000):
+        key, k = jax.random.split(key)
+        batch, _indices, _is_weights = buffer_sample(buf, k, batch_size=32, prioritised=True)
+        all_rewards.append(batch.reward)
+
+    all_rewards = jnp.concatenate(all_rewards)  # shape: (32000,)
+
+    # Then — high-priority transitions (reward 0-9) should appear much more often
+    # than their 10% share. With 100x priority on 10 items vs 1x on 90 items,
+    # expected fraction ~ 100*10 / (100*10 + 1*90) = 1000/1090 ~ 91.7%
+    high_priority_count = jnp.sum(all_rewards < 10.0)
+    fraction = float(high_priority_count) / len(all_rewards)
+    assert fraction > 0.5, f"Expected high-priority transitions > 50% of samples, got {fraction:.1%}"
+
+
+@pytest.mark.unit
+def test_is_weights_correct_bias():
+    r"""IS weights are larger for rarer (low-probability) samples.
+
+    With uniform priorities, all IS weights = 1. With skewed priorities,
+    IS weights compensate: high-priority (over-sampled) items get weight < 1
+    relative to low-priority (under-sampled) items.
+    """
+    # Given
+    buf = _fill_buffer_with_distinct_transitions(capacity=20, count=20)
+    # Give index 0 very high priority
+    buf = buffer_update_priorities(buf, jnp.array([0]), jnp.array([1000.0]))
+
+    # When
+    key = jax.random.PRNGKey(7)
+    _batch, indices, is_weights = buffer_sample(buf, key, batch_size=100, prioritised=True, alpha=0.6, beta=0.4)
+
+    # Then — max IS weight = 1.0 (by normalisation)
+    assert float(jnp.max(is_weights)) == pytest.approx(1.0, abs=1e-5)
+
+    # IS weights for index 0 (high priority, high probability) should be < 1.0
+    idx0_mask = indices == 0
+    if jnp.any(idx0_mask):
+        idx0_weights = is_weights[idx0_mask]
+        assert float(jnp.mean(idx0_weights)) < 1.0, "High-priority samples should have IS weight < 1.0"
+
+
+@pytest.mark.unit
+def test_is_weights_are_one_for_uniform():
+    """With prioritised=False, IS weights should all be exactly 1.0."""
+    # Given
+    buf = _fill_buffer_with_distinct_transitions(capacity=20, count=20)
+
+    # When
+    key = jax.random.PRNGKey(0)
+    _batch, _indices, is_weights = buffer_sample(buf, key, batch_size=8, prioritised=False)
+
+    # Then
+    assert jnp.allclose(is_weights, jnp.ones(8))
+
+
+@pytest.mark.unit
+def test_beta_one_gives_full_correction():
+    r"""With $\beta = 1.0$, IS weights should fully correct the sampling bias.
+
+    The mean of ``is_weights * f(x)`` over prioritised samples should approximate
+    the uniform-sample mean of ``f(x)`` (up to variance). We verify that weights
+    span a wider range than with $\beta = 0.4$.
+    """
+    # Given
+    buf = _fill_buffer_with_distinct_transitions(capacity=50, count=50)
+    # Make priorities very skewed
+    skewed_prios = jnp.arange(1, 51, dtype=jnp.float32)  # 1..50
+    buf = buffer_update_priorities(buf, jnp.arange(50), skewed_prios)
+
+    key = jax.random.PRNGKey(99)
+
+    # When — beta=0.4 (partial correction)
+    _batch, _idx, w_partial = buffer_sample(buf, key, batch_size=200, prioritised=True, alpha=1.0, beta=0.4)
+
+    # When — beta=1.0 (full correction)
+    _batch, _idx, w_full = buffer_sample(buf, key, batch_size=200, prioritised=True, alpha=1.0, beta=1.0)
+
+    # Then — full correction should have a wider spread of weights
+    # (more correction = bigger range between min and max weight)
+    range_partial = float(jnp.max(w_partial) - jnp.min(w_partial))
+    range_full = float(jnp.max(w_full) - jnp.min(w_full))
+    assert range_full > range_partial, (
+        f"Full correction (beta=1.0) should have wider weight range "
+        f"({range_full:.4f}) than partial ({range_partial:.4f})"
+    )
+
+    # Both should have max weight = 1.0
+    assert float(jnp.max(w_full)) == pytest.approx(1.0, abs=1e-5)
+    assert float(jnp.max(w_partial)) == pytest.approx(1.0, abs=1e-5)
+
+
+@pytest.mark.integration
+def test_per_loop_with_dqn():
+    """Full PER loop: init DQN, add transitions, sample with PER, learn, update priorities.
+
+    Verifies that priorities change after a learn step with TD error feedback.
+    """
+    # Given — agent, buffer, transitions
+    key = jax.random.PRNGKey(0)
+    k_agent, k_data, k_sample, k_learn = jax.random.split(key, 4)
+
+    agent = _make_agent(k_agent)
+    state = agent.init(jax.random.PRNGKey(1))
+
+    buf = make_buffer(capacity=200, obs_shape=(OBS_DIM,), action_shape=())
+
+    # Fill buffer with random transitions
+    for _i in range(100):
+        k_data, k1, k2, k3, k4 = jax.random.split(k_data, 5)
+        t = make_transition(
+            obs=jax.random.normal(k1, (OBS_DIM,)),
+            action=jax.random.randint(k2, (), 0, NUM_ACTIONS),
+            reward=jax.random.normal(k3, ()),
+            next_obs=jax.random.normal(k4, (OBS_DIM,)),
+            done=jnp.array(False),
+        )
+        buf = buffer_add(buf, t)
+
+    # Record priorities before
+    prio_before = buf.priorities.copy()
+
+    # When — PER sample + learn + priority update
+    batch, indices, is_weights = buffer_sample(buf, k_sample, batch_size=32, prioritised=True, alpha=0.6, beta=0.4)
+
+    # Compute IS-weighted loss with aux (TD errors) using gradient_step_with_aux
+    import equinox as eqx
+
+    static = eqx.partition(agent, eqx.is_array)[1]
+
+    def loss_fn(params):
+        model = eqx.combine(params, static)
+        target_net = eqx.combine(state.target_params, static).q_net
+
+        q_all = jax.vmap(model.q_net)(batch.obs)
+        q_sa = q_all[jnp.arange(q_all.shape[0]), batch.action.astype(jnp.int32)]
+
+        target_q_all = jax.vmap(target_net)(batch.next_obs)
+        target_max = jnp.max(target_q_all, axis=-1)
+
+        td_target = batch.reward + 0.99 * target_max * (1.0 - batch.done.astype(jnp.float32))
+        td_errors = td_target - q_sa
+        per_sample_loss = td_errors**2
+        weighted_loss = jnp.mean(is_weights * per_sample_loss)
+        return weighted_loss, {"td_errors": jnp.abs(td_errors)}
+
+    new_params, new_opt_state, loss_val, aux = gradient_step_with_aux(
+        loss_fn, state.params, state.opt_state, agent.optimizer
+    )
+
+    # Update priorities with absolute TD errors (+ small epsilon for stability)
+    new_priorities = aux["td_errors"] + 1e-6
+    buf = buffer_update_priorities(buf, indices, new_priorities)
+
+    # Then — priorities at sampled indices should have changed
+    prio_after = buf.priorities
+    changed_mask = prio_before[indices] != prio_after[indices]
+    assert jnp.any(changed_mask), "Priorities should change after TD error update"
+
+    # Loss should be finite
+    assert jnp.isfinite(loss_val)
+
+    # TD errors should be finite and non-negative
+    assert jnp.all(jnp.isfinite(aux["td_errors"]))
+    assert jnp.all(aux["td_errors"] >= 0.0)

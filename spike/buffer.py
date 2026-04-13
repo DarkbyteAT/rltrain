@@ -69,8 +69,31 @@ def buffer_sample(
     batch_size: int,
     *,
     prioritised: bool = False,
-) -> Transition:
-    """Sample a batch of transitions (uniform or priority-weighted)."""
+    alpha: float = 0.6,
+    beta: float = 0.4,
+) -> tuple[Transition, chex.Array, chex.Array]:
+    r"""Sample a batch of transitions (uniform or priority-weighted).
+
+    Returns:
+        ``(batch, indices, is_weights)`` where ``is_weights`` has shape
+        ``(batch_size,)`` and provides importance-sampling correction.
+
+        For uniform sampling, ``is_weights`` is all ones (no correction).
+        For prioritised sampling:
+
+        $$P(i) = p_i^\alpha / \sum_j p_j^\alpha$$
+        $$w_i = (N \cdot P(i))^{-\beta} / \max_j w_j$$
+
+    Args:
+        buffer: Experience buffer to sample from.
+        key: PRNG key.
+        batch_size: Number of transitions to sample.
+        prioritised: Whether to use priority-weighted sampling.
+        alpha: Priority exponent — controls how much prioritisation is used.
+            0 = uniform, 1 = full prioritisation.
+        beta: IS correction exponent — controls how much bias correction.
+            0 = no correction, 1 = full correction.
+    """
     capacity = buffer.data.obs.shape[0]
     if prioritised:
         # Normalise priorities over valid entries, zero-out invalid slots
@@ -79,12 +102,20 @@ def buffer_sample(
             buffer.priorities,
             0.0,
         )
-        probs = valid_priorities / jnp.sum(valid_priorities)
+        powered = valid_priorities**alpha
+        probs = powered / jnp.sum(powered)
         indices = jax.random.choice(key, capacity, shape=(batch_size,), replace=True, p=probs)
+
+        # IS weights: w_i = (N * P(i))^(-beta), normalised so max = 1
+        sampled_probs = probs[indices]
+        weights = (buffer.size * sampled_probs) ** (-beta)
+        is_weights = weights / jnp.max(weights)
     else:
         indices = jax.random.randint(key, shape=(batch_size,), minval=0, maxval=buffer.size)
+        is_weights = jnp.ones(batch_size)
 
-    return jax.tree.map(lambda x: x[indices], buffer.data)
+    batch = jax.tree.map(lambda x: x[indices], buffer.data)
+    return batch, indices, is_weights
 
 
 def buffer_shuffle_into_minibatches(

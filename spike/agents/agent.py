@@ -128,6 +128,33 @@ def gradient_step(
     return new_params, new_opt_state, loss_val
 
 
+def gradient_step_with_aux(
+    loss_fn,
+    params: PyTree[Array],
+    opt_state: optax.OptState,
+    optimizer: optax.GradientTransformation,
+) -> tuple[PyTree[Array], optax.OptState, Float[Array, ""], dict]:
+    r"""Like ``gradient_step`` but ``loss_fn`` returns ``(loss, aux_dict)``.
+
+    Uses ``has_aux=True`` in ``eqx.filter_value_and_grad`` to propagate
+    auxiliary data (e.g. TD errors for PER) alongside the loss without a
+    second forward pass.
+
+    Args:
+        loss_fn: Callable ``params -> (scalar_loss, aux_dict)``.
+        params: Trainable parameter pytree.
+        opt_state: Current optimizer state.
+        optimizer: An ``optax.GradientTransformation``.
+
+    Returns:
+        ``(new_params, new_opt_state, loss_value, aux_dict)``
+    """
+    (loss_val, aux), grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(params)
+    updates, new_opt_state = optimizer.update(grads, opt_state, params)
+    new_params = optax.apply_updates(params, updates)
+    return new_params, new_opt_state, loss_val, aux
+
+
 def init_target_params(params: PyTree[Array]) -> PyTree[Array]:
     """Create target parameters as a copy of the online parameters.
 

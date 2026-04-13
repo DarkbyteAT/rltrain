@@ -6,6 +6,7 @@ from spike.agents.distributional_dqn import DistributionalDQN
 from spike.agents.double_dqn import DoubleDQN
 from spike.agents.ppo import PPO
 from spike.agents.reinforce import REINFORCE
+from spike.agents.sac import SAC, SACState
 from spike.agents.spo import SPO
 from spike.agents.vanilla_ac import VanillaAC
 from spike.agents.vanilla_dqn import DQNState, VanillaDQN
@@ -21,6 +22,8 @@ __all__ = [
     "DoubleDQN",
     "PPO",
     "REINFORCE",
+    "SAC",
+    "SACState",
     "SPO",
     "TrainState",
     "VanillaAC",

@@ -221,7 +221,7 @@ def test_trains_cartpole():
         buffer = buffer_add(buffer, transition)
 
         if step >= warmup_steps and int(buffer.size) >= batch_size:
-            batch = buffer_sample(buffer, k_sample, batch_size)
+            batch, _indices, _is_weights = buffer_sample(buffer, k_sample, batch_size)
             state, _metrics = learn_jit(state, batch, jax.random.PRNGKey(0))
 
     # Evaluate: run 20 greedy episodes

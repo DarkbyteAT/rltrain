@@ -128,19 +128,19 @@ class VanillaDQN(eqx.Module):
 
     # --------------- Internal ---------------
 
-    def _loss(
+    def _td_errors(
         self,
         target_params: PyTree[Array],
         static: PyTree,
         batch: Transition,
-    ) -> Float[Array, ""]:
-        r"""Bellman MSE loss.
+    ) -> Array:
+        r"""Compute per-sample TD errors.
 
-        $$L = \frac{1}{B}\sum_i \bigl(r_i + \gamma \max_{a'} Q_{\text{target}}(s'_i, a')
-        \cdot (1 - d_i) - Q(s_i, a_i)\bigr)^2$$
+        $$\delta_i = r_i + \gamma \max_{a'} Q_{\text{target}}(s'_i, a')
+        \cdot (1 - d_i) - Q(s_i, a_i)$$
 
-        Called on a reconstructed agent (with online params combined), so
-        ``self.q_net`` carries the online weights.
+        Returns:
+            TD errors with shape ``(batch_size,)``.
         """
         target_net = eqx.combine(target_params, static).q_net
 
@@ -151,5 +151,39 @@ class VanillaDQN(eqx.Module):
         target_max = jnp.max(target_q_all, axis=-1)
 
         td_target = batch.reward + self.gamma * target_max * (1.0 - batch.done.astype(jnp.float32))
-        td_error = td_target - q_sa
+        return td_target - q_sa
+
+    def _loss(
+        self,
+        target_params: PyTree[Array],
+        static: PyTree,
+        batch: Transition,
+    ) -> Float[Array, ""]:
+        r"""Bellman MSE loss (uniform weighting).
+
+        $$L = \frac{1}{B}\sum_i \delta_i^2$$
+        """
+        td_error = self._td_errors(target_params, static, batch)
         return jnp.mean(td_error**2)
+
+    def _loss_weighted(
+        self,
+        target_params: PyTree[Array],
+        static: PyTree,
+        batch: Transition,
+        is_weights: Array,
+    ) -> tuple[Float[Array, ""], dict[str, Array]]:
+        r"""IS-weighted Bellman MSE loss with auxiliary TD errors for PER.
+
+        $$L = \frac{1}{B}\sum_i w_i \, \delta_i^2$$
+
+        where $w_i$ are importance-sampling weights from prioritised replay.
+
+        Returns:
+            ``(loss, {"td_errors": |delta|})`` — the aux dict carries absolute
+            TD errors for priority updates.
+        """
+        td_error = self._td_errors(target_params, static, batch)
+        per_sample_loss = td_error**2
+        weighted_loss = jnp.mean(is_weights * per_sample_loss)
+        return weighted_loss, {"td_errors": jnp.abs(td_error)}
