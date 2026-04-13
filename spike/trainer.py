@@ -11,8 +11,8 @@ The Trainer is generic over the agent state type ``S`` and never inspects its fi
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
-from typing import Protocol, runtime_checkable
 
 import equinox as eqx
 import jax
@@ -28,42 +28,8 @@ from spike.buffer import (
 from spike.transitions import make_transition
 
 
-# ---------------------------------------------------------------------------
-# Callback protocol
-# ---------------------------------------------------------------------------
-
-
-@runtime_checkable
-class Callback(Protocol):
-    """Hook protocol for training-loop observers.
-
-    All methods receive Python values (not JAX arrays). Implement any
-    subset; the Trainer calls all five unconditionally.
-    """
-
-    def on_train_start(self, config: dict, run_dir: Path | None) -> None:
-        """Called once before the training loop begins."""
-        ...
-
-    def on_step(self, step: int, metrics: dict[str, float]) -> None:
-        """Called after each learn step with training metrics."""
-        ...
-
-    def on_episode_end(self, episode: int, episode_return: float, episode_length: int) -> None:
-        """Called when an episode completes."""
-        ...
-
-    def on_checkpoint(self, step: int, agent_state: object, run_dir: Path | None) -> None:
-        """Called at checkpoint intervals."""
-        ...
-
-    def on_train_end(self, agent_state: object, run_dir: Path | None) -> None:
-        """Called once after the training loop exits."""
-        ...
-
-
 class _NoOpCallback:
-    """Default callback that does nothing — satisfies the protocol."""
+    """Default callback that does nothing — satisfies the Callback protocol."""
 
     def on_train_start(self, config: dict, run_dir: Path | None) -> None:
         """No-op."""
@@ -148,6 +114,14 @@ class Trainer:
             self.min_buffer_size = collect_size if self._on_policy else batch_size
         else:
             self.min_buffer_size = min_buffer_size
+
+        if self.num_steps % self.checkpoint_steps != 0:
+            warnings.warn(
+                f"num_steps ({self.num_steps}) is not divisible by checkpoint_steps "
+                f"({self.checkpoint_steps}). Scan strategy will run "
+                f"{(self.num_steps // self.checkpoint_steps) * self.checkpoint_steps} steps.",
+                stacklevel=2,
+            )
 
     def fit(self, key: PRNGKeyArray):
         """Run the training loop. Auto-dispatches on env.capabilities."""
@@ -274,6 +248,24 @@ class Trainer:
         env_state = env.reset(k_env)
         buffer = make_buffer(self.buffer_capacity, env.obs_shape, ())
 
+        # Discover metrics pytree shape by tracing a single learn call.
+        # This ensures _skip_learn returns the exact same structure as _do_learn,
+        # regardless of which keys the agent's learn method returns.
+        _dummy_batch, _dummy_sz, _dummy_buf = buffer_drain(
+            buffer_add(
+                buffer,
+                make_transition(
+                    obs=jnp.zeros(env.obs_shape),
+                    action=jnp.array(0),
+                    reward=jnp.array(0.0),
+                    next_obs=jnp.zeros(env.obs_shape),
+                    done=jnp.array(False),
+                ),
+            )
+        )
+        _dummy_state, dummy_metrics = agent.learn(state, _dummy_batch, jax.random.PRNGKey(0))
+        zero_metrics = jax.tree.map(jnp.zeros_like, dummy_metrics)
+
         config = {"num_steps": self.num_steps, "seed": self.seed}
         for cb in self.callbacks:
             cb.on_train_start(config, self.run_dir)
@@ -291,6 +283,13 @@ class Trainer:
 
             # Step env
             new_es = env.step(es, action, k_step)
+
+            # Capture terminal return/length BEFORE auto-reset zeroes them.
+            # The env accumulates episode_return and episode_length in new_es,
+            # but resets them to 0 when done=True. The pre-reset values are
+            # es.episode_return + new_es.reward and es.episode_length + 1.
+            terminal_return = es.episode_return + new_es.reward
+            terminal_length = es.episode_length + 1
 
             # Build transition
             transition = make_transition(
@@ -320,9 +319,7 @@ class Trainer:
 
             def _skip_learn(args):
                 s, b, _ = args
-                # Return dummy metrics matching the shape of real metrics
-                dummy_met = {"loss": jnp.array(0.0)}
-                return s, b, dummy_met
+                return s, b, zero_metrics
 
             agent_state, buf, metrics = jax.lax.cond(
                 should_learn,
@@ -332,8 +329,13 @@ class Trainer:
             )
 
             carry = (agent_state, new_es, buf, step_count, rng)
-            # Output: done flag, episode_return, episode_length for callback dispatch
-            step_out = (new_es.done, new_es.episode_return, new_es.episode_length, metrics["loss"])
+            step_out = (
+                new_es.done,
+                terminal_return,
+                terminal_length,
+                metrics["loss"],
+                should_learn,
+            )
             return carry, step_out
 
         scan_fn = _scan_body  # lax.scan traces the body — no separate JIT needed
@@ -345,19 +347,11 @@ class Trainer:
             carry = (state, env_state, buffer, step_count_arr, key)
             carry, segment_out = jax.lax.scan(scan_fn, carry, jnp.arange(self.checkpoint_steps))
             state, env_state, buffer, step_count_arr, key = carry
-            dones, ep_returns, ep_lengths, losses = segment_out
+            dones, ep_returns, ep_lengths, losses, did_learns = segment_out
 
             # Fire episode callbacks for completed episodes in this segment
             for i in range(self.checkpoint_steps):
                 if bool(dones[i]):
-                    # episode_return and episode_length were reset to 0 when done,
-                    # but the reward/length at the done step are the terminal values.
-                    # We need the cumulative values *before* reset. The env tracks
-                    # episode_return as a running sum that resets on done. At the
-                    # done step, episode_return has already been reset to 0 by the
-                    # auto-reset logic, but the reward for that step is still in
-                    # the transition. We use a simple heuristic: sum rewards in
-                    # the segment up to each done.
                     for cb in self.callbacks:
                         cb.on_episode_end(
                             episode_count,
@@ -365,6 +359,13 @@ class Trainer:
                             int(ep_lengths[i]),
                         )
                     episode_count += 1
+
+            # Fire on_step for learn steps in this segment
+            for i in range(self.checkpoint_steps):
+                if bool(did_learns[i]):
+                    py_metrics = {"loss": float(losses[i])}
+                    for cb in self.callbacks:
+                        cb.on_step(global_step + i, py_metrics)
 
             global_step += self.checkpoint_steps
 
@@ -374,6 +375,7 @@ class Trainer:
         for cb in self.callbacks:
             cb.on_train_end(state, self.run_dir)
 
+        # gymnax envs are pure-JAX and don't hold external resources to close
         return state
 
     # ------------------------------------------------------------------
@@ -458,4 +460,5 @@ class Trainer:
         for cb in self.callbacks:
             cb.on_train_end(state, self.run_dir)
 
+        # gymnax envs are pure-JAX and don't hold external resources to close
         return state

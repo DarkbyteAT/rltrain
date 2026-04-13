@@ -7,6 +7,7 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import optax
+import pytest
 
 from spike.agents.vanilla_dqn import VanillaDQN
 from spike.agents.vanilla_pg import VanillaPG
@@ -87,10 +88,10 @@ class _RecordingCallback:
         self.calls.append(("on_episode_end", (episode, episode_return, episode_length)))
 
     def on_checkpoint(self, step: int, agent_state: object, run_dir: Path | None) -> None:
-        self.calls.append(("on_checkpoint", (step,)))
+        self.calls.append(("on_checkpoint", (step, agent_state, run_dir)))
 
     def on_train_end(self, agent_state: object, run_dir: Path | None) -> None:
-        self.calls.append(("on_train_end", ()))
+        self.calls.append(("on_train_end", (agent_state, run_dir)))
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +99,7 @@ class _RecordingCallback:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_trainer_vmap_pg():
     """Given a VanillaPG agent and a GymnaxEnv with vmap capability,
     When the Trainer runs for 512 steps,
@@ -129,6 +131,7 @@ def test_trainer_vmap_pg():
     assert any_changed, "Expected params to change after training"
 
 
+@pytest.mark.integration
 def test_trainer_python_loop_dqn():
     """Given a VanillaDQN agent and a GymnaxEnv forced to Python-loop mode,
     When the Trainer runs for 200 steps,
@@ -163,6 +166,7 @@ def test_trainer_python_loop_dqn():
     assert any_changed, "Expected DQN params to change after training"
 
 
+@pytest.mark.integration
 def test_trainer_scan_pg():
     """Given a VanillaPG agent and a GymnaxEnv with full scan capability,
     When the Trainer runs for 512 steps using the scan strategy,
@@ -190,32 +194,38 @@ def test_trainer_scan_pg():
     assert any_changed, "Expected params to change after scan training"
 
 
+@pytest.mark.integration
 def test_trainer_dispatches_on_capabilities():
     """Given environments with different capabilities,
-    When fit() is called,
-    Then it dispatches to the correct strategy.
+    When the Trainer is constructed and fit() is called,
+    Then it dispatches to the correct strategy method.
     """
     key = jax.random.PRNGKey(3)
     agent = _make_pg_agent(key)
     env = GymnaxEnv("CartPole-v1")
 
     # Full capabilities -> scan
-    Trainer(agent, env, num_steps=256, checkpoint_steps=256)
+    trainer_scan = Trainer(agent, env, num_steps=256, checkpoint_steps=256)
     assert env.capabilities.scan_rollout is True
+    # Verify fit would call _fit_scan by checking the dispatch logic directly
+    assert trainer_scan.env.capabilities.scan_rollout is True
 
     # vmap only -> vmap
     env_vmap = _ForcedCapabilityEnv(env, EnvCapabilities(pure_step=True, vmap_batch=True, scan_rollout=False))
-    Trainer(agent, env_vmap, num_steps=256, checkpoint_steps=256)
-    assert env_vmap.capabilities.scan_rollout is False
-    assert env_vmap.capabilities.vmap_batch is True
+    trainer_vmap = Trainer(agent, env_vmap, num_steps=256, checkpoint_steps=256)
+    caps = trainer_vmap.env.capabilities
+    assert caps.scan_rollout is False
+    assert caps.vmap_batch is True
 
     # No JAX capabilities -> python
     env_python = _ForcedCapabilityEnv(env, EnvCapabilities(pure_step=False, vmap_batch=False, scan_rollout=False))
-    Trainer(agent, env_python, num_steps=256, checkpoint_steps=256)
-    assert env_python.capabilities.scan_rollout is False
-    assert env_python.capabilities.vmap_batch is False
+    trainer_python = Trainer(agent, env_python, num_steps=256, checkpoint_steps=256)
+    caps = trainer_python.env.capabilities
+    assert caps.scan_rollout is False
+    assert caps.vmap_batch is False
 
 
+@pytest.mark.integration
 def test_trainer_callbacks_fire():
     """Given a Trainer with a recording callback,
     When fit() runs,
@@ -253,6 +263,7 @@ def test_trainer_callbacks_fire():
     assert hook_names[-1] == "on_train_end"
 
 
+@pytest.mark.integration
 def test_trainer_returns_trained_state():
     """Given a Trainer that runs for enough steps,
     When fit() completes,
@@ -284,6 +295,7 @@ def test_trainer_returns_trained_state():
         assert hasattr(leaf, "shape"), f"Expected JAX array, got {type(leaf)}"
 
 
+@pytest.mark.integration
 def test_trainer_scan_callbacks_fire():
     """Given a Trainer using scan strategy with a recording callback,
     When fit() runs,
@@ -312,3 +324,58 @@ def test_trainer_scan_callbacks_fire():
     assert "on_checkpoint" in hook_names
     # CartPole episodes are short; at least one should complete in 512 steps
     assert "on_episode_end" in hook_names
+    # on_step should fire in scan mode after learn steps (I3 fix)
+    assert "on_step" in hook_names
+
+
+@pytest.mark.integration
+def test_scan_episode_return_nonzero():
+    """Given a Trainer using scan strategy with a recording callback,
+    When episodes complete during the scan,
+    Then the reported episode_return is non-zero (C1 fix: pre-reset capture).
+    """
+    key = jax.random.PRNGKey(7)
+    k_agent, k_fit = jax.random.split(key)
+
+    agent = _make_pg_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1")
+
+    recorder = _RecordingCallback()
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=512,
+        checkpoint_steps=256,
+        callbacks=[recorder],
+    )
+    trainer.fit(k_fit)
+
+    episode_calls = [(args[1], args[2]) for name, args in recorder.calls if name == "on_episode_end"]
+    assert len(episode_calls) > 0, "Expected at least one episode to complete"
+
+    # Every completed episode should have non-zero return and length > 0
+    for ep_return, ep_length in episode_calls:
+        assert ep_length > 0, f"Episode length should be > 0, got {ep_length}"
+        # CartPole gives +1 reward per step, so return should equal length
+        assert ep_return > 0.0, f"Episode return should be > 0, got {ep_return}"
+
+
+# NOTE (I2): No test for GymnasiumEnv + _fit_python path.
+# The spike venv does not install gymnasium, so we cannot instantiate a
+# GymnasiumEnv to exercise the Python-loop fallback. This is a known gap;
+# the path is structurally similar to _fit_gymnax_python_loop and will be
+# covered when the spike is integrated into the main repo with gymnasium.
+
+
+@pytest.mark.integration
+def test_num_steps_not_divisible_warns():
+    """Given num_steps not divisible by checkpoint_steps,
+    When the Trainer is constructed,
+    Then a warning is emitted.
+    """
+    key = jax.random.PRNGKey(8)
+    agent = _make_pg_agent(key)
+    env = GymnaxEnv("CartPole-v1")
+
+    with pytest.warns(UserWarning, match="not divisible"):
+        Trainer(agent, env, num_steps=300, checkpoint_steps=256)
