@@ -277,22 +277,28 @@ class Trainer:
         buffer = make_buffer(self.buffer_capacity, env.obs_shape, self.action_shape)
 
         # Discover metrics pytree shape by tracing a single learn call.
-        # This ensures _skip_learn returns the exact same structure as _do_learn,
-        # regardless of which keys the agent's learn method returns.
-        _dummy_batch, _dummy_sz, _dummy_buf = buffer_drain(
-            buffer_add(
-                buffer,
-                make_transition(
-                    obs=jnp.zeros(env.obs_shape),
-                    action=jnp.array(0),
-                    reward=jnp.array(0.0),
-                    next_obs=jnp.zeros(env.obs_shape),
-                    done=jnp.array(False),
-                ),
-            )
+        # Use a batch matching the actual training batch size so auxiliary
+        # metrics (e.g. td_errors) have the correct shape for lax.cond.
+        _batch_size = self.batch_size if not self._on_policy else collect_size
+        _dummy_batch = make_transition(
+            obs=jnp.zeros((_batch_size, *env.obs_shape)),
+            action=jnp.zeros((_batch_size, *self.action_shape)),
+            reward=jnp.zeros(_batch_size),
+            next_obs=jnp.zeros((_batch_size, *env.obs_shape)),
+            done=jnp.zeros(_batch_size, dtype=jnp.bool_),
+            log_prob=jnp.zeros(_batch_size),
+            value=jnp.zeros(_batch_size),
         )
         _dummy_state, dummy_metrics = agent.learn(state, _dummy_batch, jax.random.PRNGKey(0))
         zero_metrics = jax.tree.map(jnp.zeros_like, dummy_metrics)
+
+        # Pick a scalar metric key for the scan step output
+        _loss_key = "loss"
+        if "loss" not in dummy_metrics:
+            for k, v in dummy_metrics.items():
+                if hasattr(v, "ndim") and v.ndim == 0:
+                    _loss_key = k
+                    break
 
         config = {"num_steps": self.num_steps, "seed": self.seed}
         for cb in self.callbacks:
@@ -357,11 +363,14 @@ class Trainer:
             )
 
             carry = (agent_state, new_es, buf, step_count, rng)
+            # Extract a scalar loss for scan output — pick the first scalar
+            # metric key, determined at trace time from zero_metrics.
+            step_loss = metrics[_loss_key]
             step_out = (
                 new_es.done,
                 terminal_return,
                 terminal_length,
-                metrics["loss"],
+                step_loss,
                 should_learn,
             )
             return carry, step_out
