@@ -65,7 +65,13 @@ class _ForcedCapabilityEnv:
         self.obs_shape = inner.obs_shape
         self.num_actions = inner.num_actions
 
-    def reset(self, key):
+    def reset(self, key=None):
+        if key is None:
+            # Gymnasium-style: return obs array
+            import jax.numpy as jnp
+
+            state = self._inner.reset(jax.random.PRNGKey(0))
+            return jnp.array(state.obs)
         return self._inner.reset(key)
 
     def step(self, state, action, key):
