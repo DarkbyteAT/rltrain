@@ -1,1 +1,1 @@
-"""Showcase examples demonstrating the JAX spike."""
+"""Showcase examples."""

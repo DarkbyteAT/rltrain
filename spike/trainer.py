@@ -69,6 +69,7 @@ class Trainer:
         *,
         num_steps: int,
         checkpoint_steps: int,
+        action_shape: tuple | None = None,
         buffer_capacity: int | None = None,
         batch_size: int = 32,
         min_buffer_size: int | None = None,
@@ -83,6 +84,10 @@ class Trainer:
             env: A GymnaxEnv or GymnasiumEnv.
             num_steps: Total environment steps to run.
             checkpoint_steps: Steps between checkpoint callbacks.
+            action_shape: Storage shape of a single action in the buffer.
+                Auto-detected from ``agent.act()`` if ``None`` (default).
+                Examples: ``()`` for single discrete, ``(N,)`` for
+                N-dimensional continuous or multi-discrete.
             buffer_capacity: Replay buffer capacity. Defaults to ``collect_size``
                 for on-policy (drain pattern) or 1000 for off-policy.
             batch_size: Batch size for off-policy sampling.
@@ -99,6 +104,7 @@ class Trainer:
         self.run_dir = run_dir
         self.callbacks = callbacks if callbacks is not None else [_NoOpCallback()]
         self.seed = seed
+        self.action_shape = action_shape  # auto-detected in fit() if None
         self.batch_size = batch_size
 
         self.collect_size = getattr(agent, "collect_size", 1)
@@ -123,8 +129,29 @@ class Trainer:
                 stacklevel=2,
             )
 
+    def _detect_action_shape(self, key: PRNGKeyArray) -> tuple:
+        """Probe the agent's act() to discover the action shape for the buffer."""
+        k_init, k_act = jax.random.split(key)
+        state = self.agent.init(k_init)
+        if hasattr(self.env, "reset"):
+            if self.env.capabilities.pure_step:
+                env_state = self.env.reset(k_act)
+                obs = env_state.obs
+            else:
+                obs = self.env.reset()
+                if isinstance(obs, tuple):
+                    obs = obs[0]
+        else:
+            obs = jnp.zeros(self.env.obs_shape)
+        action = self.agent.act(state, obs, k_act)
+        return action.shape
+
     def fit(self, key: PRNGKeyArray):
         """Run the training loop. Auto-dispatches on env.capabilities."""
+        # Auto-detect action shape if not explicitly provided
+        if self.action_shape is None:
+            self.action_shape = self._detect_action_shape(key)
+
         caps = self.env.capabilities
         if caps.scan_rollout:
             return self._fit_scan(key)
@@ -153,7 +180,7 @@ class Trainer:
         act_jit = eqx.filter_jit(agent.act)
         learn_jit = eqx.filter_jit(agent.learn)
 
-        buffer = make_buffer(self.buffer_capacity, env.obs_shape, ())
+        buffer = make_buffer(self.buffer_capacity, env.obs_shape, self.action_shape)
         episode_count = 0
         episode_return = 0.0
         episode_length = 0
@@ -182,13 +209,14 @@ class Trainer:
             episode_return += float(reward)
             episode_length += 1
 
-            # Episode boundary
+            # Episode boundary — reset the gymnasium env
             if bool(done):
                 for cb in self.callbacks:
                     cb.on_episode_end(episode_count, episode_return, episode_length)
                 episode_count += 1
                 episode_return = 0.0
                 episode_length = 0
+                next_obs = env.reset()
 
             # Learn step
             if steps_since_learn >= collect_size and int(buffer.size) >= self.min_buffer_size:
@@ -199,7 +227,7 @@ class Trainer:
                 state, metrics = learn_jit(state, batch, k_learn)
                 steps_since_learn = 0
 
-                py_metrics = {k: float(v) for k, v in metrics.items()}
+                py_metrics = {k: float(v) for k, v in metrics.items() if v.ndim == 0}
                 for cb in self.callbacks:
                     cb.on_step(step, py_metrics)
 
@@ -246,7 +274,7 @@ class Trainer:
         key, k_init, k_env = jax.random.split(key, 3)
         state = agent.init(k_init)
         env_state = env.reset(k_env)
-        buffer = make_buffer(self.buffer_capacity, env.obs_shape, ())
+        buffer = make_buffer(self.buffer_capacity, env.obs_shape, self.action_shape)
 
         # Discover metrics pytree shape by tracing a single learn call.
         # This ensures _skip_learn returns the exact same structure as _do_learn,
@@ -395,7 +423,7 @@ class Trainer:
         key, k_init, k_env = jax.random.split(key, 3)
         state = agent.init(k_init)
         env_state = env.reset(k_env)
-        buffer = make_buffer(self.buffer_capacity, env.obs_shape, ())
+        buffer = make_buffer(self.buffer_capacity, env.obs_shape, self.action_shape)
 
         act_jit = eqx.filter_jit(agent.act)
         learn_jit = eqx.filter_jit(agent.learn)
@@ -446,7 +474,7 @@ class Trainer:
                 state, metrics = learn_jit(state, batch, k_learn)
                 steps_since_learn = 0
 
-                py_metrics = {k: float(v) for k, v in metrics.items()}
+                py_metrics = {k: float(v) for k, v in metrics.items() if v.ndim == 0}
                 for cb in self.callbacks:
                     cb.on_step(step, py_metrics)
 
