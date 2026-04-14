@@ -104,7 +104,11 @@ class Trainer:
         self.run_dir = run_dir
         self.callbacks = callbacks if callbacks is not None else [_NoOpCallback()]
         self.seed = seed
-        self.action_shape = action_shape  # auto-detected in fit() if None
+        # Auto-detect action shape from a trial act() call if not provided
+        if action_shape is None:
+            self.action_shape = self._detect_action_shape(jax.random.PRNGKey(seed))
+        else:
+            self.action_shape = action_shape
         self.batch_size = batch_size
 
         self.collect_size = getattr(agent, "collect_size", 1)
@@ -148,10 +152,6 @@ class Trainer:
 
     def fit(self, key: PRNGKeyArray):
         """Run the training loop. Auto-dispatches on env.capabilities."""
-        # Auto-detect action shape if not explicitly provided
-        if self.action_shape is None:
-            self.action_shape = self._detect_action_shape(key)
-
         caps = self.env.capabilities
         if caps.scan_rollout:
             return self._fit_scan(key)
