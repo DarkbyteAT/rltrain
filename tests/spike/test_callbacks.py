@@ -82,12 +82,12 @@ def test_csv_logger_flushes_at_checkpoint(tmp_path: Path):
 
 @pytest.mark.unit
 def test_video_recorder_creates_directory(tmp_path: Path):
-    """VideoRecorderCallback creates the video directory at checkpoint time."""
+    """VideoRecorderCallback creates the video directory at train start."""
     # Given
-    cb = VideoRecorderCallback(env_fn=lambda: None, video_dir="videos")
+    cb = VideoRecorderCallback()
 
     # When
-    cb.on_checkpoint(step=100, agent_state=None, run_dir=tmp_path)
+    cb.on_train_start(config={}, run_dir=tmp_path)
 
     # Then
     video_dir = tmp_path / "videos"

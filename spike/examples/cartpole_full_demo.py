@@ -53,14 +53,20 @@ def main():  # noqa: D103
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Callbacks (mirrors PyTorch demo) ---
+    import gymnasium as gym
+
     callbacks = [
         CSVLoggerCallback(),
-        VideoRecorderCallback(),  # stub — creates directory structure
+        VideoRecorderCallback(
+            agent=agent,
+            env_fn=lambda: gym.make("CartPole-v1", render_mode="rgb_array"),
+            num_episodes=3,
+        ),
     ]
 
     # --- Train ---
-    num_steps = 20_480
-    checkpoint_steps = 5_120
+    num_steps = 100_000
+    checkpoint_steps = 25_000
 
     trainer = Trainer(
         agent,
