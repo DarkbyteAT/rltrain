@@ -46,7 +46,7 @@ class VideoRecorderCallback:
 
     def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:
         """Create the video directory (stub -- no actual recording in the spike)."""
-        if not self._enabled or run_dir is None:
+        if run_dir is None:
             return
         video_path = Path(run_dir) / self._video_dir
         video_path.mkdir(parents=True, exist_ok=True)
