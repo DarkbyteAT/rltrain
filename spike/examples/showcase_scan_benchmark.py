@@ -19,7 +19,7 @@ from spike.agents.ppo import PPO
 from spike.env import GymnaxEnv
 from spike.heads import DiscreteHead
 from spike.networks import MLP
-from spike.trainer import Trainer
+from spike.trainer import PythonLoop, ScanLoop, Trainer
 
 
 def _make_agent(key):
@@ -41,18 +41,18 @@ def _make_agent(key):
 
 def _time_strategy(agent, env, num_steps, key, *, use_scan):
     """Time a training run, forcing scan or Python-loop strategy."""
-    trainer = Trainer(agent, env, num_steps=num_steps, checkpoint_steps=num_steps)
-    fit_fn = trainer._fit_scan if use_scan else trainer._fit_gymnax_python_loop
+    loop = ScanLoop() if use_scan else PythonLoop()
+    trainer = Trainer(agent, env, num_steps=num_steps, checkpoint_steps=num_steps, loop=loop)
 
     # Warm-up: first call compiles XLA kernels
     k1, k2 = jax.random.split(key)
     start = time.perf_counter()
-    _ = fit_fn(k1)
+    _ = trainer.fit(k1)
     t_compile = time.perf_counter() - start
 
     # Timed run: pure execution, no compilation
     start = time.perf_counter()
-    _ = fit_fn(k2)
+    _ = trainer.fit(k2)
     t_execute = time.perf_counter() - start
 
     return t_compile, t_execute
