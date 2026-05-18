@@ -1,11 +1,19 @@
 {
   "include": ["rltrain"],
-  "exclude": ["tests", "examples"],
+  "exclude": ["tests", "examples", "rltrain/examples"],
   "pythonVersion": "3.11",
   "typeCheckingMode": "basic",
   "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "reportAttributeAccessIssue": "warning",
   "reportCallIssue": "warning",
   "reportArgumentType": "warning",
   "reportIndexIssue": "warning",
-  "reportOperatorIssue": "warning"
+  "reportOperatorIssue": "warning",
+  "reportOptionalMemberAccess": "warning",
+  "reportOptionalCall": "warning",
+  "reportOptionalOperand": "warning",
+  "reportPrivateImportUsage": "warning",
+  "reportGeneralTypeIssues": "warning",
+  "reportReturnType": "warning"
 }

@@ -1,7 +1,7 @@
 [project]
 name = "rltrain"
-version = "1.0.0"
-description = "PyTorch deep reinforcement learning framework"
+version = "2.0.0"
+description = "JAX deep reinforcement learning framework"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -17,19 +17,22 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "torch>=2.0",
-    "toblox",
+    "jax>=0.4.30",
+    "jaxlib>=0.4.30",
+    "equinox>=0.11.0",
+    "optax>=0.2.0",
+    "gymnax>=0.0.8",
+    "distreqx>=0.0.1",
+    "chex>=0.1.80",
+    "gymnasium>=1.0",
     "numpy",
     "matplotlib",
-    "pandas",
     "seaborn",
-    "gymnasium",
     "typer",
-    "samgria",
 ]
 
 [project.optional-dependencies]
-video = ["moviepy"]
+video = ["moviepy>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/DarkbyteAT/rltrain"
@@ -44,8 +47,7 @@ dev = [
     "pytest",
     "ruff",
     "pre-commit",
-    "moviepy",
-    "pygame>=2.6.1",
+    "moviepy>=2.0",
 ]
 docs = [
     "mkdocs-material",
@@ -58,9 +60,8 @@ docs = [
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.uv.sources]
-samgria = { git = "https://github.com/DarkbyteAT/samgria" }
-toblox = { git = "https://github.com/DarkbyteAT/toblox" }
+[tool.hatch.build.targets.wheel]
+packages = ["rltrain"]
 
 [build-system]
 requires = ["hatchling"]

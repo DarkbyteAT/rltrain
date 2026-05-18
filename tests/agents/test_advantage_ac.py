@@ -1,4 +1,4 @@
-"""Tests for the Vanilla Actor-Critic agent with TD error advantage."""
+"""Tests for the Advantage Actor-Critic (A2C) agent with GAE."""
 
 import equinox as eqx
 import jax
@@ -6,8 +6,8 @@ import jax.numpy as jnp
 import optax
 import pytest
 
+from rltrain.agents.advantage_ac import AdvantageAC
 from rltrain.agents.agent import Agent
-from rltrain.agents.vanilla_ac import VanillaAC
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
 from tests.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
@@ -19,10 +19,10 @@ from tests.agents._helpers import _make_on_policy_transitions as _make_transitio
 # ---------------------------------------------------------------------------
 
 
-def _make_agent(key: jax.Array) -> VanillaAC:
-    """Build a small VanillaAC agent for CartPole-sized problems."""
+def _make_agent(key: jax.Array) -> AdvantageAC:
+    """Build a small AdvantageAC agent for CartPole-sized problems."""
     k1, k2, k3 = jax.random.split(key, 3)
-    return VanillaAC(
+    return AdvantageAC(
         actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
@@ -30,6 +30,7 @@ def _make_agent(key: jax.Array) -> VanillaAC:
         gamma=0.99,
         tau=0.01,
         beta_critic=0.5,
+        lambda_gae=0.95,
     )
 
 
@@ -106,7 +107,7 @@ def test_act_returns_valid_action():
 
 @pytest.mark.unit
 def test_satisfies_agent_protocol():
-    """VanillaAC satisfies the Agent protocol via structural subtyping."""
+    """AdvantageAC satisfies the Agent protocol via structural subtyping."""
     # Given
     agent = _make_agent(jax.random.PRNGKey(0))
 
@@ -116,12 +117,19 @@ def test_satisfies_agent_protocol():
 
 @pytest.mark.unit
 def test_advantages_are_stop_gradiented():
-    """With beta_critic=0, critic should receive zero gradients because
-    advantages (including the td_target) are stop-gradiented in the actor loss."""
+    """Advantages used in the actor loss must be stop-gradiented so the actor
+    gradient does not flow through the critic's value estimates.
+
+    We verify this by checking that the critic parameters receive gradients
+    only from the critic loss term, not from the actor loss term. Specifically,
+    if we set beta_critic=0 (disabling the critic loss), the critic gradients
+    should be zero because the only path from actor_loss to critic is through
+    stop_gradient(advantages).
+    """
     # Given — agent with beta_critic=0 so critic loss is zeroed
     key = jax.random.PRNGKey(42)
     k1, k2, k3 = jax.random.split(key, 3)
-    agent = VanillaAC(
+    agent = AdvantageAC(
         actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
@@ -129,6 +137,7 @@ def test_advantages_are_stop_gradiented():
         gamma=0.99,
         tau=0.01,
         beta_critic=0.0,
+        lambda_gae=0.95,
     )
     transitions = _make_transitions(jax.random.PRNGKey(1))
 

@@ -1,4 +1,4 @@
-"""Tests for the PPO agent with clipped surrogate objective."""
+"""Tests for the SPO agent with quadratic penalty surrogate."""
 
 import equinox as eqx
 import jax
@@ -8,6 +8,7 @@ import pytest
 
 from rltrain.agents.agent import Agent
 from rltrain.agents.ppo import PPO
+from rltrain.agents.spo import SPO
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
 from tests.agents._helpers import HIDDEN, MINIBATCH, NUM_ACTIONS, OBS_DIM
@@ -19,10 +20,10 @@ from tests.agents._helpers import _make_on_policy_transitions as _make_transitio
 # ---------------------------------------------------------------------------
 
 
-def _make_agent(key: jax.Array) -> PPO:
-    """Build a small PPO agent for CartPole-sized problems."""
+def _make_agent(key: jax.Array) -> SPO:
+    """Build a small SPO agent for CartPole-sized problems."""
     k1, k2, k3 = jax.random.split(key, 3)
-    return PPO(
+    return SPO(
         actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
@@ -44,12 +45,11 @@ def _make_agent(key: jax.Array) -> PPO:
 
 @pytest.mark.unit
 def test_loss_is_scalar():
-    """Given a mini-batch, the PPO loss returns a finite scalar."""
+    """Given a mini-batch, the SPO loss returns a finite scalar."""
     # Given
     agent = _make_agent(jax.random.PRNGKey(42))
     transitions = _make_transitions(jax.random.PRNGKey(1), n=MINIBATCH)
 
-    # Compute old log-probs
     features = jax.vmap(agent.actor)(transitions.obs)
     dists = jax.vmap(agent.action_head)(features)
     old_log_probs = dists.log_prob(transitions.action)
@@ -57,7 +57,7 @@ def test_loss_is_scalar():
     returns = jnp.ones(MINIBATCH)
 
     # When
-    loss_val = agent._ppo_loss(transitions, old_log_probs, advantages, returns)
+    loss_val = agent._spo_loss(transitions, old_log_probs, advantages, returns)
 
     # Then
     assert loss_val.shape == ()
@@ -66,7 +66,7 @@ def test_loss_is_scalar():
 
 @pytest.mark.unit
 def test_gradients_flow():
-    """Gradients through the PPO loss are non-zero."""
+    """Gradients through the SPO loss are non-zero."""
     # Given
     agent = _make_agent(jax.random.PRNGKey(7))
     transitions = _make_transitions(jax.random.PRNGKey(2), n=MINIBATCH)
@@ -78,7 +78,7 @@ def test_gradients_flow():
     returns = jnp.ones(MINIBATCH)
 
     # When
-    _loss, grads = eqx.filter_value_and_grad(lambda m: m._ppo_loss(transitions, old_log_probs, advantages, returns))(
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._spo_loss(transitions, old_log_probs, advantages, returns))(
         agent
     )
 
@@ -125,7 +125,7 @@ def test_act_returns_valid_action():
 
 @pytest.mark.unit
 def test_satisfies_agent_protocol():
-    """PPO satisfies the Agent protocol via structural subtyping."""
+    """SPO satisfies the Agent protocol via structural subtyping."""
     # Given
     agent = _make_agent(jax.random.PRNGKey(0))
 
@@ -140,7 +140,7 @@ def test_advantages_are_stop_gradiented():
     # Given
     key = jax.random.PRNGKey(42)
     k1, k2, k3 = jax.random.split(key, 3)
-    agent = PPO(
+    agent = SPO(
         actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
@@ -162,7 +162,7 @@ def test_advantages_are_stop_gradiented():
     returns = jax.lax.stop_gradient(jnp.ones(MINIBATCH))
 
     # When
-    _loss, grads = eqx.filter_value_and_grad(lambda m: m._ppo_loss(transitions, old_log_probs, advantages, returns))(
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._spo_loss(transitions, old_log_probs, advantages, returns))(
         agent
     )
 
@@ -173,34 +173,46 @@ def test_advantages_are_stop_gradiented():
 
 
 @pytest.mark.unit
-def test_clipped_ratio_bounds():
-    """The clipped ratio is bounded by [1-eps, 1+eps].
+def test_spo_loss_differs_from_ppo():
+    """SPO and PPO losses should differ on the same data when the ratio
+    deviates from 1, because they use different surrogate objectives."""
+    # Given — build PPO and SPO with identical networks
+    key = jax.random.PRNGKey(42)
+    k1, k2, k3 = jax.random.split(key, 3)
 
-    We verify indirectly: when old_log_probs diverge significantly from
-    current log_probs, the clipped loss should differ from the unclipped loss.
-    """
-    # Given
-    agent = _make_agent(jax.random.PRNGKey(42))
+    shared_kwargs = dict(
+        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        optimizer=optax.adam(1e-3),
+        gamma=0.99,
+        tau=0.01,
+        beta_critic=0.5,
+        lambda_gae=0.95,
+        eps_clip=0.2,
+        num_epochs=1,
+        minibatch_size=MINIBATCH,
+    )
+    ppo_agent = PPO(**shared_kwargs)
+    spo_agent = SPO(**shared_kwargs)
+
     transitions = _make_transitions(jax.random.PRNGKey(1), n=MINIBATCH)
 
-    # Create deliberately stale old_log_probs (shifted by a large amount)
-    features = jax.vmap(agent.actor)(transitions.obs)
-    dists = jax.vmap(agent.action_head)(features)
-    current_log_probs = dists.log_prob(transitions.action)
-    # Shift old_log_probs so ratio = exp(current - old) is far from 1
-    old_log_probs = current_log_probs - 2.0
-    advantages = jnp.ones(MINIBATCH)
+    # Compute current log probs then shift to create stale old_log_probs
+    features = jax.vmap(ppo_agent.actor)(transitions.obs)
+    dists = jax.vmap(ppo_agent.action_head)(features)
+    current_lp = dists.log_prob(transitions.action)
+    old_log_probs = current_lp - 1.5  # ratio ~ exp(1.5) ~ 4.5
+
+    advantages = jnp.ones(MINIBATCH) * 2.0
     returns = jnp.ones(MINIBATCH)
 
-    # When — compute PPO loss (clipped) and an unclipped version
-    ppo_loss = agent._ppo_loss(transitions, old_log_probs, advantages, returns)
+    # When
+    ppo_loss = ppo_agent._ppo_loss(transitions, old_log_probs, advantages, returns)
+    spo_loss = spo_agent._spo_loss(transitions, old_log_probs, advantages, returns)
 
-    # Unclipped: just ratio * advantages
-    ratio = jnp.exp(current_log_probs - old_log_probs)
-    unclipped_actor_loss = -jnp.mean(ratio * advantages)
-
-    # Then — PPO's clipping should make the loss different from raw ratio * A
-    # (because ratio = exp(2) ~ 7.4 is well outside [0.8, 1.2])
-    assert not jnp.allclose(ppo_loss, unclipped_actor_loss, atol=1e-3), (
-        "PPO loss equals unclipped loss despite extreme ratio — clipping may not be active"
+    # Then
+    assert not jnp.allclose(ppo_loss, spo_loss, atol=1e-3), (
+        f"SPO loss ({float(spo_loss):.4f}) equals PPO loss ({float(ppo_loss):.4f}) "
+        "despite different surrogate objectives"
     )

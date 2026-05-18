@@ -28,4 +28,4 @@ convention = "google"
 # Example scripts are demonstrations, not library code — D rules add noise.
 "examples/**" = ["D"]
 # jaxtyping annotations are valid but ruff can't parse them
-"spike/**" = ["F722"]
+"rltrain/**" = ["F722"]
