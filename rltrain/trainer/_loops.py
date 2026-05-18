@@ -515,24 +515,30 @@ class PmapLoop:
             # Average metrics across devices at checkpoint boundary
             avg_metrics = jax.tree.map(lambda x: x.mean(axis=0), segment_out.metrics)
 
+            # Single host transfer for both segment_out and avg_metrics —
+            # see ScanLoop for the rationale. Per-index float()/bool()/int()
+            # calls in the Python loop below operate on numpy arrays.
+            host_out = jax.device_get(segment_out)
+            host_avg_metrics = jax.device_get(avg_metrics)
+
             # Fire episode callbacks (use first device's episode data)
             for i in range(config.checkpoint_steps):
-                if bool(segment_out.done[0, i]):
+                if bool(host_out.done[0, i]):
                     for cb in callbacks:
                         cb.on_episode_end(
                             episode_count,
-                            float(segment_out.episode_return[0, i]),
-                            int(segment_out.episode_length[0, i]),
-                            float(segment_out.running_return[0, i]),
+                            float(host_out.episode_return[0, i]),
+                            int(host_out.episode_length[0, i]),
+                            float(host_out.running_return[0, i]),
                         )
                     episode_count += 1
 
             # Fire on_step with averaged metrics
             for i in range(config.checkpoint_steps):
-                if bool(segment_out.did_learn[0, i]):
+                if bool(host_out.did_learn[0, i]):
                     py_metrics = {}
                     for k in scalar_keys:
-                        py_metrics[k] = float(avg_metrics[k][i])
+                        py_metrics[k] = float(host_avg_metrics[k][i])
                     for cb in callbacks:
                         cb.on_step(global_step + i, py_metrics)
 
