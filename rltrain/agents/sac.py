@@ -128,11 +128,10 @@ class SAC(eqx.Module):
         if target_entropy is not None:
             self.target_entropy = float(target_entropy)
         elif self.discrete:
-            num_actions = action_head.linear.out_features
-            self.target_entropy = -math.log(1.0 / num_actions) * 0.98
+            self.target_entropy = -math.log(1.0 / action_head.action_dim) * 0.98
         else:
             # Convention: -action_dim for continuous
-            self.target_entropy = -float(action_head.gaussian.mu_linear.out_features)
+            self.target_entropy = -float(action_head.action_dim)
 
     # ------------------------------------------------------------------
     # Protocol methods

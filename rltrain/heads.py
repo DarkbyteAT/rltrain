@@ -27,18 +27,31 @@ class Head(Protocol):
     r"""Structural protocol for action heads.
 
     An action head is any callable mapping a feature vector to a
-    ``distreqx`` distribution over actions. Concrete implementations in
-    this module (``DiscreteHead``, ``GaussianHead``, ``SquashedGaussianHead``,
-    ``GammaHead``, ``BetaHead``) all satisfy this contract; users may
-    supply their own. The ``OnPolicyAgent.action_head`` and
-    ``SAC.action_head`` slots accept any ``eqx.Module`` matching this
-    shape — ``runtime_checkable`` lets ``isinstance`` checks succeed for
-    duck-typed heads.
+    ``distreqx`` distribution over actions, and exposing the action
+    dimensionality via an ``action_dim`` property. Concrete
+    implementations in this module (``DiscreteHead``, ``GaussianHead``,
+    ``SquashedGaussianHead``, ``GammaHead``, ``BetaHead``) all satisfy
+    this contract; users may supply their own. The
+    ``OnPolicyAgent.action_head`` and ``SAC.action_head`` slots accept
+    any ``eqx.Module`` matching this shape — ``runtime_checkable`` lets
+    ``isinstance`` checks succeed for duck-typed heads.
+
+    Why ``action_dim`` is part of the protocol: SAC reads it at
+    construction time to derive a default ``target_entropy``. Without it,
+    SAC would have to reach into private fields like ``linear.out_features``
+    or ``gaussian.mu_linear.out_features``, coupling itself to each head's
+    internal structure and breaking any custom head that doesn't replicate
+    those names.
 
     ``CategoricalAtomHead`` deliberately does NOT conform: it is a *value*
     head returning a PMF array used by distributional DQN, not an action
     distribution.
     """
+
+    @property
+    def action_dim(self) -> int:
+        """Number of action components produced by this head."""
+        ...
 
     def __call__(self, features: Float[Array, " d"]) -> AbstractDistribution:
         """Map a feature vector to a distribution over actions."""
@@ -53,6 +66,11 @@ class DiscreteHead(eqx.Module):
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
         """Initialise with a single linear layer projecting to action logits."""
         self.linear = eqx.nn.Linear(feature_dim, action_dim, key=key)
+
+    @property
+    def action_dim(self) -> int:
+        """Number of discrete actions (categorical support size)."""
+        return self.linear.out_features
 
     def __call__(self, features: Float[Array, " d"]) -> Categorical:
         """Map features to a Categorical distribution."""
@@ -78,6 +96,11 @@ class GaussianHead(eqx.Module):
         self.mu_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.log_sigma_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
 
+    @property
+    def action_dim(self) -> int:
+        """Dimensionality of the Normal distribution (per-axis means/scales)."""
+        return self.mu_linear.out_features
+
     def __call__(self, features: Float[Array, " d"]) -> Normal:
         """Map features to a diagonal Normal distribution."""
         mu = self.mu_linear(features)
@@ -99,6 +122,11 @@ class SquashedGaussianHead(eqx.Module):
     def __init__(self, feature_dim: int, action_dim: int, *, key: PRNGKeyArray):
         """Initialise the underlying Gaussian head."""
         self.gaussian = GaussianHead(feature_dim, action_dim, key=key)
+
+    @property
+    def action_dim(self) -> int:
+        """Forwarded from the wrapped Gaussian head."""
+        return self.gaussian.action_dim
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a numerically stable squashed Normal distribution."""
@@ -124,6 +152,11 @@ class GammaHead(eqx.Module):
         self.alpha_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.beta_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
 
+    @property
+    def action_dim(self) -> int:
+        """Dimensionality of the Gamma distribution."""
+        return self.alpha_linear.out_features
+
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Gamma distribution with positive parameters."""
         alpha = jax.nn.softplus(self.alpha_linear(features))
@@ -146,6 +179,11 @@ class BetaHead(eqx.Module):
         k1, k2 = jax.random.split(key)
         self.alpha_linear = eqx.nn.Linear(feature_dim, action_dim, key=k1)
         self.beta_linear = eqx.nn.Linear(feature_dim, action_dim, key=k2)
+
+    @property
+    def action_dim(self) -> int:
+        """Dimensionality of the Beta distribution."""
+        return self.alpha_linear.out_features
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Beta distribution with unimodal parameters."""
