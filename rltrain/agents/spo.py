@@ -19,7 +19,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float, PRNGKeyArray
 
 from rltrain.agents.agent import OnPolicyAgent, TrainState, gradient_step
-from rltrain.math import gae
+from rltrain.math import center, gae
 from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
@@ -71,11 +71,8 @@ class SPO(OnPolicyAgent):
             self.gamma,
             self.lambda_gae,
         )
-        advantages = jax.lax.stop_gradient(advantages)
+        advantages = jax.lax.stop_gradient(center(advantages))
         returns = jax.lax.stop_gradient(returns)
-
-        # Normalise advantages
-        advantages = (advantages - jnp.mean(advantages)) / (jnp.std(advantages) + 1e-8)
 
         # 3. Epoch loop over mini-batches
         params = state.params

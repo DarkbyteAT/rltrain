@@ -19,7 +19,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 from rltrain.agents.agent import OnPolicyAgent
-from rltrain.math import discount
+from rltrain.math import center, discount
 from rltrain.transitions import Transition
 
 
@@ -43,7 +43,7 @@ class VanillaPG(OnPolicyAgent):
         returns = discount(transitions.reward, transitions.done.astype(jnp.float32), self.gamma)
 
         if self.normalise:
-            returns = (returns - jnp.mean(returns)) / (jnp.std(returns) + 1e-8)
+            returns = center(returns)
 
         features = jax.vmap(self.actor)(transitions.obs)
         dists = jax.vmap(self.action_head)(features)

@@ -1,5 +1,6 @@
 """Tests for VanillaDQN — pure-functional JAX agent."""
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import optax
@@ -196,7 +197,7 @@ def test_trains_cartpole():
     buffer = make_buffer(capacity=10_000, obs_shape=env.obs_shape, action_shape=())
 
     # JIT the learn function
-    learn_jit = jax.jit(agent.learn)
+    learn_jit = eqx.filter_jit(agent.learn)
 
     # When — training loop
     env_state = env.reset(k_env)

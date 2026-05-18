@@ -142,7 +142,7 @@ def test_trains_cartpole():
     max_steps = 50_000
 
     # When — Python collection loop, jitted learn
-    jit_learn = jax.jit(agent.learn)
+    jit_learn = eqx.filter_jit(agent.learn)
 
     while total_steps < max_steps:
         k_loop, k_ep = jax.random.split(k_loop)
