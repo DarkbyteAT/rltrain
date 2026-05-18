@@ -24,7 +24,6 @@ from jaxtyping import Array, Float, PRNGKeyArray
 from rltrain.agents.agent import OnPolicyAgent, TrainState, gradient_step
 from rltrain.agents.ppo_terminators import EpochTerminator
 from rltrain.math import center, gae
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -36,7 +35,8 @@ class PPO(OnPolicyAgent):
     :class:`~rltrain.agents.ppo_terminators.EpochTerminator` short-circuiting.
 
     Attributes:
-        critic: Value-function network. Maps ``obs -> [1]``.
+        critic: Value-function network. Any ``eqx.Module`` mapping
+            ``obs -> [1]``.
         gamma: Discount factor $\gamma \in [0, 1]$.
         tau: Entropy regularisation coefficient.
         beta_critic: Weight on the critic MSE loss term.
@@ -51,7 +51,7 @@ class PPO(OnPolicyAgent):
             accumulated). Empty tuple disables early stopping.
     """
 
-    critic: MLP
+    critic: eqx.Module
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)

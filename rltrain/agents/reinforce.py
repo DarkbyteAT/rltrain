@@ -13,13 +13,13 @@ to prevent the actor gradient from flowing through the critic.
 
 from __future__ import annotations
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 from rltrain.agents.agent import OnPolicyAgent
 from rltrain.math import discount
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -27,10 +27,11 @@ class REINFORCE(OnPolicyAgent):
     r"""REINFORCE with learned value baseline.
 
     Inherits ``init``, ``learn``, and ``act`` from :class:`OnPolicyAgent`.
-    Only ``_loss`` is defined here.
+    Only ``_loss`` is defined here. The ``critic`` field accepts any
+    ``eqx.Module`` mapping observations to a scalar value estimate.
     """
 
-    critic: MLP
+    critic: eqx.Module
     gamma: float
     tau: float
     beta_critic: float

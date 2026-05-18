@@ -82,6 +82,30 @@ class Trainer:
         seed: int = 42,
         loop: TrainingLoop | None = None,
     ) -> None:
+        """Configure the trainer.
+
+        Args:
+            agent: Anything satisfying the :class:`rltrain.agents.Agent`
+                protocol — ``init``, ``learn``, ``act``.
+            env: An environment exposing ``EnvCapabilities`` — gymnax or
+                gymnasium backed.
+            num_steps: Total environment steps to run.
+            checkpoint_steps: Steps between callback segment dispatches and
+                checkpoint hooks.
+            action_shape: Optional override for the action-space shape used
+                to allocate the buffer. Auto-detected when ``None``.
+            buffer_capacity: Replay capacity. Defaults to the agent's
+                ``collect_size`` (on-policy) or a sensible default.
+            batch_size: Mini-batch size drawn from the buffer per learn step.
+            min_buffer_size: Warmup threshold before ``learn`` is called.
+                Defaults to ``batch_size``.
+            run_dir: Directory for callbacks (CSV/plots/checkpoints).
+            callbacks: Iterable of :class:`Callback`-shaped objects. ``None``
+                installs a single no-op callback.
+            seed: PRNG seed used by ``fit`` when no key is supplied.
+            loop: Explicit :class:`TrainingLoop`. ``None`` auto-selects from
+                ``env.capabilities``.
+        """
         self.agent = agent
         self.env = env
         self.num_steps = num_steps

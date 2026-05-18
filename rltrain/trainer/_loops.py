@@ -429,6 +429,13 @@ class PmapLoop:
     """
 
     def __init__(self, num_devices: int | None = None):
+        """Configure the loop with a device count.
+
+        Args:
+            num_devices: Number of XLA devices to shard across. ``None``
+                uses ``jax.device_count()``. Falls back to :class:`ScanLoop`
+                when ``num_devices <= 1``.
+        """
         self.num_devices = num_devices or jax.device_count()
 
     def run(self, agent, env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list) -> Any:

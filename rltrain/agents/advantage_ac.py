@@ -18,7 +18,6 @@ from jaxtyping import Array, Float
 
 from rltrain.agents.agent import OnPolicyAgent
 from rltrain.math import gae
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -33,7 +32,7 @@ class AdvantageAC(OnPolicyAgent):
     between TD(0) ($\lambda=0$) and Monte Carlo ($\lambda=1$).
     """
 
-    critic: MLP
+    critic: eqx.Module
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)

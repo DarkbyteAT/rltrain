@@ -17,7 +17,6 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 from rltrain.agents.agent import OnPolicyAgent
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -33,7 +32,7 @@ class VanillaAC(OnPolicyAgent):
     $r_t + \gamma V(s_{t+1})$.
     """
 
-    critic: MLP
+    critic: eqx.Module
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)

@@ -27,9 +27,7 @@ from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
 from rltrain.agents.agent import dqn_learn_step, init_target_params
 from rltrain.agents.vanilla_dqn import DQNState
-from rltrain.heads import CategoricalAtomHead
 from rltrain.math import project_distribution, q_values_from_pmf
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -46,8 +44,12 @@ class DistributionalDQN(eqx.Module):
     action; the target network provides the distribution to project.
 
     Args:
-        feature_net: Backbone MLP mapping observations to features.
-        atom_head: CategoricalAtomHead mapping features to per-action PMFs.
+        feature_net: Backbone network mapping observations to features. Any
+            ``eqx.Module`` with a matching input/output shape.
+        atom_head: Module mapping features to per-action PMFs. Conventionally
+            a :class:`~rltrain.heads.CategoricalAtomHead`, but any
+            ``eqx.Module`` exposing an ``atoms`` attribute and returning a
+            ``(num_actions, num_atoms)`` PMF satisfies the contract.
         optimizer: Optax gradient transformation.
         gamma: Discount factor $\gamma \in [0, 1]$.
         target_rate: Polyak averaging coefficient $\tau$ for target updates.
@@ -57,8 +59,8 @@ class DistributionalDQN(eqx.Module):
         eps_decay: Epsilon decay per learn step.
     """
 
-    feature_net: MLP
-    atom_head: CategoricalAtomHead
+    feature_net: eqx.Module
+    atom_head: eqx.Module
     optimizer: optax.GradientTransformation = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
     target_rate: float = eqx.field(static=True)
