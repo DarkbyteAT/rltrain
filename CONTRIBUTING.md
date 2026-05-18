@@ -5,63 +5,42 @@
 ```bash
 git clone https://github.com/DarkbyteAT/rltrain.git
 cd rltrain
-source scripts/enable-venv.sh   # creates venv, installs deps (uses uv if available, pip otherwise)
+uv sync --group dev             # creates .venv, installs deps
 ```
 
-Or manually:
+Or with pip:
 
 ```bash
-# With uv (recommended) — creates .venv automatically
-uv sync --group dev
-
-# With pip
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
 ## Code Conventions
 
 - **Python 3.11+** — `X | Y` union syntax, `list[T]`/`dict[K,V]` generics
-- **PyTorch aliases** — `T` for `torch`, `dst` for `torch.distributions`, `F` for `torch.nn.functional`
-- **Google-style docstrings**
-- **Orthogonal weight init** on all linear and conv layers
-
-## Docstring Style
-
-Google-style docstrings with LaTeX math support:
-
-```python
-r"""Compute the discounted return $G_t = \sum_{k=0}^{T} \gamma^k r_{t+k}$.
-
-Args:
-    rewards: Tensor of rewards per timestep.
-    gamma: Discount factor $\gamma \in [0, 1]$.
-
-Returns:
-    Discounted cumulative return.
-"""
-```
-
-Use `$...$` for inline math and `$$...$$` for display math in docstrings. Prefix docstrings containing LaTeX backslash sequences with `r"""..."""` to avoid `SyntaxWarning: invalid escape sequence` on Python 3.12+.
+- **JAX idioms** — `jax.random.key(seed)`, `jax.random.split(key)`, `eqx.partition/combine` for scannable modules, `chex.dataclass` for state pytrees
+- **Distributions** — `distreqx`; `dist.sample(key)` positional (not `seed=key`)
+- **Google-style docstrings** with LaTeX math (`$...$`, `$$...$$`). Prefix raw strings (`r"""..."""`) when docstrings contain LaTeX backslashes.
+- **Orthogonal weight init** on linear layers via `rltrain.networks.MLP`
+- **Type-check surface uses `chex.Array`** (not `jax.Array`) so callers can pass numpy arrays at the boundary without narrowing complaints. Internals can use `jax.Array` once values are lifted via `jnp.asarray`.
 
 ## Testing & Documentation
 
-Tests and documentation serve overlapping but distinct purposes — both must exist, and the overlap is intentional:
+Tests and docs serve overlapping but distinct purposes — both must exist:
 
-- **Tests verify implementation** — they prove the code does what it should, catch regressions, and serve as executable examples of correct usage.
-- **Documentation declares intent** — it describes what the code *should* do, why it exists, and how to use it.
-- **The duplication is the point.** When tests and docs describe the same behaviour, any inconsistency between them forces you to ask: did the intent change, or did the implementation drift? That tension is a feature, not waste.
+- **Tests verify implementation** — prove the code does what it should, catch regressions, double as examples.
+- **Documentation declares intent** — what the code *should* do, why, and how to use it.
+- **The duplication is the point.** Inconsistency between them forces the question: did intent change, or did implementation drift?
 
 Both must be updated alongside code changes in the same PR.
 
 ### Tests
 
-See [tests/README.md](tests/README.md) for the full testing guide. Key points:
-
-- Test structure mirrors the source layout (`tests/agents/` → `rltrain/agents/`, etc.)
+- Test structure mirrors the source layout (`tests/agents/` → `rltrain/agents/`)
 - Plain `def test_*` functions — no classes
 - Given-When-Then structure
+- E2E tests marked `@pytest.mark.e2e`
 
 ```bash
 uv run pytest tests/ -v
@@ -70,95 +49,87 @@ uv run pytest tests/ -v
 ## Linting & Type Checking
 
 ```bash
-uv run ruff check rltrain/          # lint
-uv run ruff format --check rltrain/ # format check
-uv run pyright rltrain/             # type check (basic mode)
+uv run ruff check rltrain/             # lint
+uv run ruff format --check rltrain/    # format check
+uv run pyright rltrain/                # type check (basic mode)
 ```
 
-Tool configs live in separate files (`ruff.toml`, `pytest.ini`, `pyrightconfig.json`), not in `pyproject.toml`.
+Tool configs live in dedicated files (`ruff.toml`, `pytest.ini`, `pyrightconfig.json`), not in `pyproject.toml`.
 
-A Makefile wraps these commands for convenience: `make lint`, `make format`, `make typecheck`, `make test`, or `make all` to run the full quality gate (format-check → lint → typecheck → test). Run `make fix` to auto-fix lint violations.
+A Makefile wraps these: `make lint`, `make format`, `make typecheck`, `make test`, or `make all` for the full gate (format-check → lint → typecheck → test). `make fix` auto-fixes lint violations.
+
+Pyright runs in `basic` mode against `rltrain/` only. Most categories are downgraded to `warning` so CI passes on warnings — keep new code error-free, and reduce warnings when you touch a file.
 
 ## Pull Request Workflow
 
-1. Create a PR with a clear description (see PR template below).
-2. Run `/gemini review` to request an automated review.
-3. Resolve or respond to **all** Gemini comments — do not leave unaddressed feedback.
-4. Re-run `/gemini review` after changes until the review converges (no new substantive comments).
-5. Only then request human review.
+1. Create a PR with a clear description (see template below).
+2. Run `/gemini review` for an automated pass.
+3. Resolve or respond to **all** Gemini comments — no unaddressed feedback.
+4. Re-run `/gemini review` until convergence.
+5. Then request human review.
 6. Squash-merge with `--delete-branch` once approved.
 
-PRs must not be merged with unresolved automated review comments. The Gemini review cycle is a quality gate, not a suggestion.
+PRs must not merge with unresolved automated review comments.
 
 ## Directory Structure
 
-- **`rltrain/`** — framework package: agents (policy_gradient/, actor_critic/, q_learning/), callbacks, env (MDP wrapper), utils (builders, device, math helpers), and `trainer.py`. Network modules are provided by [toblox](https://github.com/DarkbyteAT/toblox). Gradient transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria).
-- **`examples/`** — experiment configs (env.json + agent variants per environment)
-- **`tests/`** — test suite mirroring the source layout (see [tests/README.md](tests/README.md))
-- **`run.py`** — thin CLI wrapper
+The package lives under `rltrain/` with submodules for `agents/`, `callbacks/`, `builders/`, `trainer/`, plus flat modules (`buffer.py`, `transitions.py`, `heads.py`, `distributions.py`, `networks.py`, `env.py`, `math.py`, `cli.py`). Tests under `tests/` mirror the source layout. Example configs live in `examples/`. Run `tree -L 2 rltrain/` for the current layout.
 
 ## Architecture Rules
 
-- **Framework code in `rltrain/`**, experiment configs in `examples/`, results in `dump/`.
-- **Agent inheritance chain** is deliberate — each level adds one concept. Maintain this when adding algorithms.
-- **`Agent.learn()`** is the single orchestration point for optimisation. New optimisation techniques are implemented as `GradientTransform` classes in [samgria](https://github.com/DarkbyteAT/samgria), not hardcoded in `learn()` or subclasses.
-- **All networks** must use orthogonal weight initialisation.
-- **JSON + FQN** — new agents/networks must be instantiable via the FQN builder with keyword arguments from JSON.
-- **No environment-specific dependencies** — rltrain is a general-purpose RL framework. Users plug gymnasium-compatible environments from downstream scripts.
+- **Framework code in `rltrain/`**, experiment configs in `examples/`, results in `<dump>/`.
+- **`Agent` Protocol** is the contract — `init/learn/act`. Three methods, agnostic to algorithm family.
+- **No mutable state on agent modules.** Agents are `eqx.Module`s with static fields only. All mutable state in `TrainState`/`DQNState`/`SACState` pytrees.
+- **`learn` and `act` must be jittable** — composable with `grad`, `vmap`, `lax.scan`. If a method needs `pure_callback` or `io_callback`, it's in the wrong layer.
+- **New optimisation techniques** (sharpness-aware, parameter regularisation) belong in [samgria](https://github.com/DarkbyteAT/samgria) as JAX-native gradient transforms. Rltrain agents stay pure.
+- **All linear layers** must use orthogonal weight init.
+- **JSON + FQN** — new agents and networks must be instantiable via `rltrain.builders.agent` with kwargs from JSON.
+- **No environment-specific dependencies** — rltrain is general-purpose. Plug envs from downstream scripts.
 
 ## Key Patterns
 
 ### FQN Builder System
 
-The `load(fqn)` function in `utils/builders/` dynamically imports any class by fully-qualified name. JSON configs specify `"fqn": "rltrain.agents.actor_critic.PPO"` and the builder resolves it at runtime. FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `toblox.SkipMLP` for nn modules, `rltrain.transforms.SAM` for gradient transforms).
+`rltrain.builders.agent.agent(cfg, key)` dynamically resolves any `fqn` field to a Python class and recursively constructs sub-objects (`actor`, `action_head`, `critic`, `optimizer`, `epoch_terminators`). PRNG sub-keys are auto-spliced into constructors that accept a `key=` parameter (detected via `inspect`). FQNs must resolve through `__init__.py` re-exports — use the shortest public name (e.g. `rltrain.agents.PPO`, not `rltrain.agents.ppo.PPO`).
 
-### Agent Template Method
+### Agent Protocol
 
-`Agent.learn()` handles the full optimisation step. Subclasses only need to implement:
+`rltrain.agents.Agent` is a `runtime_checkable` `Protocol`:
 
-- `setup()` — initialise networks and optimisers
-- `act(states)` → Distribution
-- `step(env)` — collect experience, decide when to learn
-- `load()` → batch tensors from memory
-- `loss(*batch)` → scalar loss
-- `descend()` — optimizer step + gradient clipping
+- `init(key) → state` — fresh `TrainState` pytree
+- `learn(state, batch, key) → (state, metrics)` — pure functional update; returns new state and a dict of scalar metrics
+- `act(state, obs, key) → action` — policy
 
-### Gradient Transform Pipeline
-
-`Agent.learn()` applies a composable pipeline of `GradientTransform` steps between `loss.backward()` and `descend()`. Each transform implements a two-phase protocol:
-
-- `apply(model, loss_fn, batch)` — **pre-descent** hook for transforms that modify gradients or temporarily perturb parameters (e.g. SAM, ASAM).
-- `post_step(model)` — **post-descent** hook for transforms that operate on updated parameters (e.g. LAMPRollback noise injection + rollback).
-
-The pipeline is configured via the `grad_transforms` key in agent JSON, using the FQN resolver:
-
-```json
-"grad_transforms": [
-    {"fqn": "samgria.SAM", "rho": 1e-2},
-    {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
-]
-```
-
-Omitting `grad_transforms` (or passing an empty list) gives vanilla gradient descent.
-
-Built-in transforms are provided by [samgria](https://github.com/DarkbyteAT/samgria):
-
-| Transform | Phase | Description |
-|-----------|-------|-------------|
-| `SAM` | pre-descent | Sharpness-Aware Minimisation — perturb in gradient direction, recompute loss at worst-case point |
-| `ASAM` | pre-descent | Adaptive SAM — perturbation scaled by parameter magnitude for scale invariance |
-| `LAMPRollback` | post-descent | Noise injection + moving average rollback for flat-minima exploration |
-
-To add a custom transform, implement a class with `apply()` and `post_step()` methods matching the `GradientTransform` protocol, place it anywhere importable, and reference it via FQN in the config.
+Subclasses of `OnPolicyAgent` only need to override `_loss(...)`. DQN variants override `_loss` against `dqn_learn_step`. SAC and DistributionalDQN are standalone modules implementing the Protocol directly.
 
 ### Callback Protocol
 
-`rltrain.callbacks.Callback` is a `@runtime_checkable` Protocol with five hook methods, all defaulting to no-op (`...`). The `Trainer` accepts a `callbacks` list — if None, it uses the three built-ins (`CSVLoggerCallback`, `PlotCallback`, `CheckpointCallback`). Custom callbacks implement any subset of the protocol methods.
+`rltrain.callbacks.Callback` is a `@runtime_checkable` `Protocol` with five hooks (all default no-op):
 
-### Device System
+| Hook | Signature | Called |
+|---|---|---|
+| `on_train_start` | `(config, run_dir)` | once, before the loop |
+| `on_step` | `(step, metrics: dict[str, float])` | every step |
+| `on_episode_end` | `(episode, episode_return, episode_length, running_return)` | episode boundaries |
+| `on_checkpoint` | `(step, agent_state, run_dir)` | every `checkpoint_steps` |
+| `on_train_end` | `(agent_state, run_dir)` | once, after the loop |
 
-rltrain is device-agnostic. The `Agent` constructor takes a `T.device` and all tensor operations use `.to(self.device)`. The CLI exposes `--device {cpu,cuda,mps,auto}` (default: `auto`). Resolution logic lives in `rltrain.utils.device.resolve_device()`, which auto-detects: CUDA → MPS → CPU. Programmatic users call `resolve_device("auto")` or pass a `T.device` directly to the builder.
+Hooks fire **Python-side at segment boundaries** — `ScanLoop` collects `StepOutput` arrays inside `lax.scan` and dispatches at each `checkpoint_steps` segment. This is a deliberate departure from the original `io_callback` design (see `rltrain/trainer/_loops.py`).
+
+### Buffer
+
+`ExperienceBuffer` is a single `chex.dataclass` covering rollout (drain at horizon), horizon mini-batch (PPO/SPO), and persistent replay (DQN/SAC) regimes via configuration. PER is a buffer option (`prioritised=True`), not a separate type. Priorities are always allocated; the uniform path returns `is_weights=jnp.ones(...)`. All ops are pure JAX and jittable.
+
+### Loop Strategies
+
+The `TrainingLoop` `Protocol` has three implementations:
+
+- `PythonLoop` — Python `while` loop; works for both gymnasium and gymnax envs
+- `ScanLoop` — `lax.scan` segments; auto-selected when `env.capabilities.scan_rollout` is True
+- `PmapLoop` — multi-device via `jax.pmap`; falls back to ScanLoop on single device
+
+`Trainer` selects the right loop from `env.capabilities` unless one is supplied explicitly.
 
 ## References
 
-See [references/references.bib](references/references.bib) for the academic papers behind each algorithm and technique.
+See [references/references.bib](references/references.bib).

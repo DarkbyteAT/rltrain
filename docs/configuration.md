@@ -1,173 +1,119 @@
 # Configuration
 
-RLTrain uses JSON configuration files with fully-qualified class names (FQNs) to specify every component at runtime. This means you can swap algorithms, network architectures, optimisers, and environment wrappers without changing any Python code.
+RLTrain uses JSON config files with fully-qualified class names (FQNs) to specify every component at runtime. Algorithms, networks, optimisers, and environments can be swapped without changing any Python code.
 
 ## The FQN system
 
-Every JSON object with an `fqn` field is resolved dynamically by the builder. The FQN is a standard Python dotted import path:
+Every JSON object with an `fqn` field is resolved dynamically by `rltrain.builders.agent`. The FQN is a standard Python dotted import path:
 
 ```json
-{"fqn": "rltrain.agents.actor_critic.PPO"}
+{"fqn": "rltrain.agents.PPO"}
 ```
 
-At runtime, the builder imports `rltrain.agents.actor_critic` and retrieves the `PPO` class. All remaining fields in the JSON object are passed as constructor arguments. This works for any importable class, including your own custom agents, networks, and optimisers.
+The builder imports the module, retrieves the class, and constructs it with the remaining fields as kwargs. Sub-objects with their own `fqn` are recursively constructed and threaded into the parent. If a constructor accepts a `key=` parameter (detected via `inspect`), a PRNG sub-key is auto-spliced in.
 
-## Agent config anatomy
-
-An agent config file has three sections: algorithm hyperparameters, model architecture, and optimiser settings.
+## Agent config
 
 ```json
 {
-    "fqn": "rltrain.agents.actor_critic.PPO",
-    "gamma": 0.995,
-    "tau": 0.01,
-    "beta_critic": 0.5,
-    "normalise": true,
-    "continuous": false,
-    "horizon": 256,
-    "lambda_gae": 0.95,
-    "num_epochs": 8,
-    "batch_size": 128,
-    "epoch_terminators": [
-        {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
-    ],
-    "eps_clip": 0.2,
-    "model": {
-        "actor": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}],
-        "critic": [{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 1}]
-    },
-    "opt": {
-        "actor": {"fqn": "torch.optim.Adam", "lr": 3e-4},
-        "critic": {"fqn": "torch.optim.Adam", "lr": 3e-4}
-    }
+  "fqn": "rltrain.agents.PPO",
+  "gamma": 0.99,
+  "lambda_gae": 0.95,
+  "eps_clip": 0.2,
+  "num_epochs": 8,
+  "minibatch_size": 128,
+  "epoch_terminators": [
+    {"fqn": "rltrain.agents.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+  ],
+  "actor":        {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width_size": 256, "depth": 3},
+  "action_head":  {"fqn": "rltrain.heads.DiscreteHead", "in_features": 64, "num_actions": 2},
+  "critic":       {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1,  "width_size": 256, "depth": 3},
+  "optimizer":    {"fqn": "optax.adam", "learning_rate": 3e-4}
 }
 ```
 
-### Top-level fields
+### Common fields
 
-These are passed directly to the agent constructor. Which fields are available depends on the agent class -- see the [Algorithms](algorithms.md) page for per-algorithm hyperparameters.
-
-Common fields shared across most agents:
+Which fields are valid depends on the agent class — see [Algorithms](algorithms.md) for the per-algorithm hyperparameter surface. Most on-policy agents accept:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `fqn` | string | Fully-qualified class name of the agent |
-| `gamma` | float | Discount factor for future rewards |
-| `tau` | float | Entropy regularisation coefficient (policy gradient) or soft update rate (DQN) |
-| `normalise` | bool | Standardise returns/advantages to zero mean and unit variance |
-| `continuous` | bool | Whether the action space is continuous (Gaussian) or discrete (categorical) |
+|---|---|---|
+| `fqn` | string | Fully-qualified agent class name |
+| `gamma` | float | Discount factor |
+| `tau` | float | Entropy coefficient (PG family) or Polyak rate (DQN/SAC) |
+| `actor` / `critic` | object | Network configs — usually `rltrain.networks.MLP` or a toblox FQN |
+| `action_head` | object | Distribution head (`DiscreteHead`, `GaussianHead`, `SquashedGaussianHead`, `CategoricalAtomHead`, etc.) |
+| `optimizer` | object | An `optax.GradientTransformation` constructor (e.g. `optax.adam`) |
 
-### Model section
+SAC carries three separate optimisers (`actor_optimizer`, `critic_optimizer`, `alpha_optimizer`). C51 carries a `feature_net` plus a `CategoricalAtomHead` instead of `actor`/`critic`.
 
-The `model` section maps network roles to lists of module specs. Each list entry becomes a layer in an `nn.Sequential`, so modules compose naturally.
+### Networks
 
-**Actor-critic agents** expect `actor` and `critic` keys. Optionally, an `embedding` key defines shared feature layers (useful for visual observations):
+The default MLP is `rltrain.networks.MLP` (orthogonal-init wrapper around `eqx.nn.MLP`). For SkipMLP / CNN / RFF and other architectures, use toblox FQNs — the builder resolves any importable class.
+
+```json
+{"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width_size": 256, "depth": 3}
+```
+
+### Action heads
+
+| Head | When |
+|---|---|
+| `rltrain.heads.DiscreteHead` | Categorical policies (discrete action spaces) |
+| `rltrain.heads.GaussianHead` | Diagonal Gaussian (continuous, unbounded) |
+| `rltrain.heads.SquashedGaussianHead` | SAC continuous (tanh-squashed Gaussian) |
+| `rltrain.heads.GammaHead` / `BetaHead` | Bounded / non-negative continuous |
+| `rltrain.heads.CategoricalAtomHead` | C51 (distributional DQN) |
+
+### Optimiser
+
+The builder constructs any [optax](https://optax.readthedocs.io/) optimiser via FQN:
+
+```json
+{"fqn": "optax.adam", "learning_rate": 3e-4}
+```
+
+To compose gradient transforms (e.g. samgria's SAM, gradient clipping), wrap with `optax.chain`:
 
 ```json
 {
-    "model": {
-        "embedding": [
-            {"fqn": "toblox.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
-        ],
-        "actor": [
-            {"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 3}
-        ],
-        "critic": [
-            {"fqn": "toblox.SkipMLP", "inputs": 512, "hiddens": [256, 256, 256, 256], "outputs": 1}
-        ]
-    }
+  "fqn": "optax.chain",
+  "transformations": [
+    {"fqn": "optax.clip_by_global_norm", "max_norm": 0.5},
+    {"fqn": "optax.adam", "learning_rate": 3e-4}
+  ]
 }
 ```
-
-**DQN agents** expect a single `q` key (and optionally `embedding`).
-
-### Optimiser section
-
-The `opt` section maps the same network roles to optimiser specs:
-
-```json
-{
-    "opt": {
-        "actor": {"fqn": "torch.optim.Adam", "lr": 3e-4},
-        "critic": {"fqn": "torch.optim.Adam", "lr": 3e-4}
-    }
-}
-```
-
-Any `torch.optim.Optimizer` subclass works. Pass constructor arguments (learning rate, weight decay, etc.) as additional fields.
 
 ## Environment config
 
-Environment configs specify a Gymnasium environment ID and an optional list of wrappers:
+```json
+{"backend": "gymnax", "id": "CartPole-v1"}
+```
+
+The `backend` key dispatches between two env classes:
+
+- `gymnax` — pure-step, jittable, scannable. The trainer auto-selects `ScanLoop` for in-XLA rollouts.
+- `gymnasium` — Python-loop, broad env coverage. Trainer uses `PythonLoop`.
+
+Additional fields are passed to the env constructor (e.g. `params` for gymnax, `wrappers` for gymnasium).
+
+## PPO epoch terminators
+
+PPO accepts a list of composable `EpochTerminator` instances. Each is a callable returning a bool indicating whether to stop the epoch loop early.
 
 ```json
 {
-    "id": "CartPole-v1",
-    "wrappers": [
-        {"fqn": "gymnasium.wrappers.NormalizeObservation"}
-    ]
+  "epoch_terminators": [
+    {"fqn": "rltrain.agents.KLEarlyStop", "target_kl": 0.05, "rollback": true}
+  ]
 }
 ```
 
-Wrappers are applied in order. Any `gymnasium.Wrapper` subclass works, including custom wrappers importable from your code.
+`KLEarlyStop` halts mini-batch epochs when the approximate KL between current and pre-epoch policy exceeds `target_kl`. With `rollback: true`, it restores the pre-epoch parameters.
 
-## Network modules
+## Out-of-domain features
 
-Network modules are provided by the [toblox](https://github.com/DarkbyteAT/toblox) package, all using orthogonal weight initialisation and SiLU activation by default.
-
-### MLP
-
-```json
-{"fqn": "toblox.mlp", "inputs": 4, "hiddens": [128, 128], "outputs": 2}
-```
-
-Standard multi-layer perceptron. Best for low-dimensional dense observations (CartPole, Acrobot).
-
-### SkipMLP (D2RL)
-
-```json
-{"fqn": "toblox.SkipMLP", "inputs": 4, "hiddens": [256, 256, 256, 256], "outputs": 2}
-```
-
-D2RL-style MLP with skip connections from the input to every hidden layer. Improves gradient flow in deeper networks[^d2rl].
-
-### CNN
-
-```json
-{"fqn": "toblox.cnn", "channels": [4, 16, 32], "kernels": [2, 2], "strides": [2, 1]}
-```
-
-Convolutional network with a flatten layer at the output. Use as an embedding network for image observations.
-
-### RFF (Random Fourier Features)
-
-```json
-{"fqn": "toblox.RFF", "inputs": 4, "features": 256}
-```
-
-Projects inputs through a fixed random matrix with sinusoidal activations, approximating a kernel feature map. Useful for spectral encoding of low-dimensional inputs[^rff].
-
-## Gradient transforms
-
-Add composable gradient transforms to any agent via the `grad_transforms` key. Transforms run between `loss.backward()` and `optimizer.step()` inside `Agent.learn()`, and are specified as a list of FQN objects:
-
-```json
-{
-    "grad_transforms": [
-        {"fqn": "samgria.SAM", "rho": 0.01},
-        {"fqn": "samgria.LAMPRollback", "eps": 5e-3, "rollback_len": 10}
-    ]
-}
-```
-
-| Transform | Class | Parameters | Description |
-|-----------|-------|------------|-------------|
-| SAM | `samgria.SAM` | `rho` (perturbation radius) | Perturbs parameters in the gradient direction, recomputes loss at the perturbed point, then descends using the gradient computed there |
-| ASAM | `samgria.ASAM` | `rho` (perturbation radius) | Like SAM but perturbation is scaled by parameter magnitude for scale-invariant sharpness |
-| LAMP | `samgria.LAMPRollback` | `eps` (noise scale), `rollback_len` (rollback interval) | Injects parameter noise after each step and periodically rolls back to a moving average |
-
-Transforms compose -- list them in order. SAM/ASAM use the `apply()` hook (pre-descent) and LAMP uses the `post_step()` hook (post-descent), so they naturally complement each other[^sam].
-
-[^d2rl]: Sinha, S. et al. (2020). D2RL: Deep Dense Architectures in Reinforcement Learning. *arXiv:2010.09163*.
-[^rff]: Rahimi, A. & Recht, B. (2007). Random Features for Large-Scale Kernel Machines. *NeurIPS*, 20.
-[^sam]: Foret, P. et al. (2021). Sharpness-Aware Minimization for Efficiently Improving Generalization. *ICLR*.
+- **Gradient transforms** (SAM/ASAM/LAMP) live in [samgria](https://github.com/DarkbyteAT/samgria) — JAX-native optax-compatible primitives. Plug into the `optimizer` field via `optax.chain`.
+- **Network architectures** (SkipMLP, CNN, RFF) live in [toblox](https://github.com/DarkbyteAT/toblox). Reference via FQN in `actor`/`critic`.
+- **Experiment tracking** (W&B, TensorBoard, DuckDB) lives in [xptrack](https://github.com/DarkbyteAT/xptrack). Add as a callback alongside `CSVLoggerCallback`.
