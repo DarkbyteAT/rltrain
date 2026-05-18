@@ -382,24 +382,30 @@ class ScanLoop:
             step_count_arr = carry.step_count
             key = carry.key
 
+            # One host transfer per segment — the Python loops below see
+            # numpy arrays, so bool()/float()/int() are no-ops rather than
+            # device-to-host syncs. With checkpoint_steps in the thousands
+            # this is two orders of magnitude faster than per-index lifts.
+            host_out = jax.device_get(segment_out)
+
             # Fire episode callbacks for completed episodes
             for i in range(config.checkpoint_steps):
-                if bool(segment_out.done[i]):
+                if bool(host_out.done[i]):
                     for cb in callbacks:
                         cb.on_episode_end(
                             episode_count,
-                            float(segment_out.episode_return[i]),
-                            int(segment_out.episode_length[i]),
-                            float(segment_out.running_return[i]),
+                            float(host_out.episode_return[i]),
+                            int(host_out.episode_length[i]),
+                            float(host_out.running_return[i]),
                         )
                     episode_count += 1
 
             # Fire on_step for learn steps — extract scalar metrics only
             for i in range(config.checkpoint_steps):
-                if bool(segment_out.did_learn[i]):
+                if bool(host_out.did_learn[i]):
                     py_metrics = {}
                     for k in scalar_keys:
-                        py_metrics[k] = float(segment_out.metrics[k][i])
+                        py_metrics[k] = float(host_out.metrics[k][i])
                     for cb in callbacks:
                         cb.on_step(global_step + i, py_metrics)
 
