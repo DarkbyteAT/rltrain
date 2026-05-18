@@ -75,6 +75,7 @@ class VideoRecorderCallback:
         episode: int,
         episode_return: float,
         episode_length: int,
+        running_return: float = 0.0,
     ) -> None:
         """No-op."""
 

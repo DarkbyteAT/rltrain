@@ -3,6 +3,14 @@ r"""Action heads — output parameterisations mapping features to distributions.
 Each head is an ``eqx.Module`` that maps network features to a
 ``distreqx.Distribution``. Agents are agnostic to the action space;
 swapping the head switches between discrete and continuous control.
+
+Divergence from PyTorch rltrain: ``GaussianHead`` uses two separate Linear
+layers (one for ``mu``, one for ``log_sigma``) and clips ``log_sigma`` to
+``[-20, 2]``. PyTorch rltrain interleaved a single linear output and did
+not clip. The clip prevents ``exp(log_sigma)`` from over/underflowing at
+the start of training; the cost is the policy can never collapse to a
+truly deterministic action. This is the SAC/PPO-standard trade-off and
+is the preferred behaviour for continuous-control benchmarks.
 """
 
 import equinox as eqx
@@ -56,7 +64,7 @@ class SquashedGaussianHead(eqx.Module):
     r"""Maps features to a tanh-squashed Normal distribution.
 
     Used by SAC for bounded continuous actions.  Returns a
-    :class:`spike.distributions.SquashedNormal` with a numerically stable
+    :class:`rltrain.distributions.SquashedNormal` with a numerically stable
     ``log_prob`` that avoids the catastrophic cancellation in distreqx's
     ``Transformed(Normal, Tanh)`` bijector at saturation.
     """
@@ -128,7 +136,7 @@ class CategoricalAtomHead(eqx.Module):
     $[V_{\min}, V_{\max}]$.  Used by distributional DQN (C51).
 
     The atoms are stored as a static field and shared with
-    ``spike.math.project_distribution`` and ``spike.math.q_values_from_pmf``.
+    ``rltrain.math.project_distribution`` and ``rltrain.math.q_values_from_pmf``.
     """
 
     linear: eqx.nn.Linear

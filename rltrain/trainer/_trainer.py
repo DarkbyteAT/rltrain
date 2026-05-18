@@ -43,7 +43,13 @@ class _NoOpCallback:
     def on_step(self, step: int, metrics: dict[str, float]) -> None:
         """No-op."""
 
-    def on_episode_end(self, episode: int, episode_return: float, episode_length: int) -> None:
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float = 0.0,
+    ) -> None:
         """No-op."""
 
     def on_checkpoint(self, step: int, agent_state: object, run_dir: Path | None) -> None:

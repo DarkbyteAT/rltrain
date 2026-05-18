@@ -24,8 +24,18 @@ class Callback(Protocol):
         """Called after each agent.learn() call with Python-float metrics."""
         ...
 
-    def on_episode_end(self, episode: int, episode_return: float, episode_length: int) -> None:
-        """Called when an episode completes."""
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float = 0.0,
+    ) -> None:
+        """Called when an episode completes.
+
+        ``running_return`` is the EMA over completed-episode returns,
+        computed by the env layer. Older callbacks may ignore it.
+        """
         ...
 
     def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:

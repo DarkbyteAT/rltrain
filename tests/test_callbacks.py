@@ -44,9 +44,9 @@ def test_csv_logger_writes_file(tmp_path: Path):
         reader = csv.reader(f)
         rows = list(reader)
 
-    assert rows[0] == ["episode", "return", "length"]
-    assert rows[1] == ["1", "10.0", "50"]
-    assert rows[2] == ["2", "20.5", "100"]
+    assert rows[0] == ["episode", "return", "length", "running_return"]
+    assert rows[1] == ["1", "10.0", "50", "0.0"]
+    assert rows[2] == ["2", "20.5", "100", "0.0"]
     assert len(rows) == 3
 
 
@@ -75,9 +75,9 @@ def test_csv_logger_flushes_at_checkpoint(tmp_path: Path):
         rows = list(reader)
 
     assert len(rows) == 4  # header + 3 episodes
-    assert rows[1] == ["1", "5.0", "25"]
-    assert rows[2] == ["2", "15.0", "75"]
-    assert rows[3] == ["3", "25.0", "125"]
+    assert rows[1] == ["1", "5.0", "25", "0.0"]
+    assert rows[2] == ["2", "15.0", "75", "0.0"]
+    assert rows[3] == ["3", "25.0", "125", "0.0"]
 
 
 @pytest.mark.unit

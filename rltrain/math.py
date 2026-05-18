@@ -11,6 +11,21 @@ from jaxtyping import Array, Float
 
 
 # ---------------------------------------------------------------------------
+# Whitening and interpolation
+# ---------------------------------------------------------------------------
+
+
+def center(x: Float[Array, ...], eps: float = 1e-8) -> Float[Array, ...]:
+    r"""Standardise to zero mean and unit variance: $(x - \mu) / (\sigma + \epsilon)$."""
+    return (x - jnp.mean(x)) / (jnp.std(x) + eps)
+
+
+def lerp(x: Float[Array, ...], y: Float[Array, ...], tau: float) -> Float[Array, ...]:
+    r"""Polyak interpolation $\tau x + (1 - \tau) y$ — used for target network soft updates."""
+    return tau * x + (1.0 - tau) * y
+
+
+# ---------------------------------------------------------------------------
 # Discounted returns
 # ---------------------------------------------------------------------------
 

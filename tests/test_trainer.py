@@ -90,8 +90,14 @@ class _RecordingCallback:
     def on_step(self, step: int, metrics: dict[str, float]) -> None:
         self.calls.append(("on_step", (step, metrics)))
 
-    def on_episode_end(self, episode: int, episode_return: float, episode_length: int) -> None:
-        self.calls.append(("on_episode_end", (episode, episode_return, episode_length)))
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float = 0.0,
+    ) -> None:
+        self.calls.append(("on_episode_end", (episode, episode_return, episode_length, running_return)))
 
     def on_checkpoint(self, step: int, agent_state: object, run_dir: Path | None) -> None:
         self.calls.append(("on_checkpoint", (step, agent_state, run_dir)))

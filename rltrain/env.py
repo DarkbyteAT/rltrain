@@ -26,7 +26,12 @@ class EnvCapabilities(NamedTuple):
 
 @chex.dataclass
 class EnvState:
-    """Jittable env state — a pytree of arrays."""
+    """Jittable env state — a pytree of arrays.
+
+    ``running_return`` is an EMA over completed-episode returns, updated only
+    when ``done`` fires. Between episodes it carries the previous value so
+    downstream metrics see a stable smoothed signal.
+    """
 
     internal: Any  # gymnax env-specific state
     obs: chex.Array
@@ -34,6 +39,7 @@ class EnvState:
     reward: chex.Array
     episode_return: chex.Array
     episode_length: chex.Array
+    running_return: chex.Array
 
 
 class GymnaxEnv:
@@ -44,11 +50,18 @@ class GymnaxEnv:
 
     capabilities = EnvCapabilities(pure_step=True, vmap_batch=True, scan_rollout=True)
 
-    def __init__(self, env_name: str):
-        """Initialise from a gymnax environment name (e.g. ``'CartPole-v1'``)."""
+    def __init__(self, env_name: str, *, reward_run_rate: float = 0.1):
+        """Initialise from a gymnax environment name (e.g. ``'CartPole-v1'``).
+
+        Args:
+            env_name: gymnax environment identifier.
+            reward_run_rate: EMA mixing weight for ``running_return`` updates
+                on episode completion. Matches the PyTorch MDP's ``run_beta``.
+        """
         self.env, self.env_params = gymnax.make(env_name)
         self.obs_shape: tuple[int, ...] = self.env.obs_shape
         self.num_actions: int = self.env.num_actions
+        self.reward_run_rate: float = reward_run_rate
 
     def reset(self, key: PRNGKeyArray) -> EnvState:
         """Reset the environment, returning initial state."""
@@ -60,6 +73,7 @@ class GymnaxEnv:
             reward=jnp.array(0.0),
             episode_return=jnp.array(0.0),
             episode_length=jnp.array(0, dtype=jnp.int32),
+            running_return=jnp.array(0.0),
         )
 
     def step(self, state: EnvState, action: chex.Array, key: PRNGKeyArray) -> EnvState:
@@ -77,6 +91,11 @@ class GymnaxEnv:
         new_episode_return = jnp.where(done, 0.0, episode_return)
         new_episode_length = jnp.where(done, 0, episode_length)
 
+        # EMA running_return only updates on episode boundaries
+        beta = self.reward_run_rate
+        ema_new = beta * episode_return + (1.0 - beta) * state.running_return
+        new_running_return = jnp.where(done, ema_new, state.running_return)
+
         return EnvState(
             internal=new_internal,
             obs=new_obs,
@@ -84,6 +103,7 @@ class GymnaxEnv:
             reward=reward,
             episode_return=new_episode_return,
             episode_length=new_episode_length,
+            running_return=new_running_return,
         )
 
 

@@ -59,5 +59,6 @@ class StepOutput:
     done: Array
     episode_return: Array
     episode_length: Array
+    running_return: Array
     metrics: PyTree[Array]  # scalar metrics, keys fixed at trace time
     did_learn: Array

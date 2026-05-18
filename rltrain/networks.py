@@ -1,15 +1,26 @@
-"""Simple MLP network — inlined for the spike (no toblox dependency)."""
+"""Simple MLP network with orthogonal weight initialisation."""
 
 import equinox as eqx
+import jax
+import jax.numpy as jnp
 from jaxtyping import Array, Float, PRNGKeyArray
 
 
-class MLP(eqx.Module):
-    """Multi-layer perceptron with ReLU activations.
+def _apply_orthogonal(mlp: eqx.nn.MLP, key: PRNGKeyArray) -> eqx.nn.MLP:
+    """Replace every Linear weight in ``mlp`` with an orthogonally initialised tensor."""
+    initializer = jax.nn.initializers.orthogonal()
+    linears = [layer for layer in mlp.layers if isinstance(layer, eqx.nn.Linear)]
+    keys = jax.random.split(key, len(linears))
+    new_weights = [initializer(k, layer.weight.shape, jnp.float32) for layer, k in zip(linears, keys, strict=True)]
 
-    Wraps ``eqx.nn.MLP`` with orthogonal weight initialisation matching
-    rltrain's convention.
-    """
+    def where_fn(m: eqx.nn.MLP) -> list[Float[Array, "out in"]]:
+        return [layer.weight for layer in m.layers if isinstance(layer, eqx.nn.Linear)]
+
+    return eqx.tree_at(where_fn, mlp, new_weights)
+
+
+class MLP(eqx.Module):
+    """Multi-layer perceptron with ReLU activations and orthogonal weight initialisation."""
 
     net: eqx.nn.MLP
 
@@ -22,14 +33,16 @@ class MLP(eqx.Module):
         *,
         key: PRNGKeyArray,
     ):
-        """Initialise MLP with given dimensions."""
-        self.net = eqx.nn.MLP(
+        """Initialise an MLP and overwrite its weights with orthogonal samples."""
+        init_key, ortho_key = jax.random.split(key)
+        base = eqx.nn.MLP(
             in_size=in_size,
             out_size=out_size,
             width_size=width,
             depth=depth,
-            key=key,
+            key=init_key,
         )
+        self.net = _apply_orthogonal(base, ortho_key)
 
     def __call__(self, x: Float[Array, " d"]) -> Float[Array, " out"]:
         """Forward pass through the MLP."""

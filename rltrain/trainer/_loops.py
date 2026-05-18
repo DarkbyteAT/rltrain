@@ -183,6 +183,7 @@ def _train_step(carry: TrainCarry, _step_idx, *, agent, env, config, zero_metric
         done=new_env_state.done,
         episode_return=terminal_return,
         episode_length=terminal_length,
+        running_return=new_env_state.running_return,
         metrics=metrics,
         did_learn=learn_flag,
     )
@@ -225,6 +226,7 @@ class PythonLoop:
         episode_count = 0
         episode_return = 0.0
         episode_length = 0
+        running_return = 0.0
         steps_since_learn = 0
 
         cb_config = {"num_steps": config.num_steps, "seed": config.seed}
@@ -252,8 +254,9 @@ class PythonLoop:
                 if bool(new_env_state.done):
                     ep_ret = float(env_state.episode_return + new_env_state.reward)
                     ep_len = int(env_state.episode_length + 1)
+                    ep_run = float(new_env_state.running_return)
                     for cb in callbacks:
-                        cb.on_episode_end(episode_count, ep_ret, ep_len)
+                        cb.on_episode_end(episode_count, ep_ret, ep_len, ep_run)
                     episode_count += 1
 
                 env_state = new_env_state
@@ -276,8 +279,10 @@ class PythonLoop:
                 episode_length += 1
 
                 if bool(done):
+                    beta = getattr(env, "reward_run_rate", 0.1)
+                    running_return = beta * episode_return + (1.0 - beta) * running_return
                     for cb in callbacks:
-                        cb.on_episode_end(episode_count, episode_return, episode_length)
+                        cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
                     episode_count += 1
                     episode_return = 0.0
                     episode_length = 0
@@ -385,6 +390,7 @@ class ScanLoop:
                             episode_count,
                             float(segment_out.episode_return[i]),
                             int(segment_out.episode_length[i]),
+                            float(segment_out.running_return[i]),
                         )
                     episode_count += 1
 
@@ -504,6 +510,7 @@ class PmapLoop:
                             episode_count,
                             float(segment_out.episode_return[0, i]),
                             int(segment_out.episode_length[0, i]),
+                            float(segment_out.running_return[0, i]),
                         )
                     episode_count += 1
 
