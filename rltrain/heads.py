@@ -13,11 +13,36 @@ truly deterministic action. This is the SAC/PPO-standard trade-off and
 is the preferred behaviour for continuous-control benchmarks.
 """
 
+from typing import Protocol, runtime_checkable
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from distreqx.distributions import Beta, Categorical, Gamma, Normal
+from distreqx.distributions import AbstractDistribution, Beta, Categorical, Gamma, Normal
 from jaxtyping import Array, Float, PRNGKeyArray
+
+
+@runtime_checkable
+class Head(Protocol):
+    r"""Structural protocol for action heads.
+
+    An action head is any callable mapping a feature vector to a
+    ``distreqx`` distribution over actions. Concrete implementations in
+    this module (``DiscreteHead``, ``GaussianHead``, ``SquashedGaussianHead``,
+    ``GammaHead``, ``BetaHead``) all satisfy this contract; users may
+    supply their own. The ``OnPolicyAgent.action_head`` and
+    ``SAC.action_head`` slots accept any ``eqx.Module`` matching this
+    shape — ``runtime_checkable`` lets ``isinstance`` checks succeed for
+    duck-typed heads.
+
+    ``CategoricalAtomHead`` deliberately does NOT conform: it is a *value*
+    head returning a PMF array used by distributional DQN, not an action
+    distribution.
+    """
+
+    def __call__(self, features: Float[Array, " d"]) -> AbstractDistribution:
+        """Map a feature vector to a distribution over actions."""
+        ...
 
 
 class DiscreteHead(eqx.Module):

@@ -225,8 +225,12 @@ class OnPolicyAgent(eqx.Module):
     override ``_loss``.  PPO/SPO override ``learn`` for their epoch loop
     but inherit ``init`` and ``act``.
 
-    The ``action_head`` field is typed as ``eqx.Module`` (not
-    ``DiscreteHead``) to support both discrete and continuous heads.
+    The ``actor`` and ``action_head`` fields are typed as ``eqx.Module``
+    so any user-defined backbone or head composes here. ``action_head`` is
+    expected to satisfy the :class:`rltrain.heads.Head` protocol — i.e.
+    a callable mapping a feature vector to a ``distreqx`` distribution
+    over actions — but the protocol is not enforced at the dataclass
+    level to keep custom heads frictionless.
     """
 
     # ClassVar is excluded from dataclass fields, so subclasses can add
