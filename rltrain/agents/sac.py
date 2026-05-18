@@ -27,7 +27,6 @@ from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
 from rltrain.agents.agent import gradient_step, gradient_step_with_aux, init_target_params
 from rltrain.heads import DiscreteHead
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -74,10 +73,12 @@ class SAC(eqx.Module):
     All mutable state lives in ``SACState``.
 
     Args:
-        actor: MLP backbone producing features for the action head.
-        action_head: ``DiscreteHead`` or ``SquashedGaussianHead``.
-        critic_1: First Q-network.
-        critic_2: Second Q-network.
+        actor: Backbone producing features for the action head. Any
+            ``eqx.Module`` mapping ``obs -> features``.
+        action_head: ``DiscreteHead`` or ``SquashedGaussianHead`` (or any
+            ``eqx.Module`` that returns a ``distreqx`` distribution).
+        critic_1: First Q-network. Any ``eqx.Module``.
+        critic_2: Second Q-network. Any ``eqx.Module``.
         actor_optimizer: Optax optimizer for the actor.
         critic_optimizer: Optax optimizer for the critics.
         alpha_optimizer: Optax optimizer for ``log_alpha``.
@@ -87,10 +88,10 @@ class SAC(eqx.Module):
         discrete: Whether the action space is discrete (resolved at trace time).
     """
 
-    actor: MLP
+    actor: eqx.Module
     action_head: eqx.Module
-    critic_1: MLP
-    critic_2: MLP
+    critic_1: eqx.Module
+    critic_2: eqx.Module
     actor_optimizer: optax.GradientTransformation = eqx.field(static=True)
     critic_optimizer: optax.GradientTransformation = eqx.field(static=True)
     alpha_optimizer: optax.GradientTransformation = eqx.field(static=True)
@@ -101,10 +102,10 @@ class SAC(eqx.Module):
 
     def __init__(
         self,
-        actor: MLP,
+        actor: eqx.Module,
         action_head: eqx.Module,
-        critic_1: MLP,
-        critic_2: MLP,
+        critic_1: eqx.Module,
+        critic_2: eqx.Module,
         actor_optimizer: optax.GradientTransformation,
         critic_optimizer: optax.GradientTransformation,
         alpha_optimizer: optax.GradientTransformation,

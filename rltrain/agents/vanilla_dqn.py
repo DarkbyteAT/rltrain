@@ -18,7 +18,6 @@ import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
 from rltrain.agents.agent import TrainState, dqn_learn_step, init_target_params
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -47,7 +46,8 @@ class VanillaDQN(eqx.Module):
     and epsilon — lives in a ``DQNState`` pytree.
 
     Args:
-        q_net: Q-network architecture (MLP).
+        q_net: Q-network architecture. Any ``eqx.Module`` that maps an
+            observation to a vector of action values.
         optimizer: Optax gradient transformation.
         gamma: Discount factor $\gamma \in [0, 1]$.
         target_rate: Polyak averaging coefficient $\tau$ for target updates.
@@ -57,7 +57,7 @@ class VanillaDQN(eqx.Module):
         eps_decay: Epsilon decay per learn step.
     """
 
-    q_net: MLP
+    q_net: eqx.Module
     optimizer: optax.GradientTransformation = eqx.field(static=True)
     gamma: float = eqx.field(static=True)
     target_rate: float = eqx.field(static=True)

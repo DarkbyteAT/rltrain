@@ -20,7 +20,6 @@ from jaxtyping import Array, Float, PRNGKeyArray
 
 from rltrain.agents.agent import OnPolicyAgent, TrainState, gradient_step
 from rltrain.math import center, gae
-from rltrain.networks import MLP
 from rltrain.transitions import Transition
 
 
@@ -36,7 +35,7 @@ class SPO(OnPolicyAgent):
     magnitude.
     """
 
-    critic: MLP
+    critic: eqx.Module
     gamma: float = eqx.field(static=True)
     tau: float = eqx.field(static=True)
     beta_critic: float = eqx.field(static=True)
