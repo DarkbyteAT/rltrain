@@ -25,6 +25,7 @@ from rltrain.builders import agent as build_agent
 from rltrain.builders import env as build_env
 from rltrain.trainer import Trainer
 
+
 N_STEPS = 1_000
 HORIZON = 256
 SEED = 0
@@ -35,13 +36,6 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
     agent_cfg = json.loads((repo_root / "examples" / "cartpole" / "ppo.json").read_text())
     env_cfg = json.loads((repo_root / "examples" / "cartpole" / "env.json").read_text())
-
-    # The shipped example references `rltrain.agents.KLEarlyStop`, which is
-    # only exposed under `rltrain.agents.ppo_terminators`. Patch in-flight
-    # so the benchmark works without depending on a pending re-export fix.
-    for t in agent_cfg.get("epoch_terminators", []):
-        if t.get("fqn") == "rltrain.agents.KLEarlyStop":
-            t["fqn"] = "rltrain.agents.ppo_terminators.KLEarlyStop"
 
     key = jax.random.key(SEED)
     k_agent, k_env, k_init, k_learn = jax.random.split(key, 4)
