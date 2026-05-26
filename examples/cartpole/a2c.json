@@ -1,47 +1,11 @@
 {
-  "fqn": "rltrain.agents.actor_critic.AdvantageAC",
-  "beta_critic": 0.5,
-  "gamma": 0.995,
-  "lambda_gae": 0.9,
-  "tau": 5e-3,
-  "horizon": 128,
-  "normalise": true,
-  "model": {
-    "actor": [
-      {
-        "fqn": "toblox.SkipMLP",
-        "inputs": 4,
-        "hiddens": [
-          256,
-          256,
-          256,
-          256
-        ],
-        "outputs": 2
-      }
-    ],
-    "critic": [
-      {
-        "fqn": "toblox.SkipMLP",
-        "inputs": 4,
-        "hiddens": [
-          256,
-          256,
-          256,
-          256
-        ],
-        "outputs": 1
-      }
-    ]
-  },
-  "opt": {
-    "actor": {
-      "fqn": "torch.optim.Adam",
-      "lr": 3e-4
-    },
-    "critic": {
-      "fqn": "torch.optim.Adam",
-      "lr": 3e-4
-    }
-  }
+    "fqn": "rltrain.agents.AdvantageAC",
+    "gamma": 0.995,
+    "tau": 0.005,
+    "beta_critic": 0.5,
+    "lambda_gae": 0.95,
+    "actor":  {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width": 64, "depth": 2},
+    "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width": 64, "depth": 2},
+    "action_head": {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 64, "action_dim": 2},
+    "optimizer": {"fqn": "optax.adam", "learning_rate": 3e-4}
 }
