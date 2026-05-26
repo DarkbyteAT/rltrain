@@ -1,16 +1,14 @@
-"""Train PPO on CartPole-v1 via the gymnasium backend.
+"""Train PPO on CartPole-v1 with multiple parallel environments.
 
-Demonstrates the gymnasium pathway — broad env coverage, Python step
-loop. Compare with ``cartpole_video_demo.py`` (gymnax backend,
-``lax.scan``-able, faster per step) for the trade-off.
+Demonstrates the gymnasium pathway with ``num_envs > 1``. Each
+``env.step()`` advances all ``NUM_ENVS`` copies and returns batched
+observations of shape ``(N, obs_dim)``; ``PythonLoop`` dispatches to
+``agent.act_batch`` on the hot path, so the agent picks ``N`` actions
+per step from a single forward pass (vmapped under the hood).
 
-Known limitation — true multi-env vectorisation is not yet wired
-through the JAX trainer. ``GymnasiumEnv(num_envs=N)`` would batch
-observations to shape ``(N, obs_dim)``, but ``PythonLoop`` calls
-``agent.act(state, obs, key)`` assuming the unbatched shape
-``(obs_dim,)`` — wiring an ``agent.act_batch`` or auto-``vmap`` on the
-hot path is tracked as a future enhancement. For now the demo runs a
-single env via the gymnasium backend.
+Compare with ``cartpole_video_demo.py`` (single-env gymnax,
+``lax.scan``-able) for the per-step-throughput vs broad-env-coverage
+trade-off.
 """
 
 from __future__ import annotations
@@ -37,10 +35,11 @@ NUM_STEPS = 500_000
 CHECKPOINT_STEPS = 25_000
 SEED = 42
 
-# Currently forced to 1 — see the module docstring for the framework
-# limitation. Leaving the constant in place so the multi-env enhancement
-# only flips this knob.
-NUM_ENVS = 1
+# Number of parallel environment copies. Each env.step() advances all
+# NUM_ENVS environments and returns NUM_ENVS transitions, so horizon
+# buffers fill faster and the agent sees more diverse experience per
+# update.
+NUM_ENVS = 8
 
 
 def main() -> None:
@@ -64,7 +63,8 @@ def main() -> None:
         seed=SEED,
     )
 
-    print(f"Training PPO on CartPole-v1 (gymnasium backend, num_envs={NUM_ENVS})...")
+    print(f"Training PPO on CartPole-v1 with {NUM_ENVS} parallel environments...")
+    print(f"Each env.step() collects {NUM_ENVS} transitions ({NUM_ENVS}x data throughput)")
     trainer.fit(k_fit)
     print(f"Done. Results saved to {RUN_DIR}/")
 
