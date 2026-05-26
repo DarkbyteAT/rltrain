@@ -490,7 +490,15 @@ def test_discrete_polyak_updates_target():
 
 
 @pytest.mark.unit
-@pytest.mark.xfail(reason="distreqx Transformed(Normal, Tanh) produces NaN — justifies spike/distributions.py")
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "distreqx Transformed(Normal, Tanh) produces NaN — justifies "
+        "rltrain.distributions.SquashedNormal. When this XPASSes, remove "
+        "SquashedNormal and migrate SAC's SquashedGaussianHead to use "
+        "distreqx Transformed directly."
+    ),
+)
 def test_distreqx_squashed_gaussian_is_unstable():
     """Demonstrates that distreqx's Transformed(Normal, Tanh) produces NaN log_prob
     at moderate feature magnitudes. This is the upstream limitation that motivates
