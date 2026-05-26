@@ -5,6 +5,7 @@ from rltrain.agents.agent import Agent, OnPolicyAgent, TrainState, gradient_step
 from rltrain.agents.distributional_dqn import DistributionalDQN
 from rltrain.agents.double_dqn import DoubleDQN
 from rltrain.agents.ppo import PPO
+from rltrain.agents.ppo_terminators import EpochTerminator, KLEarlyStop
 from rltrain.agents.reinforce import REINFORCE
 from rltrain.agents.sac import SAC, SACState
 from rltrain.agents.spo import SPO
@@ -17,9 +18,11 @@ __all__ = [
     "AdvantageAC",
     "Agent",
     "DQNState",
-    "OnPolicyAgent",
     "DistributionalDQN",
     "DoubleDQN",
+    "EpochTerminator",
+    "KLEarlyStop",
+    "OnPolicyAgent",
     "PPO",
     "REINFORCE",
     "SAC",

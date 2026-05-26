@@ -49,7 +49,20 @@ class SPO(OnPolicyAgent):
     def learn(
         self, state: TrainState, batch: Transition, key: PRNGKeyArray
     ) -> tuple[TrainState, dict[str, Float[Array, ""]]]:
-        r"""SPO learning step: GAE, then multiple epochs of mini-batch quadratic-penalty updates."""
+        r"""SPO learning step: GAE, then a double ``lax.scan`` of mini-batch quadratic-penalty updates.
+
+        Mirrors :meth:`PPO.learn` minus the terminator chain — SPO has no
+        early stopping today. Keeping the structure parallel makes a future
+        SPO + terminators extension a small diff.
+
+        Args:
+            state: Current :class:`TrainState`.
+            batch: Horizon-length :class:`Transition`.
+            key: PRNG key for per-epoch mini-batch shuffles.
+
+        Returns:
+            ``(new_state, {"loss": mean_loss})``.
+        """
         static = eqx.partition(self, eqx.is_array)[1]
 
         # 1. Compute old log-probs (frozen)
@@ -73,34 +86,43 @@ class SPO(OnPolicyAgent):
         advantages = jax.lax.stop_gradient(center(advantages))
         returns = jax.lax.stop_gradient(returns)
 
-        # 3. Epoch loop over mini-batches
-        params = state.params
-        opt_state = state.opt_state
-        total_loss = jnp.zeros(())
-
         horizon_size = batch.obs.shape[0]
         num_minibatches = horizon_size // self.minibatch_size
+        total = num_minibatches * self.minibatch_size
 
-        for _epoch in range(self.num_epochs):
+        def _minibatch_body(mb_carry, xs):
+            params, opt_state, total_loss = mb_carry
+            mb, mb_old_lp, mb_a, mb_r = xs
+
+            def loss_fn(p):
+                return eqx.combine(p, static)._spo_loss(mb, mb_old_lp, mb_a, mb_r)
+
+            params, opt_state, loss_val = gradient_step(loss_fn, params, opt_state, self.optimizer)
+            return (params, opt_state, total_loss + loss_val), None
+
+        def _epoch_body(epoch_carry, _epoch_idx):
+            params, opt_state, total_loss, key = epoch_carry
             key, epoch_key = jax.random.split(key)
-            perm = jax.random.permutation(epoch_key, horizon_size)
 
-            for mb_idx in range(num_minibatches):
-                start = mb_idx * self.minibatch_size
-                end = start + self.minibatch_size
-                idx = perm[start:end]
+            perm = jax.random.permutation(epoch_key, horizon_size)[:total]
 
-                mb = jax.tree.map(lambda x, i=idx: x[i], batch)
-                mb_old_lp = old_log_probs[idx]
-                mb_adv = advantages[idx]
-                mb_ret = returns[idx]
+            def _shuffle_and_reshape(x):
+                return x[perm].reshape(num_minibatches, self.minibatch_size, *x.shape[1:])
 
-                def loss_fn(p, *, _mb=mb, _mb_old_lp=mb_old_lp, _mb_adv=mb_adv, _mb_ret=mb_ret):
-                    agent = eqx.combine(p, static)
-                    return agent._spo_loss(_mb, _mb_old_lp, _mb_adv, _mb_ret)
+            mb_batch = jax.tree.map(_shuffle_and_reshape, batch)
+            mb_olp = _shuffle_and_reshape(old_log_probs)
+            mb_adv = _shuffle_and_reshape(advantages)
+            mb_ret = _shuffle_and_reshape(returns)
 
-                params, opt_state, loss_val = gradient_step(loss_fn, params, opt_state, self.optimizer)
-                total_loss = total_loss + loss_val
+            (params, opt_state, total_loss), _ = jax.lax.scan(
+                _minibatch_body,
+                (params, opt_state, total_loss),
+                (mb_batch, mb_olp, mb_adv, mb_ret),
+            )
+            return (params, opt_state, total_loss, key), None
+
+        init_outer = (state.params, state.opt_state, jnp.zeros(()), key)
+        (params, opt_state, total_loss, _key), _ = jax.lax.scan(_epoch_body, init_outer, jnp.arange(self.num_epochs))
 
         new_state = TrainState(
             params=params,
