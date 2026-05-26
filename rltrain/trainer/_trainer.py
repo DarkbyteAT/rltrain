@@ -186,7 +186,11 @@ class Trainer:
                     obs = obs[0]
         else:
             obs = jnp.zeros(self.env.obs_shape)
-        action = self.agent.act(state, obs, k_act)
+        if obs.ndim > 1:
+            # Batched env — strip the leading axis to probe a single-element action shape.
+            action = self.agent.act(state, obs[0], k_act)
+        else:
+            action = self.agent.act(state, obs, k_act)
         return action.shape
 
     # ------------------------------------------------------------------
