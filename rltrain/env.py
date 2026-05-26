@@ -143,7 +143,7 @@ class GymnasiumEnv:
         """Reset and return initial observation as a JAX array."""
         seed = int(jax.random.randint(key, (), 0, 2**30)) if key is not None else None
         if self.num_envs > 1:
-            self._env = gymnasium.vector.make(self.env_id, num_envs=self.num_envs)
+            self._env = gymnasium.make_vec(self.env_id, num_envs=self.num_envs)
         else:
             self._env = gymnasium.make(self.env_id)
         obs, _ = self._env.reset(seed=seed)
