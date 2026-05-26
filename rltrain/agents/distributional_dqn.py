@@ -25,7 +25,7 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
-from rltrain.agents.agent import dqn_learn_step, init_target_params
+from rltrain.agents.agent import default_act_batch, dqn_learn_step, init_target_params
 from rltrain.agents.vanilla_dqn import DQNState
 from rltrain.math import project_distribution, q_values_from_pmf
 from rltrain.transitions import Transition
@@ -114,6 +114,10 @@ class DistributionalDQN(eqx.Module):
             random_action,
             best_action,
         )
+
+    def act_batch(self, state: DQNState, obs: Float[Array, "N obs_dim"], key: PRNGKeyArray) -> Array:
+        """Epsilon-greedy action selection for a batch of N observations (default vmap)."""
+        return default_act_batch(self, state, obs, key)
 
     # --------------- Internal ---------------
 

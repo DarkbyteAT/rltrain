@@ -25,7 +25,7 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
-from rltrain.agents.agent import gradient_step, gradient_step_with_aux, init_target_params
+from rltrain.agents.agent import default_act_batch, gradient_step, gradient_step_with_aux, init_target_params
 from rltrain.heads import DiscreteHead
 from rltrain.transitions import Transition
 
@@ -260,6 +260,15 @@ class SAC(eqx.Module):
         features = actor(obs)
         dist = head(features)
         return dist.sample(key)
+
+    def act_batch(
+        self,
+        state: SACState,
+        obs: Float[Array, "N d"],
+        key: PRNGKeyArray,
+    ) -> Array:
+        """Sample actions for a batch of N observations (default vmap)."""
+        return default_act_batch(self, state, obs, key)
 
     # ------------------------------------------------------------------
     # Internal: partitioning and reconstruction

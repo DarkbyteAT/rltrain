@@ -99,10 +99,31 @@ class Agent(Protocol[S]):
         """Select an action given the current state and observation."""
         ...
 
+    def act_batch(self, state: S, obs: Float[Array, "N d"], key: PRNGKeyArray) -> Array:
+        """Select actions for a batch of N observations.
+
+        The default implementation (see :func:`default_act_batch`) vmaps
+        ``act`` over the leading axis after splitting the PRNG key. Agents
+        that benefit from a fused batched forward pass — e.g. avoiding a
+        per-element ``eqx.combine`` reconstruction — may override.
+        """
+        ...
+
 
 # ---------------------------------------------------------------------------
 # Shared utilities
 # ---------------------------------------------------------------------------
+
+
+def default_act_batch(agent, state, obs: Float[Array, "N d"], key: PRNGKeyArray) -> Array:
+    """Default batched-act: vmap ``agent.act`` over the leading axis.
+
+    ``state`` is **not** mapped (it's a per-call constant, not a per-env one),
+    only ``obs`` and the per-element PRNG keys are. Use as the body of every
+    agent's ``act_batch`` unless a custom fused implementation is provided.
+    """
+    keys = jax.random.split(key, obs.shape[0])
+    return jax.vmap(agent.act, in_axes=(None, 0, 0))(state, obs, keys)
 
 
 def gradient_step(
@@ -290,6 +311,15 @@ class OnPolicyAgent(eqx.Module):
         features = agent.actor(obs)
         dist = agent.action_head(features)
         return dist.sample(key)
+
+    def act_batch(
+        self,
+        state: TrainState,
+        obs: Float[Array, "N d"],
+        key: PRNGKeyArray,
+    ) -> Array:
+        """Sample actions for a batch of N observations (default vmap)."""
+        return default_act_batch(self, state, obs, key)
 
     def _loss(self, batch: Transition) -> Float[Array, ""]:
         """Compute the scalar loss. Override in subclasses."""
