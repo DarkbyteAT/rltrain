@@ -1,20 +1,28 @@
-"""Train PPO on CartPole-v1 with video recording until it hits a score of 500."""
+"""Train PPO on CartPole-v1 with periodic video recording.
+
+Pure-JAX gymnax pathway: the agent jits once, the env is ``lax.scan``-able,
+and ``VideoRecorderCallback`` periodically renders an evaluation episode
+via a sibling gymnasium env for rgb_array support.
+"""
+
+from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-import rltrain.utils.builders as mk
+import gymnasium
+import jax
+
+from rltrain.builders import agent as build_agent
+from rltrain.builders import env as build_env
 from rltrain.callbacks.checkpoint import CheckpointCallback
 from rltrain.callbacks.csv_logger import CSVLoggerCallback
 from rltrain.callbacks.plot import PlotCallback
 from rltrain.callbacks.video_recorder import VideoRecorderCallback
-from rltrain.env import MDP
 from rltrain.trainer import Trainer
-from rltrain.utils.device import resolve_device
 
 
-# --- Config ---
 EXAMPLES_DIR = Path(__file__).parent
 AGENT_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "ppo.json").read_text())
 ENV_CFG = json.loads((EXAMPLES_DIR / "cartpole" / "env.json").read_text())
@@ -23,32 +31,39 @@ NUM_STEPS = 500_000
 CHECKPOINT_STEPS = 25_000
 SEED = 42
 
-# --- Build ---
-agent = mk.agent(device=resolve_device("auto"), **AGENT_CFG)
-env = MDP(mk.env(**ENV_CFG), run_beta=0.05, log_freq=10, swap_channels=False)
 
-# --- Train with video recording ---
-trainer = Trainer(
-    agent,
-    env,
-    num_steps=NUM_STEPS,
-    checkpoint_steps=CHECKPOINT_STEPS,
-    run_dir=RUN_DIR,
-    callbacks=[
-        CSVLoggerCallback(),
-        PlotCallback(num_steps=NUM_STEPS),
-        CheckpointCallback(),
-        VideoRecorderCallback(
-            env_fn=lambda: mk.eval_env(**ENV_CFG),
-            num_episodes=1,
-        ),
-    ],
-    seed=SEED,
-)
+def main() -> None:
+    """Run the CartPole PPO + video-recording demo."""
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    key = jax.random.key(SEED)
+    k_agent, k_fit = jax.random.split(key)
 
-print(f"Training {agent.name} on CartPole-v1 for {NUM_STEPS:,} steps...")
-print(f"Videos will be saved to {RUN_DIR / 'videos'}/")
-trainer.fit()
+    agent = build_agent(**AGENT_CFG, key=k_agent)
+    env = build_env(**ENV_CFG)
 
-print(f"\nDone! Final running return: {env.run_reward:.1f}")
-print(f"Videos: {list((RUN_DIR / 'videos').glob('*.mp4'))}")
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=NUM_STEPS,
+        checkpoint_steps=CHECKPOINT_STEPS,
+        run_dir=RUN_DIR,
+        callbacks=[
+            CSVLoggerCallback(),
+            PlotCallback(num_steps=NUM_STEPS),
+            CheckpointCallback(),
+            VideoRecorderCallback(
+                env_fn=lambda: gymnasium.make(ENV_CFG["id"], render_mode="rgb_array"),
+                num_episodes=1,
+            ),
+        ],
+        seed=SEED,
+    )
+
+    print(f"Training PPO on CartPole-v1 for {NUM_STEPS:,} steps...")
+    print(f"Videos will be saved to {RUN_DIR / 'videos'}/")
+    trainer.fit(k_fit)
+    print(f"Done. Results saved to {RUN_DIR}/")
+
+
+if __name__ == "__main__":
+    main()
