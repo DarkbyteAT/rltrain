@@ -212,7 +212,22 @@ class PythonLoop:
         buffer = initial_carry.buffer
 
         act_jit = eqx.filter_jit(agent.act)
+        # Multi-env vectorisation: dispatch to act_batch when the env returns
+        # a batched observation. Falls back gracefully — agents predating
+        # the Agent Protocol's act_batch raise a clear error rather than
+        # crashing inside the linear layer with a cryptic shape mismatch.
+        act_batch_jit = eqx.filter_jit(agent.act_batch) if hasattr(agent, "act_batch") else None
         learn_jit = eqx.filter_jit(agent.learn)
+
+        def _act(state, obs, k):
+            if obs.ndim > 1:
+                if act_batch_jit is None:
+                    raise NotImplementedError(
+                        f"Agent {type(agent).__name__} has no act_batch and the env returned "
+                        f"batched obs of shape {obs.shape}. Set num_envs=1 or implement act_batch."
+                    )
+                return act_batch_jit(state, obs, k)
+            return act_jit(state, obs, k)
 
         # Env init depends on capabilities
         if pure_step:
@@ -238,7 +253,7 @@ class PythonLoop:
 
             if pure_step:
                 # Gymnax path
-                action = act_jit(state, env_state.obs, k_act)
+                action = _act(state, env_state.obs, k_act)
                 new_env_state = step_jit(env_state, action, k_step)
 
                 transition = make_transition(
@@ -262,31 +277,66 @@ class PythonLoop:
                 env_state = new_env_state
             else:
                 # Gymnasium path
-                action = act_jit(state, obs, k_act)
+                action = _act(state, obs, k_act)
                 next_obs, reward, done, _info = env.step(action)
 
-                transition = make_transition(
-                    obs=obs,
-                    action=action,
-                    reward=reward,
-                    next_obs=next_obs,
-                    done=done,
-                )
-                buffer = buffer_add(buffer, transition)
-                steps_since_learn += 1
+                if obs.ndim > 1:
+                    # Multi-env (num_envs > 1): unroll N batched transitions
+                    # into N sequential buffer adds. Episode statistics are
+                    # aggregated across envs — `reward` and `done` are
+                    # treated as a sum and an any-done respectively. Per-env
+                    # episode tracking would require parallel counters; this
+                    # aggregate view is sufficient for the demo and matches
+                    # the original MDP wrapper's behaviour at num_envs > 1.
+                    num_envs = obs.shape[0]
+                    for i in range(num_envs):
+                        per_env_transition = make_transition(
+                            obs=obs[i],
+                            action=action[i],
+                            reward=reward[i],
+                            next_obs=next_obs[i],
+                            done=done[i],
+                        )
+                        buffer = buffer_add(buffer, per_env_transition)
+                    steps_since_learn += num_envs
 
-                episode_return += float(reward)
-                episode_length += 1
+                    step_reward = float(jnp.sum(reward))
+                    step_done = bool(jnp.any(done))
+                    episode_return += step_reward
+                    episode_length += 1
 
-                if bool(done):
-                    beta = getattr(env, "reward_run_rate", 0.1)
-                    running_return = beta * episode_return + (1.0 - beta) * running_return
-                    for cb in callbacks:
-                        cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
-                    episode_count += 1
-                    episode_return = 0.0
-                    episode_length = 0
-                    next_obs = env.reset()
+                    if step_done:
+                        beta = getattr(env, "reward_run_rate", 0.1)
+                        running_return = beta * episode_return + (1.0 - beta) * running_return
+                        for cb in callbacks:
+                            cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
+                        episode_count += 1
+                        episode_return = 0.0
+                        episode_length = 0
+                        # Vector env auto-resets per-element; no manual reset needed.
+                else:
+                    transition = make_transition(
+                        obs=obs,
+                        action=action,
+                        reward=reward,
+                        next_obs=next_obs,
+                        done=done,
+                    )
+                    buffer = buffer_add(buffer, transition)
+                    steps_since_learn += 1
+
+                    episode_return += float(reward)
+                    episode_length += 1
+
+                    if bool(done):
+                        beta = getattr(env, "reward_run_rate", 0.1)
+                        running_return = beta * episode_return + (1.0 - beta) * running_return
+                        for cb in callbacks:
+                            cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
+                        episode_count += 1
+                        episode_return = 0.0
+                        episode_length = 0
+                        next_obs = env.reset()
 
                 obs = next_obs
 
