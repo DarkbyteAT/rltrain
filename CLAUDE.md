@@ -25,7 +25,6 @@ The PyTorch lineage is gone from `main`; the JAX port absorbed all retained feat
 ## Known Technical Debt
 
 - **PER end-to-end wiring** — `_loss_weighted` exists on VanillaDQN and accepts IS weights, but the default trainer loop calls `_loss` (uniform). Wiring priorities back into the buffer is plumbing, not a design regression.
-- **`buffer_shuffle_into_minibatches` helper** — implemented but bypassed by PPO's inline epoch shuffle. Either wire it in or remove.
 - **Gaussian head divergence** — `GaussianHead` clips `log_sigma ∈ [-20, 2]` (numerical stability win over the original PyTorch); documented but not aligned to a single canonical form.
 - **No CI/CD release pipeline** — `release.yml` exists but is untested.
 

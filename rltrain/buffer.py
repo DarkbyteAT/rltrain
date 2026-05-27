@@ -119,27 +119,33 @@ def buffer_sample(
 
 
 def buffer_shuffle_into_minibatches(
-    data: Transition,
+    arrays,
     key: chex.PRNGKey,
     num_valid: int,
     minibatch_size: int,
-) -> Transition:
-    """Shuffle valid entries and reshape into scannable minibatches.
+):
+    """Shuffle valid entries of a pytree of arrays and reshape into scannable minibatches.
+
+    Accepts any pytree whose leaves share a leading axis of length at
+    least ``num_valid`` — a bare :class:`Transition`, a tuple of
+    ``Transition``-plus-aux-arrays, a flat dict, etc. The shuffle
+    permutation is shared across all leaves so per-element correspondence
+    is preserved (action[i] still pairs with obs[i] post-reshape).
 
     ``num_valid`` must be a compile-time constant (which it is for
-    horizon-based PPO where the horizon is a hyperparameter).  This avoids
+    horizon-based PPO where the horizon is a hyperparameter). This avoids
     dynamic shapes under JIT.
 
     Args:
-        data: Full-capacity Transition arrays.
+        arrays: Pytree of arrays sharing a leading axis.
         key: PRNG key for shuffling.
         num_valid: Number of valid entries (must be static under JIT).
         minibatch_size: Size of each minibatch.
 
     Returns:
-        A Transition where each field has shape
-        ``(num_minibatches, minibatch_size, ...)``, suitable for ``lax.scan``
-        over the leading axis.
+        The same pytree shape with each leaf reshaped to
+        ``(num_minibatches, minibatch_size, ...)``, suitable for
+        ``lax.scan`` over the leading axis.
     """
     perm = jax.random.permutation(key, num_valid)
 
@@ -148,10 +154,9 @@ def buffer_shuffle_into_minibatches(
     total = num_minibatches * minibatch_size
     perm = perm[:total]
 
-    shuffled = jax.tree.map(lambda x: x[perm], data)
     return jax.tree.map(
-        lambda x: x.reshape(num_minibatches, minibatch_size, *x.shape[1:]),
-        shuffled,
+        lambda x: x[perm].reshape(num_minibatches, minibatch_size, *x.shape[1:]),
+        arrays,
     )
 
 
