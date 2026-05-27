@@ -81,6 +81,7 @@ class Trainer:
         callbacks: list[Any] | None = None,
         seed: int = 42,
         loop: TrainingLoop | None = None,
+        prioritised: bool = False,
     ) -> None:
         """Configure the trainer.
 
@@ -105,6 +106,10 @@ class Trainer:
             seed: PRNG seed used by ``fit`` when no key is supplied.
             loop: Explicit :class:`TrainingLoop`. ``None`` auto-selects from
                 ``env.capabilities``.
+            prioritised: Enable Prioritised Experience Replay. When ``True``,
+                off-policy agents sample with priority weighting and the
+                trainer writes ``td_errors`` back as new priorities after
+                each learn step. No-op for on-policy agents.
         """
         self.agent = agent
         self.env = env
@@ -154,6 +159,7 @@ class Trainer:
             batch_size=batch_size,
             seed=seed,
             run_dir=run_dir,
+            prioritised=prioritised,
         )
 
         # Auto-select loop strategy.

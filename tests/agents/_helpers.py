@@ -7,7 +7,7 @@ modules only need to define agent-specific construction.
 import jax
 import jax.numpy as jnp
 
-from rltrain.transitions import Transition
+from rltrain.transitions import Transition, make_transition
 
 
 OBS_DIM = 4
@@ -20,7 +20,7 @@ MINIBATCH = 16
 def _make_on_policy_transitions(key: jax.Array, n: int = 16) -> Transition:
     """Fabricate a batch of random transitions with (n,) action shape."""
     k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
+    return make_transition(
         obs=jax.random.normal(k1, (n, OBS_DIM)),
         action=jax.random.randint(k2, (n,), 0, NUM_ACTIONS),
         reward=jax.random.normal(k3, (n,)),
@@ -34,7 +34,7 @@ def _make_on_policy_transitions(key: jax.Array, n: int = 16) -> Transition:
 def _make_off_policy_batch(key: jax.Array, n: int = 32) -> Transition:
     """Fabricate a batch of random transitions for off-policy agents."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
-    return Transition(
+    return make_transition(
         obs=jax.random.normal(k1, (n, OBS_DIM)),
         action=jax.random.randint(k2, (n,), 0, NUM_ACTIONS),
         reward=jax.random.normal(k3, (n,)),

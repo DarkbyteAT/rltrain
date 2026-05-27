@@ -41,6 +41,11 @@ def make_buffer(capacity: int, obs_shape: tuple[int, ...], action_shape: tuple[i
             done=jnp.zeros(capacity, dtype=jnp.bool_),
             log_prob=jnp.zeros(capacity),
             value=jnp.zeros(capacity),
+            # is_weights/indices are populated per-batch by buffer_sample;
+            # the per-slot storage carries sentinel values so the pytree
+            # shape stays uniform.
+            is_weights=jnp.ones(capacity),
+            indices=jnp.zeros(capacity, dtype=jnp.int32),
         ),
         write_idx=jnp.array(0, dtype=jnp.int32),
         size=jnp.array(0, dtype=jnp.int32),
@@ -115,31 +120,41 @@ def buffer_sample(
         is_weights = jnp.ones(batch_size)
 
     batch = jax.tree.map(lambda x: x[indices], buffer.data)
+    # Embed the per-batch IS weights and sample indices into the Transition
+    # itself. Agents that don't use PER ignore these fields; the trainer
+    # reads them post-learn to route updated priorities back into the buffer.
+    batch = batch.replace(is_weights=is_weights, indices=indices)
     return batch, indices, is_weights
 
 
 def buffer_shuffle_into_minibatches(
-    data: Transition,
+    arrays,
     key: chex.PRNGKey,
     num_valid: int,
     minibatch_size: int,
-) -> Transition:
-    """Shuffle valid entries and reshape into scannable minibatches.
+):
+    """Shuffle valid entries of a pytree of arrays and reshape into scannable minibatches.
+
+    Accepts any pytree whose leaves share a leading axis of length at
+    least ``num_valid`` — a bare :class:`Transition`, a tuple of
+    ``Transition``-plus-aux-arrays, a flat dict, etc. The shuffle
+    permutation is shared across all leaves so per-element correspondence
+    is preserved (action[i] still pairs with obs[i] post-reshape).
 
     ``num_valid`` must be a compile-time constant (which it is for
-    horizon-based PPO where the horizon is a hyperparameter).  This avoids
+    horizon-based PPO where the horizon is a hyperparameter). This avoids
     dynamic shapes under JIT.
 
     Args:
-        data: Full-capacity Transition arrays.
+        arrays: Pytree of arrays sharing a leading axis.
         key: PRNG key for shuffling.
         num_valid: Number of valid entries (must be static under JIT).
         minibatch_size: Size of each minibatch.
 
     Returns:
-        A Transition where each field has shape
-        ``(num_minibatches, minibatch_size, ...)``, suitable for ``lax.scan``
-        over the leading axis.
+        The same pytree shape with each leaf reshaped to
+        ``(num_minibatches, minibatch_size, ...)``, suitable for
+        ``lax.scan`` over the leading axis.
     """
     perm = jax.random.permutation(key, num_valid)
 
@@ -148,11 +163,16 @@ def buffer_shuffle_into_minibatches(
     total = num_minibatches * minibatch_size
     perm = perm[:total]
 
-    shuffled = jax.tree.map(lambda x: x[perm], data)
-    return jax.tree.map(
-        lambda x: x.reshape(num_minibatches, minibatch_size, *x.shape[1:]),
-        shuffled,
-    )
+    def _shuffle_reshape(x):
+        # Scalar sentinel leaves (e.g. zero-dim ``log_prob`` or ``is_weights``
+        # placeholders from on-policy Transitions) have no leading axis to
+        # permute; broadcast them to the per-minibatch shape so downstream
+        # scan bodies see a consistent leaf structure.
+        if x.ndim == 0:
+            return jnp.broadcast_to(x, (num_minibatches, minibatch_size))
+        return x[perm].reshape(num_minibatches, minibatch_size, *x.shape[1:])
+
+    return jax.tree.map(_shuffle_reshape, arrays)
 
 
 def buffer_drain(buffer: ExperienceBuffer) -> tuple[Transition, chex.Array, ExperienceBuffer]:

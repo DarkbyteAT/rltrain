@@ -234,6 +234,40 @@ def dqn_learn_step(
     return new_state, {"loss": loss_val}
 
 
+def dqn_learn_step_with_aux(
+    loss_fn,
+    state,
+    optimizer: optax.GradientTransformation,
+    target_rate: float,
+    eps_end: float,
+    eps_decay: float,
+):
+    """Shared DQN learn step variant for losses returning ``(loss, aux_dict)``.
+
+    Used by the PER-aware path: ``_loss_weighted`` returns
+    ``(loss, {"td_errors": ...})`` so the trainer can route the per-sample
+    TD errors back into the buffer's priorities. The aux dict is merged
+    into the returned metrics.
+    """
+    from rltrain.agents.vanilla_dqn import DQNState
+
+    new_params, new_opt_state, loss_val, aux = gradient_step_with_aux(
+        loss_fn,
+        state.params,
+        state.opt_state,
+        optimizer,
+    )
+    new_target = optax.incremental_update(new_params, state.target_params, target_rate)
+    new_eps = jnp.maximum(jnp.array(eps_end), state.epsilon - jnp.array(eps_decay))
+    new_state = DQNState(
+        params=new_params,
+        opt_state=new_opt_state,
+        target_params=new_target,
+        epsilon=new_eps,
+    )
+    return new_state, {"loss": loss_val, **aux}
+
+
 # ---------------------------------------------------------------------------
 # On-policy base class
 # ---------------------------------------------------------------------------

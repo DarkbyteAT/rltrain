@@ -17,7 +17,12 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
-from rltrain.agents.agent import TrainState, default_act_batch, dqn_learn_step, init_target_params
+from rltrain.agents.agent import (
+    TrainState,
+    default_act_batch,
+    dqn_learn_step_with_aux,
+    init_target_params,
+)
 from rltrain.transitions import Transition
 
 
@@ -104,9 +109,20 @@ class VanillaDQN(eqx.Module):
 
         def loss_fn(params):
             agent = eqx.combine(params, static)
-            return agent._loss(state.target_params, static, batch)
+            # _loss_weighted always returns (loss, {"td_errors": ...}).
+            # is_weights is a sentinel of 1.0 on the uniform sampling path
+            # (see Transition + buffer_sample), so the mathematics reduce
+            # to uniform Bellman MSE; PER paths see the real IS weights.
+            return agent._loss_weighted(state.target_params, static, batch, batch.is_weights)
 
-        return dqn_learn_step(loss_fn, state, self.optimizer, self.target_rate, self.eps_end, self.eps_decay)
+        return dqn_learn_step_with_aux(
+            loss_fn,
+            state,
+            self.optimizer,
+            self.target_rate,
+            self.eps_end,
+            self.eps_decay,
+        )
 
     def act(self, state: DQNState, obs: Float[Array, " obs_dim"], key: PRNGKeyArray) -> Array:
         r"""Epsilon-greedy action selection.

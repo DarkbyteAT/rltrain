@@ -18,7 +18,7 @@ from rltrain.agents.vanilla_ac import VanillaAC
 from rltrain.agents.vanilla_pg import VanillaPG
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
-from rltrain.transitions import Transition
+from rltrain.transitions import make_transition
 from tests.agents._helpers import HIDDEN, MINIBATCH, NUM_ACTIONS, OBS_DIM
 
 
@@ -36,7 +36,7 @@ def _make_stacked_batches(key, batch_size):
 
     def make_one(k):
         k1, k2, k3 = jax.random.split(k, 3)
-        return Transition(
+        return make_transition(
             obs=jax.random.normal(k1, (batch_size, OBS_DIM)),
             action=jax.random.randint(k2, (batch_size,), 0, NUM_ACTIONS),
             reward=jax.random.normal(k3, (batch_size,)),

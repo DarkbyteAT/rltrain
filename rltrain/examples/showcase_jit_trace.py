@@ -15,13 +15,13 @@ from rltrain.agents.agent import TrainState
 from rltrain.agents.vanilla_pg import VanillaPG
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
-from rltrain.transitions import Transition
+from rltrain.transitions import make_transition
 
 
 def _make_batch(key, horizon=64):
     """Synthesise a batch of fake CartPole transitions."""
     k1, k2, k3 = jax.random.split(key, 3)
-    return Transition(
+    return make_transition(
         obs=jax.random.normal(k1, (horizon, 4)),
         action=jax.random.randint(k2, (horizon,), 0, 2),
         reward=jax.random.uniform(k3, (horizon,)),

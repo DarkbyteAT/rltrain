@@ -19,6 +19,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float, PRNGKeyArray
 
 from rltrain.agents.agent import OnPolicyAgent, TrainState, gradient_step
+from rltrain.buffer import buffer_shuffle_into_minibatches
 from rltrain.math import center, gae
 from rltrain.transitions import Transition
 
@@ -88,7 +89,6 @@ class SPO(OnPolicyAgent):
 
         horizon_size = batch.obs.shape[0]
         num_minibatches = horizon_size // self.minibatch_size
-        total = num_minibatches * self.minibatch_size
 
         def _minibatch_body(mb_carry, xs):
             params, opt_state, total_loss = mb_carry
@@ -104,15 +104,13 @@ class SPO(OnPolicyAgent):
             params, opt_state, total_loss, key = epoch_carry
             key, epoch_key = jax.random.split(key)
 
-            perm = jax.random.permutation(epoch_key, horizon_size)[:total]
-
-            def _shuffle_and_reshape(x):
-                return x[perm].reshape(num_minibatches, self.minibatch_size, *x.shape[1:])
-
-            mb_batch = jax.tree.map(_shuffle_and_reshape, batch)
-            mb_olp = _shuffle_and_reshape(old_log_probs)
-            mb_adv = _shuffle_and_reshape(advantages)
-            mb_ret = _shuffle_and_reshape(returns)
+            # Shared shuffle helper — same pattern as PPO.
+            mb_batch, mb_olp, mb_adv, mb_ret = buffer_shuffle_into_minibatches(
+                (batch, old_log_probs, advantages, returns),
+                epoch_key,
+                num_valid=horizon_size,
+                minibatch_size=self.minibatch_size,
+            )
 
             (params, opt_state, total_loss), _ = jax.lax.scan(
                 _minibatch_body,
