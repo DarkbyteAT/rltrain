@@ -374,9 +374,16 @@ class SAC(eqx.Module):
         done_mask = 1.0 - batch.done.astype(jnp.float32)
         td_target = batch.reward + self.gamma * done_mask * v_next
 
-        td_errors = jnp.minimum(q1_val, q2_val) - td_target
-        critic_loss = 0.5 * jnp.mean((q1_val - td_target) ** 2 + (q2_val - td_target) ** 2)
-        return critic_loss, {"td_errors": jnp.abs(td_errors)}
+        # Per-sample squared error per twin -> mean across twins -> weight by IS.
+        # Uniform sampling fills batch.is_weights = 1.0, so the weighted path
+        # reduces to plain mean of twin Bellman MSE.
+        per_sample_se = 0.5 * ((q1_val - td_target) ** 2 + (q2_val - td_target) ** 2)
+        critic_loss = jnp.mean(batch.is_weights * per_sample_se)
+
+        # Priority signal: mean of |TD error| across the two critics per sample.
+        # Rainbow / Ape-X convention for twin Q-network agents.
+        per_twin_td_abs = 0.5 * (jnp.abs(q1_val - td_target) + jnp.abs(q2_val - td_target))
+        return critic_loss, {"td_errors": per_twin_td_abs}
 
     def _actor_loss(
         self,
