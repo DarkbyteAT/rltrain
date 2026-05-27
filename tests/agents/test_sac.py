@@ -10,7 +10,7 @@ from rltrain.agents.agent import Agent, gradient_step, gradient_step_with_aux
 from rltrain.agents.sac import SAC
 from rltrain.heads import DiscreteHead, GaussianHead, SquashedGaussianHead
 from rltrain.networks import MLP
-from rltrain.transitions import Transition
+from rltrain.transitions import make_transition
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ def _make_discrete_agent(key=KEY):
 def _make_continuous_batch(key, n=BATCH_SIZE):
     """Fabricate a batch of transitions with continuous actions."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
-    return Transition(
+    return make_transition(
         obs=jax.random.normal(k1, (n, OBS_DIM)),
         action=jax.random.normal(k2, (n, ACTION_DIM)),  # continuous
         reward=jax.random.normal(k3, (n,)),
@@ -73,7 +73,7 @@ def _make_continuous_batch(key, n=BATCH_SIZE):
 def _make_discrete_batch(key, n=BATCH_SIZE):
     """Fabricate a batch of transitions with discrete actions."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
-    return Transition(
+    return make_transition(
         obs=jax.random.normal(k1, (n, OBS_DIM)),
         action=jax.random.randint(k2, (n,), 0, NUM_ACTIONS),
         reward=jax.random.normal(k3, (n,)),

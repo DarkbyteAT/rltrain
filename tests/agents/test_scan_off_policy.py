@@ -11,7 +11,7 @@ from rltrain.agents.sac import SAC, SACState
 from rltrain.agents.vanilla_dqn import DQNState, VanillaDQN
 from rltrain.heads import CategoricalAtomHead, DiscreteHead, SquashedGaussianHead
 from rltrain.networks import MLP
-from rltrain.transitions import Transition
+from rltrain.transitions import make_transition
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ def _make_dqn_stacked_batches(key, K, batch_size, obs_dim, num_actions):
 
     def make_one(k):
         k1, k2, k3, k4 = jax.random.split(k, 4)
-        return Transition(
+        return make_transition(
             obs=jax.random.normal(k1, (batch_size, obs_dim)),
             action=jax.random.randint(k2, (batch_size,), 0, num_actions),
             reward=jax.random.normal(k3, (batch_size,)),
@@ -55,7 +55,7 @@ def _make_sac_continuous_stacked_batches(key, K, batch_size, obs_dim, action_dim
 
     def make_one(k):
         k1, k2, k3, k4 = jax.random.split(k, 4)
-        return Transition(
+        return make_transition(
             obs=jax.random.normal(k1, (batch_size, obs_dim)),
             action=jax.random.normal(k2, (batch_size, action_dim)),
             reward=jax.random.normal(k3, (batch_size,)),

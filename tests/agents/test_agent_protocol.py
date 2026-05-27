@@ -332,8 +332,18 @@ def test_scan_over_learn_steps():
     K = 5
     # Stack K batches along a leading axis
     batches = _make_transitions(jax.random.PRNGKey(2), n=16 * K)
+
     # Reshape into (K, 16, ...) for scanning
-    batched = jax.tree.map(lambda x: x.reshape(K, 16, *x.shape[1:]) if x.ndim > 1 else x.reshape(K, 16), batches)
+    def _reshape_leaf(x):
+        if x.ndim >= 2:
+            return x.reshape(K, 16, *x.shape[1:])
+        if x.ndim == 1:
+            return x.reshape(K, 16)
+        # Scalar sentinel leaves (e.g. unsupplied is_weights/indices) — broadcast
+        # to (K, 16) so the scan body sees a consistent shape per iteration.
+        return jnp.broadcast_to(x, (K, 16))
+
+    batched = jax.tree.map(_reshape_leaf, batches)
 
     # When
     def step(state, batch):
@@ -361,7 +371,17 @@ def test_scan_matches_python_loop():
     state = agent.init(jax.random.PRNGKey(1))
     K = 3
     batches = _make_transitions(jax.random.PRNGKey(2), n=16 * K)
-    batched = jax.tree.map(lambda x: x.reshape(K, 16, *x.shape[1:]) if x.ndim > 1 else x.reshape(K, 16), batches)
+
+    def _reshape_leaf(x):
+        if x.ndim >= 2:
+            return x.reshape(K, 16, *x.shape[1:])
+        if x.ndim == 1:
+            return x.reshape(K, 16)
+        # Scalar sentinel leaves (e.g. unsupplied is_weights/indices) — broadcast
+        # to (K, 16) so the scan body sees a consistent shape per iteration.
+        return jnp.broadcast_to(x, (K, 16))
+
+    batched = jax.tree.map(_reshape_leaf, batches)
 
     # When — scan
     def step(state, batch):
