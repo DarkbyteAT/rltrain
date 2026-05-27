@@ -16,6 +16,7 @@ from typing import Any
 import jax
 from jaxtyping import PRNGKeyArray
 
+from rltrain.agents.agent import Agent
 from rltrain.builders.load import load
 
 
@@ -64,7 +65,7 @@ def _key_hash(name: str) -> int:
     return hash(name) & 0x7FFFFFFF
 
 
-def agent(fqn: str, *, key: PRNGKeyArray, **kwargs):
+def agent(fqn: str, *, key: PRNGKeyArray, **kwargs) -> Agent:
     """Build an Equinox-based agent from a JSON config.
 
     Args:

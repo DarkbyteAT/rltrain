@@ -6,7 +6,7 @@ on ``env.capabilities`` to select the right rollout strategy.
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 import chex
 import gymnasium
@@ -22,6 +22,28 @@ class EnvCapabilities(NamedTuple):
     pure_step: bool
     vmap_batch: bool
     scan_rollout: bool
+
+
+@runtime_checkable
+class Env(Protocol):
+    """Structural contract every environment wrapper satisfies.
+
+    The trainer dispatches on ``capabilities`` to pick the right loop
+    strategy. ``reset`` and ``step`` differ between the gymnax (pure
+    JAX, state-carrying) and gymnasium (eager Python) backends — the
+    Protocol pins them as ``Callable[..., Any]`` so concrete callers
+    can pass whatever the chosen backend expects.
+    """
+
+    capabilities: EnvCapabilities
+
+    def reset(self, *args: Any, **kwargs: Any) -> Any:
+        """Reset the environment. Signature varies by backend."""
+        ...
+
+    def step(self, *args: Any, **kwargs: Any) -> Any:
+        """Step the environment. Signature varies by backend."""
+        ...
 
 
 @chex.dataclass
@@ -149,7 +171,7 @@ class GymnasiumEnv:
         obs, _ = self._env.reset(seed=seed)
         return jnp.asarray(obs, dtype=jnp.float32)
 
-    def step(self, action: chex.Array) -> tuple[chex.Array, chex.Array, chex.Array, dict]:
+    def step(self, action: chex.Array) -> tuple[chex.Array, chex.Array, chex.Array, dict[str, Any]]:
         """Step the env with a numpy action, return JAX arrays."""
         assert self._env is not None
         import numpy as np
