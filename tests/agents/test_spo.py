@@ -24,9 +24,9 @@ def _make_agent(key: jax.Array) -> SPO:
     """Build a small SPO agent for CartPole-sized problems."""
     k1, k2, k3 = jax.random.split(key, 3)
     return SPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -141,9 +141,9 @@ def test_advantages_are_stop_gradiented():
     key = jax.random.PRNGKey(42)
     k1, k2, k3 = jax.random.split(key, 3)
     agent = SPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -181,9 +181,9 @@ def test_spo_loss_differs_from_ppo():
     k1, k2, k3 = jax.random.split(key, 3)
 
     shared_kwargs = dict(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,

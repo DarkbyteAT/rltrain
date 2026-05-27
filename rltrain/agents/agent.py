@@ -20,7 +20,8 @@ This separation means:
 
 from __future__ import annotations
 
-from typing import ClassVar, Protocol, TypeVar, runtime_checkable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, ClassVar, Protocol, TypeVar, runtime_checkable
 
 import chex
 import equinox as eqx
@@ -30,6 +31,10 @@ import optax
 from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 
 from rltrain.transitions import Transition
+
+
+if TYPE_CHECKING:
+    from rltrain.agents.vanilla_dqn import DQNState
 
 
 S = TypeVar("S")
@@ -127,7 +132,7 @@ def default_act_batch(agent, state, obs: Float[Array, "N d"], key: PRNGKeyArray)
 
 
 def gradient_step(
-    loss_fn,
+    loss_fn: Callable[[PyTree[Array]], Float[Array, ""]],
     params: PyTree[Array],
     opt_state: optax.OptState,
     optimizer: optax.GradientTransformation,
@@ -155,7 +160,7 @@ def gradient_step(
 
 
 def gradient_step_with_aux(
-    loss_fn,
+    loss_fn: Callable[[PyTree[Array]], tuple[Float[Array, ""], dict]],
     params: PyTree[Array],
     opt_state: optax.OptState,
     optimizer: optax.GradientTransformation,
@@ -196,13 +201,13 @@ def zero_target_params(params: PyTree[Array]) -> PyTree[Array]:
 
 
 def dqn_learn_step(
-    loss_fn,
-    state,
+    loss_fn: Callable[[PyTree[Array]], Float[Array, ""]],
+    state: DQNState,
     optimizer: optax.GradientTransformation,
     target_rate: float,
     eps_end: float,
     eps_decay: float,
-):
+) -> tuple[DQNState, dict[str, Float[Array, ""]]]:
     """Shared DQN learn step: gradient descent + Polyak + epsilon decay.
 
     Used by VanillaDQN, DoubleDQN, and DistributionalDQN to avoid
@@ -235,13 +240,13 @@ def dqn_learn_step(
 
 
 def dqn_learn_step_with_aux(
-    loss_fn,
-    state,
+    loss_fn: Callable[[PyTree[Array]], tuple[Float[Array, ""], dict]],
+    state: DQNState,
     optimizer: optax.GradientTransformation,
     target_rate: float,
     eps_end: float,
     eps_decay: float,
-):
+) -> tuple[DQNState, dict[str, Array]]:
     """Shared DQN learn step variant for losses returning ``(loss, aux_dict)``.
 
     Used by the PER-aware path: ``_loss_weighted`` returns

@@ -58,8 +58,8 @@ def test_ppo_runs_with_terminator_attached():
     # Given
     key = jax.random.PRNGKey(0)
     k_actor, k_critic, k_head, k_learn = jax.random.split(key, 4)
-    actor = MLP(in_size=OBS_DIM, out_size=HIDDEN, width=HIDDEN, depth=1, key=k_actor)
-    critic = MLP(in_size=OBS_DIM, out_size=1, width=HIDDEN, depth=1, key=k_critic)
+    actor = MLP(in_size=OBS_DIM, out_size=HIDDEN, width_size=HIDDEN, depth=1, key=k_actor)
+    critic = MLP(in_size=OBS_DIM, out_size=1, width_size=HIDDEN, depth=1, key=k_critic)
     head = DiscreteHead(feature_dim=HIDDEN, action_dim=NUM_ACTIONS, key=k_head)
     agent = PPO(
         actor=actor,
@@ -91,9 +91,9 @@ def _make_ppo(key, *, num_epochs: int, epoch_terminators=()):
     """Build a small PPO with a tunable epoch count and terminator tuple."""
     k1, k2, k3 = jax.random.split(key, 3)
     return PPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,

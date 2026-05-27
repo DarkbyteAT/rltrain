@@ -23,7 +23,7 @@ KEY = jax.random.PRNGKey(0)
 
 def _make_agent(key=KEY):
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=2, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,
@@ -183,7 +183,7 @@ def test_trains_cartpole():
     k_agent, k_env, key = jax.random.split(key, 3)
 
     agent = VanillaDQN(
-        q_net=MLP(env.obs_shape[0], env.num_actions, width=128, depth=2, key=k_agent),
+        q_net=MLP(env.obs_shape[0], env.num_actions, width_size=128, depth=2, key=k_agent),
         optimizer=optax.adam(3e-4),
         gamma=0.99,
         target_rate=0.005,

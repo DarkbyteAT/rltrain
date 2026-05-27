@@ -35,9 +35,9 @@ def main():  # noqa: D103
 
     # --- Agent ---
     agent = PPO(
-        actor=MLP(env.obs_shape[0], 64, width=64, depth=1, key=k1),
+        actor=MLP(env.obs_shape[0], 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, env.num_actions, key=k2),
-        critic=MLP(env.obs_shape[0], 1, width=64, depth=1, key=k3),
+        critic=MLP(env.obs_shape[0], 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,

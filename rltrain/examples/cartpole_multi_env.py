@@ -21,9 +21,9 @@ def main():  # noqa: D103
     # Agent
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = PPO(
-        actor=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        actor=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, n_actions, key=k2),
-        critic=MLP(obs_dim, 1, width=64, depth=1, key=k3),
+        critic=MLP(obs_dim, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,

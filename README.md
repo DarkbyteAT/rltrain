@@ -122,7 +122,7 @@ The `fqn` field resolves any importable class at runtime; remaining fields becom
     {"fqn": "rltrain.agents.KLEarlyStop", "target_kl": 0.05, "rollback": true}
   ],
   "actor":        {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width_size": 256, "depth": 3},
-  "action_head":  {"fqn": "rltrain.heads.DiscreteHead", "in_features": 64, "num_actions": 2},
+  "action_head":  {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 64, "action_dim": 2},
   "critic":       {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1,  "width_size": 256, "depth": 3},
   "optimizer":    {"fqn": "optax.adam", "learning_rate": 3e-4}
 }

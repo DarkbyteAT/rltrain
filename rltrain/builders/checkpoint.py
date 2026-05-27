@@ -11,6 +11,7 @@ import equinox as eqx
 import jax
 from jaxtyping import PRNGKeyArray
 
+from rltrain.agents.agent import Agent
 from rltrain.builders.agent import agent as build_agent
 
 
@@ -22,7 +23,7 @@ def load_agent(
     *,
     checkpoint: str = "FINAL",
     key: PRNGKeyArray | None = None,
-) -> tuple[Any, Any]:
+) -> tuple[Agent, Any]:
     """Load a trained agent and its serialised training state.
 
     Reconstructs the agent module from ``config/agent.json``, builds a fresh

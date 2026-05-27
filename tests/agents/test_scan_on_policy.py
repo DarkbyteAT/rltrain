@@ -79,7 +79,7 @@ def _params_differ(params_a, params_b) -> bool:
 def _make_vanilla_pg(key):
     k1, k2 = jax.random.split(key)
     return VanillaPG(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
@@ -91,9 +91,9 @@ def _make_vanilla_pg(key):
 def _make_reinforce(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return REINFORCE(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -104,9 +104,9 @@ def _make_reinforce(key):
 def _make_vanilla_ac(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return VanillaAC(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -117,9 +117,9 @@ def _make_vanilla_ac(key):
 def _make_advantage_ac(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return AdvantageAC(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -131,9 +131,9 @@ def _make_advantage_ac(key):
 def _make_ppo(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return PPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -148,9 +148,9 @@ def _make_ppo(key):
 def _make_spo(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return SPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,

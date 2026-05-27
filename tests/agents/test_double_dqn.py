@@ -24,7 +24,7 @@ KEY = jax.random.PRNGKey(0)
 
 def _make_agent(key=KEY):
     return DoubleDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=2, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,
@@ -37,7 +37,7 @@ def _make_agent(key=KEY):
 
 def _make_vanilla(key=KEY):
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=2, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,

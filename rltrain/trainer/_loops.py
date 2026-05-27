@@ -18,7 +18,10 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array, PRNGKeyArray
 
+from rltrain.agents.agent import Agent
 from rltrain.buffer import buffer_add, buffer_drain, buffer_sample, buffer_update_priorities
+from rltrain.callbacks import Callback
+from rltrain.env import Env
 from rltrain.trainer._carry import StepOutput, TrainCarry, TrainConfig
 from rltrain.transitions import make_transition
 
@@ -33,12 +36,12 @@ class TrainingLoop(Protocol):
 
     def run(
         self,
-        agent,
-        env,
+        agent: Agent,
+        env: Env,
         *,
         initial_carry: TrainCarry,
         config: TrainConfig,
-        callbacks: list,
+        callbacks: list[Callback],
     ) -> Any:
         """Execute the training loop. Returns final agent_state."""
         ...
@@ -107,7 +110,7 @@ def _make_dummy_batch(
     )
 
 
-def _discover_metrics_shape(agent, state, dummy_batch):
+def _discover_metrics_shape(agent: Agent, state: Any, dummy_batch: Any) -> tuple[dict, list[str]]:
     """Trace ``agent.learn()`` to discover metrics pytree structure.
 
     Uses ``jax.eval_shape`` for zero-cost shape inference — no FLOPs.
@@ -135,7 +138,15 @@ def _discover_metrics_shape(agent, state, dummy_batch):
 # ---------------------------------------------------------------------------
 
 
-def _train_step(carry: TrainCarry, _step_idx, *, agent, env, config, zero_metrics):
+def _train_step(
+    carry: TrainCarry,
+    _step_idx: Array,
+    *,
+    agent: Agent,
+    env: Env,
+    config: TrainConfig,
+    zero_metrics: dict,
+) -> tuple[TrainCarry, StepOutput]:
     """One step of collect + conditional learn inside ``lax.scan``.
 
     Pure function: no side effects, no Python control flow over traced values.
@@ -226,7 +237,9 @@ class PythonLoop:
     (gymnasium or gymnax). Does NOT use TrainCarry or ``_train_step``.
     """
 
-    def run(self, agent, env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list) -> Any:
+    def run(
+        self, agent: Agent, env: Env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list[Callback]
+    ) -> Any:
         """Execute the Python training loop."""
         pure_step = env.capabilities.pure_step
 
@@ -237,19 +250,14 @@ class PythonLoop:
 
         act_jit = eqx.filter_jit(agent.act)
         # Multi-env vectorisation: dispatch to act_batch when the env returns
-        # a batched observation. Falls back gracefully — agents predating
-        # the Agent Protocol's act_batch raise a clear error rather than
-        # crashing inside the linear layer with a cryptic shape mismatch.
-        act_batch_jit = eqx.filter_jit(agent.act_batch) if hasattr(agent, "act_batch") else None
+        # a batched observation. ``act_batch`` is part of the Agent Protocol
+        # — no defensive ``hasattr`` check; missing it is a contract violation
+        # that will fail at jit-compile time with a clear error.
+        act_batch_jit = eqx.filter_jit(agent.act_batch)
         learn_jit = eqx.filter_jit(agent.learn)
 
         def _act(state, obs, k):
             if obs.ndim > 1:
-                if act_batch_jit is None:
-                    raise NotImplementedError(
-                        f"Agent {type(agent).__name__} has no act_batch and the env returned "
-                        f"batched obs of shape {obs.shape}. Set num_envs=1 or implement act_batch."
-                    )
                 return act_batch_jit(state, obs, k)
             return act_jit(state, obs, k)
 
@@ -412,7 +420,9 @@ class ScanLoop:
     is the pure scan body. Callbacks fire at segment boundaries.
     """
 
-    def run(self, agent, env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list) -> Any:
+    def run(
+        self, agent: Agent, env: Env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list[Callback]
+    ) -> Any:
         """Execute the scan-based training loop."""
         state = initial_carry.agent_state
         env_state = initial_carry.env_state
@@ -525,7 +535,9 @@ class PmapLoop:
         """
         self.num_devices = num_devices or jax.device_count()
 
-    def run(self, agent, env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list) -> Any:
+    def run(
+        self, agent: Agent, env: Env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list[Callback]
+    ) -> Any:
         """Execute multi-device parallel training."""
         if self.num_devices <= 1:
             return ScanLoop().run(

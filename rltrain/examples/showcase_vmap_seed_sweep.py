@@ -23,7 +23,7 @@ from rltrain.transitions import make_transition
 _env = GymnaxEnv("CartPole-v1")
 
 _agent = VanillaPG(
-    actor=MLP(4, 64, width=64, depth=1, key=jax.random.PRNGKey(0)),
+    actor=MLP(4, 64, width_size=64, depth=1, key=jax.random.PRNGKey(0)),
     action_head=DiscreteHead(64, 2, key=jax.random.PRNGKey(1)),
     optimizer=optax.adam(3e-3),
     gamma=0.99,

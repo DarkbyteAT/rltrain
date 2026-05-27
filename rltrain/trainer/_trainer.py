@@ -26,7 +26,10 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import PRNGKeyArray
 
+from rltrain.agents.agent import Agent
 from rltrain.buffer import make_buffer
+from rltrain.callbacks import Callback
+from rltrain.env import Env
 from rltrain.trainer._carry import TrainCarry, TrainConfig
 
 
@@ -68,8 +71,8 @@ class Trainer:
 
     def __init__(
         self,
-        agent: Any,
-        env: Any,
+        agent: Agent,
+        env: Env,
         *,
         num_steps: int,
         checkpoint_steps: int,
@@ -78,7 +81,7 @@ class Trainer:
         batch_size: int = 32,
         min_buffer_size: int | None = None,
         run_dir: Path | None = None,
-        callbacks: list[Any] | None = None,
+        callbacks: list[Callback] | None = None,
         seed: int = 42,
         loop: TrainingLoop | None = None,
         prioritised: bool = False,

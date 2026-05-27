@@ -70,7 +70,7 @@ class DiscreteHead(eqx.Module):
     @property
     def action_dim(self) -> int:
         """Number of discrete actions (categorical support size)."""
-        return self.linear.out_features
+        return int(self.linear.out_features)
 
     def __call__(self, features: Float[Array, " d"]) -> Categorical:
         """Map features to a Categorical distribution."""
@@ -99,7 +99,7 @@ class GaussianHead(eqx.Module):
     @property
     def action_dim(self) -> int:
         """Dimensionality of the Normal distribution (per-axis means/scales)."""
-        return self.mu_linear.out_features
+        return int(self.mu_linear.out_features)
 
     def __call__(self, features: Float[Array, " d"]) -> Normal:
         """Map features to a diagonal Normal distribution."""
@@ -155,7 +155,7 @@ class GammaHead(eqx.Module):
     @property
     def action_dim(self) -> int:
         """Dimensionality of the Gamma distribution."""
-        return self.alpha_linear.out_features
+        return int(self.alpha_linear.out_features)
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Gamma distribution with positive parameters."""
@@ -183,7 +183,7 @@ class BetaHead(eqx.Module):
     @property
     def action_dim(self) -> int:
         """Dimensionality of the Beta distribution."""
-        return self.alpha_linear.out_features
+        return int(self.alpha_linear.out_features)
 
     def __call__(self, features: Float[Array, " d"]):
         """Map features to a Beta distribution with unimodal parameters."""

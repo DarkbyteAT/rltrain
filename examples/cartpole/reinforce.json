@@ -3,8 +3,8 @@
     "gamma": 0.995,
     "tau": 0.005,
     "beta_critic": 0.5,
-    "actor":  {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width": 64, "depth": 2},
-    "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width": 64, "depth": 2},
+    "actor":  {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 64, "width_size": 64, "depth": 2},
+    "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width_size": 64, "depth": 2},
     "action_head": {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 64, "action_dim": 2},
     "optimizer": {"fqn": "optax.adam", "learning_rate": 3e-4}
 }

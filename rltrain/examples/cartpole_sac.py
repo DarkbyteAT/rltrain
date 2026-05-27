@@ -26,10 +26,10 @@ def main():  # noqa: D103
     # SAC-Discrete: critics output Q per action (obs_dim -> n_actions)
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     agent = SAC(
-        actor=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        actor=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, n_actions, key=k2),
-        critic_1=MLP(obs_dim, n_actions, width=64, depth=1, key=k3),
-        critic_2=MLP(obs_dim, n_actions, width=64, depth=1, key=k4),
+        critic_1=MLP(obs_dim, n_actions, width_size=64, depth=1, key=k3),
+        critic_2=MLP(obs_dim, n_actions, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(1e-3),

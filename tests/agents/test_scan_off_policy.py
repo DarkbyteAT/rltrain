@@ -75,7 +75,7 @@ def _make_sac_continuous_stacked_batches(key, K, batch_size, obs_dim, action_dim
 
 def _make_vanilla_dqn(key):
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,
@@ -88,7 +88,7 @@ def _make_vanilla_dqn(key):
 
 def _make_double_dqn(key):
     return DoubleDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,
@@ -102,7 +102,7 @@ def _make_double_dqn(key):
 def _make_c51(key):
     k1, k2 = jax.random.split(key)
     return DistributionalDQN(
-        feature_net=MLP(OBS_DIM, 64, width=64, depth=1, key=k1),
+        feature_net=MLP(OBS_DIM, 64, width_size=64, depth=1, key=k1),
         atom_head=CategoricalAtomHead(64, NUM_ACTIONS, num_atoms=11, v_min=-5, v_max=5, key=k2),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
@@ -117,10 +117,10 @@ def _make_c51(key):
 def _make_continuous_sac(key):
     k1, k2, k3, k4 = jax.random.split(key, 4)
     return SAC(
-        actor=MLP(OBS_DIM, 64, width=64, depth=1, key=k1),
+        actor=MLP(OBS_DIM, 64, width_size=64, depth=1, key=k1),
         action_head=SquashedGaussianHead(64, ACTION_DIM, key=k2),
-        critic_1=MLP(OBS_DIM + ACTION_DIM, 1, width=64, depth=1, key=k3),
-        critic_2=MLP(OBS_DIM + ACTION_DIM, 1, width=64, depth=1, key=k4),
+        critic_1=MLP(OBS_DIM + ACTION_DIM, 1, width_size=64, depth=1, key=k3),
+        critic_2=MLP(OBS_DIM + ACTION_DIM, 1, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),
@@ -132,10 +132,10 @@ def _make_continuous_sac(key):
 def _make_discrete_sac(key):
     k1, k2, k3, k4 = jax.random.split(key, 4)
     return SAC(
-        actor=MLP(OBS_DIM, 64, width=64, depth=1, key=k1),
+        actor=MLP(OBS_DIM, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, NUM_ACTIONS, key=k2),
-        critic_1=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=k3),
-        critic_2=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=k4),
+        critic_1=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=k3),
+        critic_2=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),

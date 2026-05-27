@@ -17,11 +17,18 @@ from rltrain.transitions import Transition
 class ExperienceBuffer:
     """Fixed-size circular buffer of transitions stored as a pytree of arrays.
 
-    Args:
-        data: Batched Transition with shape (capacity, ...) on each field.
+    Attributes:
+        data: Batched :class:`Transition` with shape ``(capacity, ...)``
+            on each field. The ``is_weights`` and ``indices`` slots are
+            populated per-batch by :func:`buffer_sample` (uniform
+            sampling fills them with sentinels); they're carried on the
+            stored Transition so PER state never has to be threaded as
+            a separate return value.
         write_idx: Next write position (wraps at capacity).
         size: Number of valid entries (clamped at capacity).
-        priorities: Optional priority weights for PER. Shape (capacity,).
+        priorities: Per-slot priority weights for PER. Shape
+            ``(capacity,)``. Always allocated; the uniform sampling path
+            leaves them at their default of 1.0.
     """
 
     data: Transition

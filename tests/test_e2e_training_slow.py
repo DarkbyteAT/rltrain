@@ -90,9 +90,9 @@ def test_ppo_cartpole_converges():
     key = jax.random.PRNGKey(0)
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = PPO(
-        actor=MLP(CARTPOLE_OBS, 64, width=64, depth=1, key=k1),
+        actor=MLP(CARTPOLE_OBS, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, CARTPOLE_ACTS, key=k2),
-        critic=MLP(CARTPOLE_OBS, 1, width=64, depth=1, key=k3),
+        critic=MLP(CARTPOLE_OBS, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,
@@ -115,9 +115,9 @@ def test_spo_cartpole_converges():
     key = jax.random.PRNGKey(1)
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = SPO(
-        actor=MLP(CARTPOLE_OBS, 64, width=64, depth=1, key=k1),
+        actor=MLP(CARTPOLE_OBS, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, CARTPOLE_ACTS, key=k2),
-        critic=MLP(CARTPOLE_OBS, 1, width=64, depth=1, key=k3),
+        critic=MLP(CARTPOLE_OBS, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,
@@ -140,7 +140,7 @@ def test_vanilla_dqn_cartpole_converges():
     key = jax.random.PRNGKey(2)
     k1, key = jax.random.split(key)
     agent = VanillaDQN(
-        q_net=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width=128, depth=2, key=k1),
+        q_net=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width_size=128, depth=2, key=k1),
         optimizer=optax.adam(3e-4),
         gamma=0.99,
         target_rate=0.005,
@@ -170,7 +170,7 @@ def test_double_dqn_cartpole_converges():
     key = jax.random.PRNGKey(3)
     k1, key = jax.random.split(key)
     agent = DoubleDQN(
-        q_net=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width=128, depth=2, key=k1),
+        q_net=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width_size=128, depth=2, key=k1),
         optimizer=optax.adam(3e-4),
         gamma=0.99,
         target_rate=0.005,
@@ -200,7 +200,7 @@ def test_c51_cartpole_converges():
     key = jax.random.PRNGKey(4)
     k1, k2, key = jax.random.split(key, 3)
     agent = DistributionalDQN(
-        feature_net=MLP(CARTPOLE_OBS, 64, width=64, depth=1, key=k1),
+        feature_net=MLP(CARTPOLE_OBS, 64, width_size=64, depth=1, key=k1),
         atom_head=CategoricalAtomHead(64, CARTPOLE_ACTS, num_atoms=21, v_min=-10, v_max=10, key=k2),
         optimizer=optax.adam(3e-4),
         gamma=0.99,
@@ -231,10 +231,10 @@ def test_sac_discrete_cartpole_converges():
     key = jax.random.PRNGKey(5)
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     agent = SAC(
-        actor=MLP(CARTPOLE_OBS, 64, width=64, depth=1, key=k1),
+        actor=MLP(CARTPOLE_OBS, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, CARTPOLE_ACTS, key=k2),
-        critic_1=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width=64, depth=1, key=k3),
-        critic_2=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width=64, depth=1, key=k4),
+        critic_1=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width_size=64, depth=1, key=k3),
+        critic_2=MLP(CARTPOLE_OBS, CARTPOLE_ACTS, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),
@@ -261,9 +261,9 @@ def test_ppo_continuous_pendulum_converges():
     key = jax.random.PRNGKey(6)
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = PPO(
-        actor=MLP(PENDULUM_OBS, 64, width=64, depth=1, key=k1),
+        actor=MLP(PENDULUM_OBS, 64, width_size=64, depth=1, key=k1),
         action_head=GaussianHead(64, PENDULUM_ACTS, key=k2),
-        critic=MLP(PENDULUM_OBS, 1, width=64, depth=1, key=k3),
+        critic=MLP(PENDULUM_OBS, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,
@@ -287,10 +287,10 @@ def test_sac_continuous_pendulum_converges():
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     obs_act = PENDULUM_OBS + PENDULUM_ACTS
     agent = SAC(
-        actor=MLP(PENDULUM_OBS, 64, width=64, depth=1, key=k1),
+        actor=MLP(PENDULUM_OBS, 64, width_size=64, depth=1, key=k1),
         action_head=SquashedGaussianHead(64, PENDULUM_ACTS, key=k2),
-        critic_1=MLP(obs_act, 1, width=64, depth=1, key=k3),
-        critic_2=MLP(obs_act, 1, width=64, depth=1, key=k4),
+        critic_1=MLP(obs_act, 1, width_size=64, depth=1, key=k3),
+        critic_2=MLP(obs_act, 1, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),

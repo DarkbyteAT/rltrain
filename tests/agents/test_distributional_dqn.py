@@ -29,7 +29,7 @@ KEY = jax.random.PRNGKey(0)
 def _make_agent(key=KEY):
     k1, k2 = jax.random.split(key)
     return DistributionalDQN(
-        feature_net=MLP(OBS_DIM, FEATURE_DIM, width=64, depth=2, key=k1),
+        feature_net=MLP(OBS_DIM, FEATURE_DIM, width_size=64, depth=2, key=k1),
         atom_head=CategoricalAtomHead(
             feature_dim=FEATURE_DIM,
             num_actions=NUM_ACTIONS,

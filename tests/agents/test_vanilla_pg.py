@@ -24,7 +24,7 @@ def _make_agent(key: jax.Array) -> VanillaPG:
     """Build a small VanillaPG for CartPole-sized problems."""
     k1, k2 = jax.random.split(key)
     return VanillaPG(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
@@ -126,7 +126,7 @@ def test_trains_cartpole():
     k_agent, k_env, k_loop = jax.random.split(key, 3)
 
     agent = VanillaPG(
-        actor=MLP(env.obs_shape[0], 64, width=64, depth=1, key=jax.random.split(k_agent)[0]),
+        actor=MLP(env.obs_shape[0], 64, width_size=64, depth=1, key=jax.random.split(k_agent)[0]),
         action_head=DiscreteHead(64, env.num_actions, key=jax.random.split(k_agent)[1]),
         optimizer=optax.adam(3e-3),
         gamma=0.99,

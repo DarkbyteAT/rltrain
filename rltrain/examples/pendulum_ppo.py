@@ -56,9 +56,9 @@ def main():  # noqa: D103
     # 1. PPO with GaussianHead
     k1, k2, k3, key = jax.random.split(key, 4)
     ppo = PPO(
-        actor=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        actor=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         action_head=GaussianHead(64, action_dim, key=k2),
-        critic=MLP(obs_dim, 1, width=64, depth=1, key=k3),
+        critic=MLP(obs_dim, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         **ac_kwargs,
     )
@@ -68,9 +68,9 @@ def main():  # noqa: D103
     # 2. SPO with GaussianHead (same architecture, different surrogate)
     k1, k2, k3, key = jax.random.split(key, 4)
     spo = SPO(
-        actor=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        actor=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         action_head=GaussianHead(64, action_dim, key=k2),
-        critic=MLP(obs_dim, 1, width=64, depth=1, key=k3),
+        critic=MLP(obs_dim, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         **ac_kwargs,
     )

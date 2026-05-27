@@ -46,7 +46,7 @@ def main():  # noqa: D103
     # 1. VanillaDQN
     k1, key = jax.random.split(key)
     vanilla = VanillaDQN(
-        q_net=MLP(obs_dim, n_actions, width=64, depth=1, key=k1),
+        q_net=MLP(obs_dim, n_actions, width_size=64, depth=1, key=k1),
         optimizer=optax.adam(1e-3),
         **dqn_kwargs,
     )
@@ -56,7 +56,7 @@ def main():  # noqa: D103
     # 2. DoubleDQN
     k1, key = jax.random.split(key)
     double = DoubleDQN(
-        q_net=MLP(obs_dim, n_actions, width=64, depth=1, key=k1),
+        q_net=MLP(obs_dim, n_actions, width_size=64, depth=1, key=k1),
         optimizer=optax.adam(1e-3),
         **dqn_kwargs,
     )
@@ -66,7 +66,7 @@ def main():  # noqa: D103
     # 3. C51 (DistributionalDQN)
     k1, k2, key = jax.random.split(key, 3)
     c51 = DistributionalDQN(
-        feature_net=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        feature_net=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         atom_head=CategoricalAtomHead(64, n_actions, num_atoms=51, key=k2),
         optimizer=optax.adam(1e-3),
         **dqn_kwargs,

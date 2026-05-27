@@ -23,8 +23,8 @@ def test_builder_constructs_ppo_from_config():
         "eps_clip": 0.2,
         "num_epochs": 2,
         "minibatch_size": 8,
-        "actor": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 16, "width": 16, "depth": 1},
-        "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width": 16, "depth": 1},
+        "actor": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 16, "width_size": 16, "depth": 1},
+        "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width_size": 16, "depth": 1},
         "action_head": {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 16, "action_dim": 2},
         "optimizer": {"fqn": "optax.adam", "learning_rate": 3e-4},
     }
@@ -69,8 +69,8 @@ def test_cli_smoke(tmp_path: Path):
                 "eps_clip": 0.2,
                 "num_epochs": 2,
                 "minibatch_size": 8,
-                "actor": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 16, "width": 16, "depth": 1},
-                "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width": 16, "depth": 1},
+                "actor": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 16, "width_size": 16, "depth": 1},
+                "critic": {"fqn": "rltrain.networks.MLP", "in_size": 4, "out_size": 1, "width_size": 16, "depth": 1},
                 "action_head": {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 16, "action_dim": 2},
                 "optimizer": {"fqn": "optax.adam", "learning_rate": 3e-4},
             }

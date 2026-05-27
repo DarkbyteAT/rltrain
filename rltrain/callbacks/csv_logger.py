@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import IO
+from typing import IO, Any
 
 
 class CSVLoggerCallback:
@@ -16,7 +16,10 @@ class CSVLoggerCallback:
     def __init__(self) -> None:
         """Initialise empty episode buffer and file handles."""
         self._episodes: list[dict] = []
-        self._writer: csv.writer | None = None
+        # ``csv.writer`` is a factory, not a class — ``csv._writer.Writer`` is
+        # the actual return type but private. Use ``Any | None`` to satisfy
+        # type-checkers without dipping into a private symbol.
+        self._writer: Any | None = None
         self._file: IO[str] | None = None
 
     def on_train_start(self, config: dict, run_dir: Path | None) -> None:
