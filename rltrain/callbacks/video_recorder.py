@@ -37,10 +37,17 @@ class VideoRecorderCallback:
             method is called with the checkpoint's ``agent_state``.
         env_fn: Zero-arg callable returning a ``gymnasium.Env`` with
             ``render_mode="rgb_array"``.
-        num_episodes: Number of evaluation episodes per checkpoint.
+        num_episodes: Number of evaluation episodes per recording.
         video_dir: Subdirectory under run_dir for videos.
         max_steps: Maximum steps per eval episode (safety cap).
         fps: Frames per second for the output video.
+        eval_trigger: Optional predicate ``Callable[[int], bool]``
+            evaluated at each ``on_episode_end`` against the episode
+            index. When provided, recording is driven episode-by-episode
+            via the trigger rather than at checkpoint boundaries. When
+            ``None`` (the default), recording fires on ``on_checkpoint``.
+            The most recent ``agent_state`` seen at a checkpoint is
+            reused for trigger-driven recordings.
     """
 
     def __init__(
@@ -51,6 +58,7 @@ class VideoRecorderCallback:
         video_dir: str = "videos",
         max_steps: int = 1000,
         fps: int = 30,
+        eval_trigger: Callable[[int], bool] | None = None,
     ) -> None:
         """Initialise with agent and env factory."""
         self._agent = agent
@@ -59,7 +67,12 @@ class VideoRecorderCallback:
         self._video_dir_name = video_dir
         self._max_steps = max_steps
         self._fps = fps
+        self._eval_trigger = eval_trigger
         self._video_dir: Path | None = None
+        # When the user opts into trigger-driven recording, we still need
+        # an agent_state to pass to ``act()``. Cache the most recent one
+        # observed via ``on_checkpoint``.
+        self._latest_state = None
 
     def on_train_start(self, config: dict, run_dir: Path | None) -> None:
         """Create the video output directory."""
@@ -77,14 +90,29 @@ class VideoRecorderCallback:
         episode_length: int,
         running_return: float = 0.0,
     ) -> None:
-        """No-op."""
+        """Fire a recording when ``eval_trigger(episode)`` is True."""
+        if self._eval_trigger is None or self._latest_state is None:
+            return
+        if self._video_dir is None or self._agent is None or self._env_fn is None:
+            return
+        if not self._eval_trigger(episode):
+            return
+        self._record_rollouts(episode, self._latest_state)
 
     def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:
-        """Record eval rollouts and write MP4 videos."""
-        if self._video_dir is None:
-            return
+        """Record eval rollouts and write MP4 videos.
 
-        if self._agent is None or self._env_fn is None:
+        When ``eval_trigger`` is set, this hook only caches the latest
+        ``agent_state`` for trigger-driven recordings to consume; it
+        does not record. When ``eval_trigger`` is ``None`` (default), it
+        records at each checkpoint as before.
+        """
+        self._latest_state = agent_state
+
+        if self._eval_trigger is not None:
+            return  # episode-driven path handles recording
+
+        if self._video_dir is None or self._agent is None or self._env_fn is None:
             return
 
         self._record_rollouts(step, agent_state)
