@@ -18,7 +18,7 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array, PRNGKeyArray
 
-from rltrain.buffer import buffer_add, buffer_drain, buffer_sample
+from rltrain.buffer import buffer_add, buffer_drain, buffer_sample, buffer_update_priorities
 from rltrain.trainer._carry import StepOutput, TrainCarry, TrainConfig
 from rltrain.transitions import make_transition
 
@@ -59,17 +59,29 @@ def should_learn(
     return (steps_since_learn >= collect_size) & (buffer_size >= min_buffer_size)
 
 
-def collect_batch(buffer, key: PRNGKeyArray, *, collect_size: int, batch_size: int):
+def collect_batch(
+    buffer,
+    key: PRNGKeyArray,
+    *,
+    collect_size: int,
+    batch_size: int,
+    prioritised: bool = False,
+):
     """Drain for on-policy (collect_size > 1), sample for off-policy.
 
     The on-policy/off-policy distinction is derived from ``collect_size``
     at trace time (Python bool), so JAX tracing sees only one branch.
+
+    Returns ``(batch, new_buffer)``. The batch's ``is_weights`` and
+    ``indices`` fields carry PER state when ``prioritised=True`` on the
+    sampling path; the drain path leaves them as the sentinel values
+    populated by :func:`make_buffer`.
     """
     if collect_size > 1:  # Python bool, resolved at trace time
         batch, _size, new_buffer = buffer_drain(buffer)
         return batch, new_buffer
     else:
-        batch, _indices, _weights = buffer_sample(buffer, key, batch_size)
+        batch, _indices, _weights = buffer_sample(buffer, key, batch_size, prioritised=prioritised)
         return batch, buffer
 
 
@@ -157,8 +169,20 @@ def _train_step(carry: TrainCarry, _step_idx, *, agent, env, config, zero_metric
 
     def _do_learn(args):
         s, b, k = args
-        batch, b_new = collect_batch(b, k, collect_size=config.collect_size, batch_size=config.batch_size)
+        batch, b_new = collect_batch(
+            b,
+            k,
+            collect_size=config.collect_size,
+            batch_size=config.batch_size,
+            prioritised=config.prioritised,
+        )
         s_new, met = agent.learn(s, batch, k)
+        # PER: when the agent emits per-sample td_errors and we sampled with
+        # priorities, route those back into the buffer at the original
+        # indices. The `prioritised` flag is a Python bool resolved at trace
+        # time, so only one branch is traced.
+        if config.prioritised and "td_errors" in met:
+            b_new = buffer_update_priorities(b_new, batch.indices, met["td_errors"])
         return s_new, b_new, met
 
     def _skip_learn(args):
@@ -347,9 +371,16 @@ class PythonLoop:
                     k_learn,
                     collect_size=config.collect_size,
                     batch_size=config.batch_size,
+                    prioritised=config.prioritised,
                 )
                 state, metrics = learn_jit(state, batch, k_learn)
                 steps_since_learn = 0
+
+                # PER: route per-sample td_errors back into the buffer at the
+                # original sample indices. ``batch.indices`` was populated by
+                # ``buffer_sample`` (zero sentinels otherwise).
+                if config.prioritised and "td_errors" in metrics:
+                    buffer = buffer_update_priorities(buffer, batch.indices, metrics["td_errors"])
 
                 py_metrics = {k: float(v) for k, v in metrics.items() if v.ndim == 0}
                 for cb in callbacks:

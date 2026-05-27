@@ -31,6 +31,7 @@ class TrainConfig:
     batch_size: int
     seed: int
     run_dir: Path | None
+    prioritised: bool = False
 
 
 @chex.dataclass
