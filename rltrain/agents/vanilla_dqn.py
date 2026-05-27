@@ -153,7 +153,7 @@ class VanillaDQN(eqx.Module):
         target_params: PyTree[Array],
         static: PyTree,
         batch: Transition,
-    ) -> Array:
+    ) -> Float[Array, " B"]:
         r"""Compute per-sample TD errors.
 
         $$\delta_i = r_i + \gamma \max_{a'} Q_{\text{target}}(s'_i, a')

@@ -29,12 +29,13 @@ class Callback(Protocol):
         episode: int,
         episode_return: float,
         episode_length: int,
-        running_return: float = 0.0,
+        running_return: float,
     ) -> None:
         """Called when an episode completes.
 
         ``running_return`` is the EMA over completed-episode returns,
-        computed by the env layer. Older callbacks may ignore it.
+        computed by the env layer. It is part of the contract — every
+        trainer passes it, every callback receives it.
         """
         ...
 

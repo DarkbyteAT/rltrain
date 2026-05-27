@@ -145,7 +145,7 @@ class DistributionalDQN(eqx.Module):
         target_params: PyTree[Array],
         static: PyTree,
         batch: Transition,
-    ) -> tuple[Array, Array, Array]:
+    ) -> tuple[Float[Array, " B"], Float[Array, "B N"], Float[Array, "B N"]]:
         r"""Per-sample cross-entropy and projected target PMFs.
 
         Returns ``(per_sample_xent, online_pmf_sa, projected)`` — shared

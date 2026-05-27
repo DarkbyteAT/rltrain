@@ -17,7 +17,7 @@ from __future__ import annotations
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, PyTree
+from jaxtyping import Array, Float, PyTree
 
 from rltrain.agents.vanilla_dqn import VanillaDQN
 from rltrain.transitions import Transition
@@ -37,7 +37,7 @@ class DoubleDQN(VanillaDQN):
         target_params: PyTree[Array],
         static: PyTree,
         batch: Transition,
-    ) -> Array:
+    ) -> Float[Array, " B"]:
         r"""Per-sample TD errors with double-Q target.
 
         $$\delta_i = r_i + \gamma\,Q_{\text{target}}\!\bigl(s'_i,\;
