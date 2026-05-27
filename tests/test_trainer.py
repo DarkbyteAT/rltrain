@@ -33,7 +33,7 @@ def _make_pg_agent(key: jax.Array) -> VanillaPG:
     """Build a small VanillaPG for testing."""
     k1, k2 = jax.random.split(key)
     return VanillaPG(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
@@ -45,7 +45,7 @@ def _make_pg_agent(key: jax.Array) -> VanillaPG:
 def _make_dqn_agent(key: jax.Array) -> VanillaDQN:
     """Build a small VanillaDQN for testing."""
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=HIDDEN, depth=1, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=HIDDEN, depth=1, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,

@@ -46,7 +46,7 @@ def _fill_buffer_with_distinct_transitions(capacity=100, count=100):
 
 def _make_agent(key):
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=2, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=2, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.01,
@@ -295,9 +295,9 @@ def test_on_policy_agent_ignores_extended_transition_fields():
     k1, k2, k3 = jax.random.split(key, 3)
     horizon = 32
     agent = PPO(
-        actor=MLP(OBS_DIM, 32, width=32, depth=1, key=k1),
+        actor=MLP(OBS_DIM, 32, width_size=32, depth=1, key=k1),
         action_head=DiscreteHead(32, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=32, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=32, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,

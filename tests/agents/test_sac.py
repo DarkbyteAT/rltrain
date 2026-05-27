@@ -28,10 +28,10 @@ def _make_continuous_agent(key=KEY):
     """Build a continuous SAC agent with SquashedGaussianHead."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
     return SAC(
-        actor=MLP(OBS_DIM, 64, width=64, depth=1, key=k1),
+        actor=MLP(OBS_DIM, 64, width_size=64, depth=1, key=k1),
         action_head=SquashedGaussianHead(64, ACTION_DIM, key=k2),
-        critic_1=MLP(OBS_DIM + ACTION_DIM, 1, width=64, depth=1, key=k3),
-        critic_2=MLP(OBS_DIM + ACTION_DIM, 1, width=64, depth=1, key=k4),
+        critic_1=MLP(OBS_DIM + ACTION_DIM, 1, width_size=64, depth=1, key=k3),
+        critic_2=MLP(OBS_DIM + ACTION_DIM, 1, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),
@@ -44,10 +44,10 @@ def _make_discrete_agent(key=KEY):
     """Build a discrete SAC agent with DiscreteHead."""
     k1, k2, k3, k4 = jax.random.split(key, 4)
     return SAC(
-        actor=MLP(OBS_DIM, 64, width=64, depth=1, key=k1),
+        actor=MLP(OBS_DIM, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, NUM_ACTIONS, key=k2),
-        critic_1=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=k3),
-        critic_2=MLP(OBS_DIM, NUM_ACTIONS, width=64, depth=1, key=k4),
+        critic_1=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=k3),
+        critic_2=MLP(OBS_DIM, NUM_ACTIONS, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(3e-4),

@@ -37,7 +37,7 @@ def main():  # noqa: D103
     k1, k2, k_data = jax.random.split(key, 3)
 
     agent = VanillaPG(
-        actor=MLP(4, 32, width=32, depth=1, key=k1),
+        actor=MLP(4, 32, width_size=32, depth=1, key=k1),
         action_head=DiscreteHead(32, 2, key=k2),
         optimizer=optax.adam(1e-3),
         gamma=0.99,

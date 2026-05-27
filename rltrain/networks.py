@@ -28,7 +28,7 @@ class MLP(eqx.Module):
         self,
         in_size: int,
         out_size: int,
-        width: int,
+        width_size: int,
         depth: int,
         *,
         key: PRNGKeyArray,
@@ -38,7 +38,7 @@ class MLP(eqx.Module):
         base = eqx.nn.MLP(
             in_size=in_size,
             out_size=out_size,
-            width_size=width,
+            width_size=width_size,
             depth=depth,
             key=init_key,
         )

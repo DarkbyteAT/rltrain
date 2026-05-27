@@ -25,9 +25,9 @@ from rltrain.trainer import PythonLoop, ScanLoop, Trainer
 def _make_agent(key):
     k1, k2, k3 = jax.random.split(key, 3)
     return PPO(
-        actor=MLP(4, 64, width=64, depth=1, key=k1),
+        actor=MLP(4, 64, width_size=64, depth=1, key=k1),
         action_head=DiscreteHead(64, 2, key=k2),
-        critic=MLP(4, 1, width=64, depth=1, key=k3),
+        critic=MLP(4, 1, width_size=64, depth=1, key=k3),
         optimizer=optax.adam(3e-3),
         gamma=0.99,
         tau=0.01,

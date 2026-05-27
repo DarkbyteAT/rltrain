@@ -23,9 +23,9 @@ def _make_ppo(key: jax.Array) -> PPO:
     """Build a small PPO for batched-act probing."""
     k1, k2, k3 = jax.random.split(key, 3)
     return PPO(
-        actor=MLP(OBS_DIM, HIDDEN, width=HIDDEN, depth=1, key=k1),
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
         action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
-        critic=MLP(OBS_DIM, 1, width=HIDDEN, depth=1, key=k3),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         tau=0.01,
@@ -40,7 +40,7 @@ def _make_ppo(key: jax.Array) -> PPO:
 def _make_dqn(key: jax.Array) -> VanillaDQN:
     """Build a small VanillaDQN for batched-act probing."""
     return VanillaDQN(
-        q_net=MLP(OBS_DIM, NUM_ACTIONS, width=HIDDEN, depth=1, key=key),
+        q_net=MLP(OBS_DIM, NUM_ACTIONS, width_size=HIDDEN, depth=1, key=key),
         optimizer=optax.adam(1e-3),
         gamma=0.99,
         target_rate=0.005,

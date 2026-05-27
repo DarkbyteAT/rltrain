@@ -26,10 +26,10 @@ def main():  # noqa: D103
     # Agent -- SAC with squashed Gaussian for bounded continuous actions
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     agent = SAC(
-        actor=MLP(obs_dim, 64, width=64, depth=1, key=k1),
+        actor=MLP(obs_dim, 64, width_size=64, depth=1, key=k1),
         action_head=SquashedGaussianHead(64, action_dim, key=k2),
-        critic_1=MLP(obs_dim + action_dim, 1, width=64, depth=1, key=k3),
-        critic_2=MLP(obs_dim + action_dim, 1, width=64, depth=1, key=k4),
+        critic_1=MLP(obs_dim + action_dim, 1, width_size=64, depth=1, key=k3),
+        critic_2=MLP(obs_dim + action_dim, 1, width_size=64, depth=1, key=k4),
         actor_optimizer=optax.adam(3e-4),
         critic_optimizer=optax.adam(3e-4),
         alpha_optimizer=optax.adam(1e-3),
