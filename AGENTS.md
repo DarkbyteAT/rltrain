@@ -18,7 +18,9 @@ uv sync --group dev             # or: source .venv/bin/activate
 uv run ruff check rltrain/      # lint
 uv run ruff format --check rltrain/   # format check
 uv run pyright rltrain/         # type check (basic mode)
-uv run pytest tests/            # test
+uv run pytest tests/            # default: unit + integration + e2e smoke
+uv run pytest tests/ -m slow    # opt-in convergence suite
+uv run pytest tests/ -m benchmark -s   # opt-in perf snapshot
 
 # Before commit
 make all                        # format-check + lint + typecheck + test
@@ -57,7 +59,8 @@ make all                        # format-check + lint + typecheck + test
 - Test structure mirrors the source layout (`tests/agents/` → `rltrain/agents/`, etc.)
 - Given-When-Then structure
 - Plain `def test_*` functions — no classes
-- e2e tests marked `@pytest.mark.e2e` (slow; the full suite runs in CI)
+- Every test marked with exactly one of `@pytest.mark.{unit,integration,e2e,benchmark,slow}` — see `tests/README.md`
+- `pytest.ini` excludes `benchmark` and `slow` from the default run; convergence tests live in `test_foo_slow.py` files
 
 ### Code Style
 

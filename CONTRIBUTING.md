@@ -40,10 +40,15 @@ Both must be updated alongside code changes in the same PR.
 - Test structure mirrors the source layout (`tests/agents/` → `rltrain/agents/`)
 - Plain `def test_*` functions — no classes
 - Given-When-Then structure
-- E2E tests marked `@pytest.mark.e2e`
+- Every test marked with exactly one of `@pytest.mark.{unit,integration,e2e,benchmark,slow}` — see `tests/README.md` for marker semantics
+- `pytest.ini` excludes `benchmark` and `slow` from the default run; convergence tests live in `test_foo_slow.py` files
 
 ```bash
-uv run pytest tests/ -v
+uv run pytest tests/                    # default: unit + integration + e2e smoke
+uv run pytest tests/ -m slow            # opt-in convergence suite
+uv run pytest tests/ -m benchmark -s    # opt-in perf snapshot
+make test-slow                          # same as -m slow
+make test-benchmark                     # same as -m benchmark -s
 ```
 
 ## Linting & Type Checking
@@ -56,7 +61,7 @@ uv run pyright rltrain/                # type check (basic mode)
 
 Tool configs live in dedicated files (`ruff.toml`, `pytest.ini`, `pyrightconfig.json`), not in `pyproject.toml`.
 
-A Makefile wraps these: `make lint`, `make format`, `make typecheck`, `make test`, or `make all` for the full gate (format-check → lint → typecheck → test). `make fix` auto-fixes lint violations.
+A Makefile wraps these: `make lint`, `make format`, `make typecheck`, `make test` (default test set), `make test-slow` (convergence suite), `make test-benchmark` (perf snapshot), or `make all` for the full gate (format-check → lint → typecheck → test). `make fix` auto-fixes lint violations.
 
 Pyright runs in `basic` mode against `rltrain/` only. Most categories are downgraded to `warning` so CI passes on warnings — keep new code error-free, and reduce warnings when you touch a file.
 
