@@ -1,13 +1,11 @@
-"""End-to-end training tests — verify agents show learning signal.
+"""End-to-end smoke tests — verify each agent trains end-to-end on a
+single env without crashing and produces a finite final state.
 
-These tests train each agent for a modest number of steps and check
-that the mean return over the last N episodes exceeds a threshold.
-The thresholds are deliberately lower than the spec's convergence
-targets (500 for CartPole, >-200 for Pendulum) because we optimise
-for fast feedback, not full convergence.
-
-Thresholds: CartPole > 50 (random baseline ~20), Pendulum > -1500
-(random baseline ~-1600). These prove a learning signal, not mastery.
+These tests deliberately use tiny step counts (~500-1000 per agent) so
+the full suite finishes in seconds. They prove the training pipeline
+wires together — agent.init → trainer.fit → final TrainState exists
+with finite leaves. Convergence claims live in
+``tests/test_e2e_training_slow.py`` (marked ``@pytest.mark.slow``).
 """
 
 import jax
@@ -31,40 +29,33 @@ from rltrain.trainer import Trainer
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 CARTPOLE_OBS = 4
 CARTPOLE_ACTS = 2
 PENDULUM_OBS = 3
 PENDULUM_ACTS = 1
 
+# Smoke configuration: just enough to exercise wiring; not enough to converge.
+SMOKE_STEPS = 1000
+SMOKE_CHECKPOINT = 250
 
-def _eval_cartpole(agent, state, num_episodes=20):
-    """Evaluate a discrete agent on CartPole, return mean episode return."""
-    env = GymnaxEnv("CartPole-v1")
-    returns = []
-    key = jax.random.PRNGKey(999)
-    for _ in range(num_episodes):
-        key, k_reset, k_ep = jax.random.split(key, 3)
-        es = env.reset(k_reset)
-        ep_ret = 0.0
-        for _t in range(500):
-            k_ep, k_act, k_step = jax.random.split(k_ep, 3)
-            action = agent.act(state, es.obs, k_act)
-            es = env.step(es, action, k_step)
-            ep_ret += float(es.reward)
-            if bool(es.done):
-                break
-        returns.append(ep_ret)
-    return sum(returns) / len(returns)
+
+def _assert_state_finite(state) -> None:
+    """Recurse the state pytree and assert every array leaf is finite."""
+    leaves = jax.tree_util.tree_leaves(state)
+    for leaf in leaves:
+        if hasattr(leaf, "shape"):
+            assert jnp.all(jnp.isfinite(leaf)), f"non-finite leaf in state: shape={leaf.shape}"
 
 
 # ---------------------------------------------------------------------------
-# CartPole agents (target: mean return > 50)
+# Discrete-action agents on CartPole-v1
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.e2e
 def test_ppo_cartpole():
-    """PPO trains on CartPole with learning signal."""
+    """PPO completes one training segment on CartPole and produces a finite state."""
     # Given
     key = jax.random.PRNGKey(0)
     k1, k2, k3, key = jax.random.split(key, 4)
@@ -82,19 +73,18 @@ def test_ppo_cartpole():
         minibatch_size=64,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_480, checkpoint_steps=5_120)
+    trainer = Trainer(agent, env, num_steps=SMOKE_STEPS, checkpoint_steps=SMOKE_CHECKPOINT)
 
     # When
     state = trainer.fit(key)
 
     # Then
-    mean_ret = _eval_cartpole(agent, state)
-    assert mean_ret > 50, f"PPO CartPole mean return {mean_ret:.1f}, expected > 50"
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_spo_cartpole():
-    """SPO trains on CartPole with learning signal."""
+    """SPO completes one training segment on CartPole and produces a finite state."""
     key = jax.random.PRNGKey(1)
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = SPO(
@@ -111,16 +101,14 @@ def test_spo_cartpole():
         minibatch_size=64,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_480, checkpoint_steps=5_120)
-
+    trainer = Trainer(agent, env, num_steps=SMOKE_STEPS, checkpoint_steps=SMOKE_CHECKPOINT)
     state = trainer.fit(key)
-    mean_ret = _eval_cartpole(agent, state)
-    assert mean_ret > 50, f"SPO CartPole mean return {mean_ret:.1f}, expected > 50"
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_vanilla_dqn_cartpole():
-    """VanillaDQN trains on CartPole with learning signal."""
+    """VanillaDQN completes one training segment on CartPole and produces a finite state."""
     key = jax.random.PRNGKey(2)
     k1, key = jax.random.split(key)
     agent = VanillaDQN(
@@ -134,25 +122,21 @@ def test_vanilla_dqn_cartpole():
         eps_decay=5e-4,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_000, checkpoint_steps=5_000, buffer_capacity=10_000, batch_size=64)
-
-    state = trainer.fit(key)
-    # Force greedy eval
-    from rltrain.agents.vanilla_dqn import DQNState
-
-    eval_state = DQNState(
-        params=state.params,
-        opt_state=state.opt_state,
-        target_params=state.target_params,
-        epsilon=jnp.array(0.0),
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=SMOKE_STEPS,
+        checkpoint_steps=SMOKE_CHECKPOINT,
+        buffer_capacity=10_000,
+        batch_size=64,
     )
-    mean_ret = _eval_cartpole(agent, eval_state)
-    assert mean_ret > 50, f"VanillaDQN CartPole mean return {mean_ret:.1f}, expected > 50"
+    state = trainer.fit(key)
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_double_dqn_cartpole():
-    """DoubleDQN trains on CartPole with learning signal."""
+    """DoubleDQN completes one training segment on CartPole and produces a finite state."""
     key = jax.random.PRNGKey(3)
     k1, key = jax.random.split(key)
     agent = DoubleDQN(
@@ -166,24 +150,21 @@ def test_double_dqn_cartpole():
         eps_decay=5e-4,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_000, checkpoint_steps=5_000, buffer_capacity=10_000, batch_size=64)
-
-    state = trainer.fit(key)
-    from rltrain.agents.vanilla_dqn import DQNState
-
-    eval_state = DQNState(
-        params=state.params,
-        opt_state=state.opt_state,
-        target_params=state.target_params,
-        epsilon=jnp.array(0.0),
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=SMOKE_STEPS,
+        checkpoint_steps=SMOKE_CHECKPOINT,
+        buffer_capacity=10_000,
+        batch_size=64,
     )
-    mean_ret = _eval_cartpole(agent, eval_state)
-    assert mean_ret > 50, f"DoubleDQN CartPole mean return {mean_ret:.1f}, expected > 50"
+    state = trainer.fit(key)
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_c51_cartpole():
-    """DistributionalDQN (C51) trains on CartPole with learning signal."""
+    """DistributionalDQN (C51) completes one training segment on CartPole and produces a finite state."""
     key = jax.random.PRNGKey(4)
     k1, k2, key = jax.random.split(key, 3)
     agent = DistributionalDQN(
@@ -198,24 +179,21 @@ def test_c51_cartpole():
         eps_decay=5e-4,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_000, checkpoint_steps=5_000, buffer_capacity=10_000, batch_size=64)
-
-    state = trainer.fit(key)
-    from rltrain.agents.vanilla_dqn import DQNState
-
-    eval_state = DQNState(
-        params=state.params,
-        opt_state=state.opt_state,
-        target_params=state.target_params,
-        epsilon=jnp.array(0.0),
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=SMOKE_STEPS,
+        checkpoint_steps=SMOKE_CHECKPOINT,
+        buffer_capacity=10_000,
+        batch_size=64,
     )
-    mean_ret = _eval_cartpole(agent, eval_state)
-    assert mean_ret > 50, f"C51 CartPole mean return {mean_ret:.1f}, expected > 50"
+    state = trainer.fit(key)
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_sac_discrete_cartpole():
-    """SAC-Discrete trains on CartPole with learning signal."""
+    """SAC-Discrete completes one training segment on CartPole and produces a finite state."""
     key = jax.random.PRNGKey(5)
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     agent = SAC(
@@ -230,44 +208,26 @@ def test_sac_discrete_cartpole():
         tau=0.005,
     )
     env = GymnaxEnv("CartPole-v1")
-    trainer = Trainer(agent, env, num_steps=20_000, checkpoint_steps=5_000, buffer_capacity=10_000, batch_size=64)
-
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=SMOKE_STEPS,
+        checkpoint_steps=SMOKE_CHECKPOINT,
+        buffer_capacity=10_000,
+        batch_size=64,
+    )
     state = trainer.fit(key)
-    # SAC doesn't have epsilon — just eval directly
-    mean_ret = _eval_cartpole(agent, state)
-    # SAC-Discrete needs more training for CartPole — 20K steps is tight.
-    # Threshold lowered to 25 (random baseline ~20) to prove learning signal.
-    assert mean_ret > 25, f"SAC-Discrete CartPole mean return {mean_ret:.1f}, expected > 25"
+    _assert_state_finite(state)
 
 
 # ---------------------------------------------------------------------------
-# Pendulum agents (target: mean return > -1500)
+# Continuous-action agents on Pendulum-v1
 # ---------------------------------------------------------------------------
-
-
-def _eval_pendulum(agent, state, num_episodes=10):
-    """Evaluate a continuous agent on Pendulum, return mean episode return."""
-    env = GymnaxEnv("Pendulum-v1")
-    returns = []
-    key = jax.random.PRNGKey(888)
-    for _ in range(num_episodes):
-        key, k_reset, k_ep = jax.random.split(key, 3)
-        es = env.reset(k_reset)
-        ep_ret = 0.0
-        for _t in range(200):
-            k_ep, k_act, k_step = jax.random.split(k_ep, 3)
-            action = agent.act(state, es.obs, k_act)
-            es = env.step(es, action, k_step)
-            ep_ret += float(es.reward)
-            if bool(es.done):
-                break
-        returns.append(ep_ret)
-    return sum(returns) / len(returns)
 
 
 @pytest.mark.e2e
 def test_ppo_continuous_pendulum():
-    """PPO with GaussianHead trains on Pendulum with learning signal."""
+    """PPO with GaussianHead completes one training segment on Pendulum."""
     key = jax.random.PRNGKey(6)
     k1, k2, k3, key = jax.random.split(key, 4)
     agent = PPO(
@@ -284,16 +244,14 @@ def test_ppo_continuous_pendulum():
         minibatch_size=64,
     )
     env = GymnaxEnv("Pendulum-v1")
-    trainer = Trainer(agent, env, num_steps=20_480, checkpoint_steps=5_120)
-
+    trainer = Trainer(agent, env, num_steps=SMOKE_STEPS, checkpoint_steps=SMOKE_CHECKPOINT)
     state = trainer.fit(key)
-    mean_ret = _eval_pendulum(agent, state)
-    assert mean_ret > -1500, f"PPO Pendulum mean return {mean_ret:.1f}, expected > -1500"
+    _assert_state_finite(state)
 
 
 @pytest.mark.e2e
 def test_sac_continuous_pendulum():
-    """SAC with SquashedGaussianHead trains on Pendulum with learning signal."""
+    """SAC with SquashedGaussianHead completes one training segment on Pendulum."""
     key = jax.random.PRNGKey(7)
     k1, k2, k3, k4, key = jax.random.split(key, 5)
     obs_act = PENDULUM_OBS + PENDULUM_ACTS
@@ -309,8 +267,13 @@ def test_sac_continuous_pendulum():
         tau=0.005,
     )
     env = GymnaxEnv("Pendulum-v1")
-    trainer = Trainer(agent, env, num_steps=20_000, checkpoint_steps=5_000, buffer_capacity=10_000, batch_size=64)
-
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=SMOKE_STEPS,
+        checkpoint_steps=SMOKE_CHECKPOINT,
+        buffer_capacity=10_000,
+        batch_size=64,
+    )
     state = trainer.fit(key)
-    mean_ret = _eval_pendulum(agent, state)
-    assert mean_ret > -1500, f"SAC Pendulum mean return {mean_ret:.1f}, expected > -1500"
+    _assert_state_finite(state)

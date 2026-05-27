@@ -171,7 +171,7 @@ def test_learn_updates_params():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.e2e
+@pytest.mark.slow
 def test_trains_cartpole():
     """Train DQN on gymnax CartPole for ~50K steps, achieve return > 50."""
 
