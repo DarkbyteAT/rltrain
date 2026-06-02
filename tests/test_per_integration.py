@@ -296,7 +296,6 @@ def test_scan_loop_per_segment_helper_updates_buffer_priorities():
     # And a segment of synthetic PER state: 4 learn steps, each touching
     # 2 distinct slots with a known TD error value.
     checkpoint_steps = 4
-    batch_size = 2
     sample_indices = jnp.array(
         [
             [0, 1],
