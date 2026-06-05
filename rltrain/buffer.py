@@ -108,10 +108,13 @@ def buffer_sample(
     """
     capacity = buffer.data.obs.shape[0]
     if prioritised:
-        # Normalise priorities over valid entries, zero-out invalid slots
+        # Normalise priorities over valid entries, zero-out invalid slots.
+        # The +1e-6 epsilon on valid slots guards against the cold-start case
+        # where every td_error happens to be 0 — without it, ``powered.sum()``
+        # would also be 0 and ``probs`` would be NaN.
         valid_priorities = jnp.where(
             jnp.arange(capacity) < buffer.size,
-            buffer.priorities,
+            buffer.priorities + 1e-6,
             0.0,
         )
         powered = valid_priorities**alpha
