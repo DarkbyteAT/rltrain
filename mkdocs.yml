@@ -1,5 +1,5 @@
 site_name: RLTrain
-site_description: A modular PyTorch framework for deep reinforcement learning research
+site_description: A modular JAX framework for deep reinforcement learning research
 site_url: https://darkbyteat.github.io/rltrain
 repo_url: https://github.com/DarkbyteAT/rltrain
 repo_name: DarkbyteAT/rltrain

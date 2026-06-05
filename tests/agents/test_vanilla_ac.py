@@ -1,27 +1,143 @@
-"""Hand-computed loss test for VanillaAC.
+"""Tests for the Vanilla Actor-Critic agent with TD error advantage."""
 
-Loss = mean(-log_π(a|s) · δ.detach()) + β · mean(δ²) + (-τ · mean(H(π)))
-
-where δ = r + γ·V(s') - V(s) is the one-step TD error. The TD error is detached
-for the actor loss (psi) but not for the critic loss, so the critic gradient
-flows through the value predictions.
-"""
-
+import equinox as eqx
+import jax
+import jax.numpy as jnp
+import optax
 import pytest
-import torch as T
 
-from rltrain.agents.actor_critic import VanillaAC
-from tests.agents.conftest import make_ac_agent
+from rltrain.agents.agent import Agent
+from rltrain.agents.vanilla_ac import VanillaAC
+from rltrain.heads import DiscreteHead
+from rltrain.networks import MLP
+from tests.agents._helpers import HIDDEN, NUM_ACTIONS, OBS_DIM
+from tests.agents._helpers import _make_on_policy_transitions as _make_transitions
 
 
-# Pre-computed with tests/agents/_compute_expected.py (seed actor=0, critic=1)
-EXPECTED_LOSS = 0.22458896040916443
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_agent(key: jax.Array) -> VanillaAC:
+    """Build a small VanillaAC agent for CartPole-sized problems."""
+    k1, k2, k3 = jax.random.split(key, 3)
+    return VanillaAC(
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
+        action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
+        optimizer=optax.adam(1e-3),
+        gamma=0.99,
+        tau=0.01,
+        beta_critic=0.5,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Unit tests
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
-def test_vanilla_ac_loss(batch_5):
-    agent = make_ac_agent(VanillaAC)
-    loss = agent.loss(*batch_5)
-    assert T.allclose(loss, T.tensor(EXPECTED_LOSS), atol=1e-6), (
-        f"VanillaAC loss mismatch: got {loss.item()}, expected {EXPECTED_LOSS}"
+def test_loss_is_scalar():
+    """Given a batch of transitions, loss returns a finite scalar."""
+    # Given
+    agent = _make_agent(jax.random.PRNGKey(42))
+    transitions = _make_transitions(jax.random.PRNGKey(1))
+
+    # When
+    loss_val = agent._loss(transitions)
+
+    # Then
+    assert loss_val.shape == ()
+    assert jnp.isfinite(loss_val)
+
+
+@pytest.mark.unit
+def test_gradients_flow():
+    """Gradients through loss are non-zero."""
+    # Given
+    agent = _make_agent(jax.random.PRNGKey(7))
+    transitions = _make_transitions(jax.random.PRNGKey(2))
+
+    # When
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._loss(transitions))(agent)
+
+    # Then
+    grad_leaves = jax.tree.leaves(eqx.filter(grads, eqx.is_array))
+    has_nonzero = any(jnp.any(g != 0.0) for g in grad_leaves)
+    assert has_nonzero, "All gradients are zero"
+
+
+@pytest.mark.unit
+def test_learn_updates_params():
+    """After one learn step, at least some parameters differ."""
+    # Given
+    agent = _make_agent(jax.random.PRNGKey(99))
+    state = agent.init(jax.random.PRNGKey(1))
+    transitions = _make_transitions(jax.random.PRNGKey(3))
+
+    # When
+    new_state, metrics = agent.learn(state, transitions, jax.random.PRNGKey(0))
+
+    # Then
+    assert jnp.isfinite(metrics["loss"])
+    old_leaves = jax.tree.leaves(state.params)
+    new_leaves = jax.tree.leaves(new_state.params)
+    any_changed = any(not jnp.allclose(o, n) for o, n in zip(old_leaves, new_leaves, strict=False))
+    assert any_changed, "No parameters changed after a learn step"
+
+
+@pytest.mark.unit
+def test_act_returns_valid_action():
+    """Given an observation, act produces an action in valid range."""
+    # Given
+    agent = _make_agent(jax.random.PRNGKey(0))
+    state = agent.init(jax.random.PRNGKey(1))
+    obs = jnp.ones(OBS_DIM)
+
+    # When
+    action = agent.act(state, obs, jax.random.PRNGKey(2))
+
+    # Then
+    assert action.shape == ()
+    assert 0 <= int(action) < NUM_ACTIONS
+
+
+@pytest.mark.unit
+def test_satisfies_agent_protocol():
+    """VanillaAC satisfies the Agent protocol via structural subtyping."""
+    # Given
+    agent = _make_agent(jax.random.PRNGKey(0))
+
+    # Then
+    assert isinstance(agent, Agent)
+
+
+@pytest.mark.unit
+def test_advantages_are_stop_gradiented():
+    """With beta_critic=0, critic should receive zero gradients because
+    advantages (including the td_target) are stop-gradiented in the actor loss."""
+    # Given — agent with beta_critic=0 so critic loss is zeroed
+    key = jax.random.PRNGKey(42)
+    k1, k2, k3 = jax.random.split(key, 3)
+    agent = VanillaAC(
+        actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
+        action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+        critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
+        optimizer=optax.adam(1e-3),
+        gamma=0.99,
+        tau=0.01,
+        beta_critic=0.0,
+    )
+    transitions = _make_transitions(jax.random.PRNGKey(1))
+
+    # When
+    _loss, grads = eqx.filter_value_and_grad(lambda m: m._loss(transitions))(agent)
+
+    # Then — critic gradients should be zero (no gradient path from actor loss)
+    critic_grad_leaves = jax.tree.leaves(eqx.filter(grads.critic, eqx.is_array))
+    all_zero = all(jnp.allclose(g, 0.0) for g in critic_grad_leaves)
+    assert all_zero, (
+        "Critic has non-zero gradients with beta_critic=0, meaning advantages are not properly stop-gradiented"
     )

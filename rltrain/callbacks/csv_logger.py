@@ -1,63 +1,66 @@
-"""CSV logger callback — writes episode metrics to CSV at checkpoint intervals."""
+"""CSV logger callback -- writes episode metrics to a CSV file."""
 
 from __future__ import annotations
 
-import logging
+import csv
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-import numpy as np
-import pandas as pd
-
-
-if TYPE_CHECKING:
-    from rltrain.agents.agent import Agent
-    from rltrain.env import MDP
-
-
-log = logging.getLogger(__name__)
+from typing import IO, Any
 
 
 class CSVLoggerCallback:
-    """Writes episode metrics (episode, length, return, running_return) to CSV.
+    """Writes episode metrics (return, length, EMA running return) to a CSV file.
 
-    The CSV is written at each checkpoint and at train end to capture the full
-    episode history up to that point.
+    Accumulates episode data between checkpoints, then flushes to disk.
     """
 
     def __init__(self) -> None:
-        """Initialise the callback; the CSV path is resolved in ``on_train_start``."""
-        self._csv_path: Path | None = None
+        """Initialise empty episode buffer and file handles."""
+        self._episodes: list[dict] = []
+        # ``csv.writer`` is a factory, not a class — ``csv._writer.Writer`` is
+        # the actual return type but private. Use ``Any | None`` to satisfy
+        # type-checkers without dipping into a private symbol.
+        self._writer: Any | None = None
+        self._file: IO[str] | None = None
 
-    def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Record the output path for ``metrics.csv`` inside ``run_dir``."""
-        self._csv_path = run_dir / "metrics.csv"
+    def on_train_start(self, config: dict, run_dir: Path | None) -> None:
+        """Open metrics.csv in run_dir and write the header row."""
+        if run_dir:
+            path = Path(run_dir) / "metrics.csv"
+            self._file = open(path, "w", newline="")  # noqa: SIM115
+            self._writer = csv.writer(self._file)
+            self._writer.writerow(["episode", "return", "length", "running_return"])
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
-        """See ``Callback.on_step``."""
-        ...
+    def on_step(self, step: int, metrics: dict[str, float]) -> None:
+        """No-op -- step-level metrics are not logged to CSV."""
 
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
-        """See ``Callback.on_episode_end``."""
-        ...
-
-    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Write the episode metrics CSV at each checkpoint."""
-        self._write(env)
-
-    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Write the final episode metrics CSV after training completes."""
-        self._write(env)
-
-    def _write(self, env: MDP) -> None:
-        if self._csv_path is None or env.episode_count == 0:
-            return
-        pd.DataFrame(
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float = 0.0,
+    ) -> None:
+        """Buffer episode data for the next checkpoint flush."""
+        self._episodes.append(
             {
-                "episode": np.arange(1, env.episode_count + 1),
-                "length": np.asarray(env.length_history),
-                "return": np.asarray(env.return_history),
-                "running_return": np.asarray(env.run_history),
+                "episode": episode,
+                "return": episode_return,
+                "length": episode_length,
+                "running_return": running_return,
             }
-        ).set_index("episode").to_csv(self._csv_path)
-        log.debug("wrote metrics to '%s'", self._csv_path)
+        )
+
+    def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:
+        """Flush buffered episodes to the CSV file."""
+        if self._writer:
+            for ep in self._episodes:
+                self._writer.writerow([ep["episode"], ep["return"], ep["length"], ep["running_return"]])
+            assert self._file is not None
+            self._file.flush()
+            self._episodes.clear()
+
+    def on_train_end(self, agent_state, run_dir: Path | None) -> None:
+        """Flush remaining episodes and close the CSV file."""
+        self.on_checkpoint(0, agent_state, run_dir)
+        if self._file:
+            self._file.close()

@@ -1,20 +1,19 @@
-"""Plot callback — renders per-episode and per-sample SVG plots at checkpoints."""
+"""Plot callback — renders SVG plots of episode returns at each checkpoint.
+
+Reads the rolling buffer of episodes the callback accumulates locally
+(matching the JAX-side ``Callback.on_episode_end`` signature) and produces
+``per_episode.svg`` and ``per_sample.svg`` next to ``metrics.csv``.
+"""
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 import numpy as np
 import seaborn as sns
-
-
-if TYPE_CHECKING:
-    from rltrain.agents.agent import Agent
-    from rltrain.env import MDP
 
 
 log = logging.getLogger(__name__)
@@ -24,108 +23,103 @@ class PlotCallback:
     """Renders per-episode and per-sample return SVG plots at each checkpoint.
 
     Args:
-        num_steps: Total number of training steps (used for x-axis scaling on the
+        num_steps: Total number of training steps (x-axis scaling for the
             per-sample plot).
+        run_beta: EMA mixing weight used for the running-return curve label.
     """
 
-    def __init__(self, *, num_steps: int) -> None:
+    def __init__(self, *, num_steps: int, run_beta: float = 0.1) -> None:
         """Initialise the callback with the total step count for x-axis scaling."""
         self._num_steps = num_steps
+        self._run_beta = run_beta
         self._run_dir: Path | None = None
+        self._returns: list[float] = []
+        self._lengths: list[int] = []
+        self._running: list[float] = []
 
-    def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+    def on_train_start(self, config: dict, run_dir: Path | None) -> None:
         """Record the run directory so plots can be written there."""
         self._run_dir = run_dir
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
-        """See ``Callback.on_step``."""
-        ...
+    def on_step(self, step: int, metrics: dict[str, float]) -> None:
+        """No-op — plotting is checkpoint-driven, not step-driven."""
 
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
-        """See ``Callback.on_episode_end``."""
-        ...
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float = 0.0,
+    ) -> None:
+        """Buffer one episode's data for the next checkpoint render."""
+        self._returns.append(episode_return)
+        self._lengths.append(episode_length)
+        self._running.append(running_return)
 
-    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
+    def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:
         """Render and save per-episode and per-sample SVG plots."""
-        if self._run_dir is None or env.episode_count == 0:
+        if self._run_dir is None or not self._returns:
             return
-        self._plot_episodes(agent, env)
-        self._plot_samples(agent, env)
+        self._plot_episodes()
+        self._plot_samples()
 
-    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """See ``Callback.on_train_end``."""
-        ...
+    def on_train_end(self, agent_state, run_dir: Path | None) -> None:
+        """Render a final pair of plots if not already done."""
+        if self._returns:
+            self.on_checkpoint(0, agent_state, run_dir)
 
-    def _plot_episodes(self, agent: Agent, env: MDP) -> None:
+    def _plot_episodes(self) -> None:
         """Render return-over-episodes SVG."""
         assert self._run_dir is not None
-        episode_plot_path = self._run_dir / "per_episode.svg"
+        path = self._run_dir / "per_episode.svg"
 
-        log.debug("plotting episode graph...")
-        fig = plt.figure(dpi=600, clear=True)
+        fig = plt.figure(dpi=300, clear=True)
         ax = plt.gca()
-        x = np.arange(1, env.episode_count + 1)
-        y1 = np.asarray(env.return_history)
-        y2 = np.asarray(env.run_history)
+        x = np.arange(1, len(self._returns) + 1)
+        y_returns = np.asarray(self._returns)
+        y_running = np.asarray(self._running)
 
-        plt.title(f"Return over Episodes ({agent.name})")
+        plt.title("Return over Episodes")
         plt.xlabel("Episode")
         plt.ylabel("Return")
-        plt.xlim(1, env.episode_count + 1)
+        plt.xlim(1, len(self._returns) + 1)
         ax.xaxis.set_major_locator(tck.MaxNLocator(integer=True))
 
-        if env.target_reward is not None:
-            ax.set_ylim(
-                min(env.target_reward, y1.min(), y2.min()),
-                max(env.target_reward, y1.max(), y2.max()),
-            )
-            plt.axhline(env.target_reward, linestyle="dashed", color="black", label="Target")
-
-        sns.lineplot(x=x, y=y1, color="orange", alpha=0.67, label="Return")
+        sns.lineplot(x=x, y=y_returns, color="orange", alpha=0.67, label="Return")
         sns.lineplot(
             x=x,
-            y=y2,
+            y=y_running,
             color="blue",
-            label=r"EMA ($\beta = " f"{env.run_beta}" r"$)",
+            label=r"EMA ($\beta = " f"{self._run_beta}" r"$)",
         )
         plt.legend()
-        plt.plot()
-        plt.savefig(episode_plot_path, format="svg")
+        plt.savefig(path, format="svg")
         plt.close(fig)
 
-    def _plot_samples(self, agent: Agent, env: MDP) -> None:
+    def _plot_samples(self) -> None:
         """Render return-over-timesteps SVG."""
         assert self._run_dir is not None
-        sample_plot_path = self._run_dir / "per_sample.svg"
+        path = self._run_dir / "per_sample.svg"
 
-        log.debug("plotting per-sample graph...")
-        fig = plt.figure(dpi=600, clear=True)
+        fig = plt.figure(dpi=300, clear=True)
         ax = plt.gca()
-        x = np.asarray(env.length_history).cumsum()
-        y1 = np.asarray(env.return_history)
-        y2 = np.asarray(env.run_history)
+        x = np.asarray(self._lengths).cumsum()
+        y_returns = np.asarray(self._returns)
+        y_running = np.asarray(self._running)
 
-        plt.title(f"Return over Timesteps ({agent.name})")
+        plt.title("Return over Timesteps")
         plt.xlabel("Timestep")
         plt.ylabel("Return")
-        plt.xlim(0, max(self._num_steps, env.episode_steps))
+        plt.xlim(0, max(self._num_steps, int(x[-1]) if len(x) else 0))
         ax.xaxis.set_major_locator(tck.MaxNLocator(integer=True))
 
-        if env.target_reward is not None:
-            ax.set_ylim(
-                min(env.target_reward, y1.min(), y2.min()),
-                max(env.target_reward, y1.max(), y2.max()),
-            )
-            plt.axhline(env.target_reward, linestyle="dashed", color="black", label="Target")
-
-        sns.lineplot(x=x, y=y1, color="orange", alpha=0.67, label="Return")
+        sns.lineplot(x=x, y=y_returns, color="orange", alpha=0.67, label="Return")
         sns.lineplot(
             x=x,
-            y=y2,
+            y=y_running,
             color="blue",
-            label=r"EMA ($\beta = " f"{env.run_beta}" r"$)",
+            label=r"EMA ($\beta = " f"{self._run_beta}" r"$)",
         )
         plt.legend()
-        plt.plot()
-        plt.savefig(sample_plot_path, format="svg")
+        plt.savefig(path, format="svg")
         plt.close(fig)

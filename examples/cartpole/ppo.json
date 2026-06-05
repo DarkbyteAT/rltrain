@@ -1,53 +1,36 @@
 {
-  "fqn": "rltrain.agents.actor_critic.PPO",
-  "beta_critic": 0.5,
-  "gamma": 0.995,
-  "lambda_gae": 0.9,
-  "tau": 5e-3,
-  "epoch_terminators": [
-    {"fqn": "rltrain.agents.actor_critic.KLEarlyStop", "target_kl": 0.05, "rollback": true}
-  ],
-  "eps_clip": 0.2,
-  "horizon": 256,
-  "num_epochs": 8,
-  "batch_size": 128,
-  "normalise": true,
-  "model": {
-    "actor": [
-      {
-        "fqn": "toblox.SkipMLP",
-        "inputs": 4,
-        "hiddens": [
-          256,
-          256,
-          256,
-          256
-        ],
-        "outputs": 2
-      }
-    ],
-    "critic": [
-      {
-        "fqn": "toblox.SkipMLP",
-        "inputs": 4,
-        "hiddens": [
-          256,
-          256,
-          256,
-          256
-        ],
-        "outputs": 1
-      }
-    ]
-  },
-  "opt": {
+    "fqn": "rltrain.agents.PPO",
+    "gamma": 0.995,
+    "tau": 0.005,
+    "beta_critic": 0.5,
+    "lambda_gae": 0.9,
+    "eps_clip": 0.2,
+    "num_epochs": 8,
+    "minibatch_size": 128,
     "actor": {
-      "fqn": "torch.optim.Adam",
-      "lr": 3e-4
+        "fqn": "rltrain.networks.MLP",
+        "in_size": 4,
+        "out_size": 64,
+        "width_size": 64,
+        "depth": 2
     },
     "critic": {
-      "fqn": "torch.optim.Adam",
-      "lr": 3e-4
-    }
-  }
+        "fqn": "rltrain.networks.MLP",
+        "in_size": 4,
+        "out_size": 1,
+        "width_size": 64,
+        "depth": 2
+    },
+    "action_head": {
+        "fqn": "rltrain.heads.DiscreteHead",
+        "feature_dim": 64,
+        "action_dim": 2
+    },
+    "optimizer": {
+        "fqn": "optax.adam",
+        "learning_rate": 3e-4
+    },
+    "epoch_terminators": [
+        {"fqn": "rltrain.agents.KLEarlyStop", "kl_threshold": 0.05}
+    ]
 }

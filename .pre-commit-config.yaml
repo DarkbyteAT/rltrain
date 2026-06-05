@@ -56,5 +56,5 @@ repos:
         entry: bash
         args:
           - -c
-          - pytest -m unit --tb=short -q 2>/dev/null || echo "No unit tests found (yet)"
+          - pytest tests/ -m unit --tb=short -q
         pass_filenames: false

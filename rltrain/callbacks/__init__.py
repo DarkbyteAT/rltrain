@@ -1,36 +1,51 @@
-"""Callback protocol and built-in callbacks for the training loop."""
+"""Callback protocol and built-in implementations for the training loop."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
-
-
-if TYPE_CHECKING:
-    from rltrain.agents.agent import Agent
-    from rltrain.env import MDP
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
 class Callback(Protocol):
-    """Hook points for the training loop. All methods have default no-ops."""
+    """Five-hook observer protocol for the training loop.
 
-    def on_train_start(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Called once before training begins; use for setup and initialisation."""
+    All hooks receive Python values (not JAX arrays). Callbacks must not
+    modify agent or environment state -- they are observers.
+
+    Hooks that are not needed should be implemented as no-ops (pass or ...).
+    """
+
+    def on_train_start(self, config: dict, run_dir: Path | None) -> None:
+        """Called once before the training loop begins."""
         ...
 
-    def on_step(self, agent: Agent, env: MDP, step: int) -> None:
-        """Called after every ``agent.step()`` call with the current step count."""
+    def on_step(self, step: int, metrics: dict[str, float]) -> None:
+        """Called after each agent.learn() call with Python-float metrics."""
         ...
 
-    def on_episode_end(self, agent: Agent, env: MDP, episode: int) -> None:
-        """Called when an episode completes with the current episode count."""
+    def on_episode_end(
+        self,
+        episode: int,
+        episode_return: float,
+        episode_length: int,
+        running_return: float,
+    ) -> None:
+        """Called when an episode completes.
+
+        ``running_return`` is the EMA over completed-episode returns,
+        computed by the env layer. It is part of the contract — every
+        trainer passes it, every callback receives it.
+        """
         ...
 
-    def on_checkpoint(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Called at each checkpoint interval; use for saving metrics or models."""
+    def on_checkpoint(self, step: int, agent_state, run_dir: Path | None) -> None:
+        """Called at checkpoint intervals (Python-level, outside scan)."""
         ...
 
-    def on_train_end(self, agent: Agent, env: MDP, run_dir: Path) -> None:
-        """Called once after the training loop exits; use for cleanup and finalisation."""
+    def on_train_end(self, agent_state, run_dir: Path | None) -> None:
+        """Called once after the training loop exits."""
         ...
+
+
+__all__ = ["Callback"]
