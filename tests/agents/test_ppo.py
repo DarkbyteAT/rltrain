@@ -204,3 +204,31 @@ def test_clipped_ratio_bounds():
     assert not jnp.allclose(ppo_loss, unclipped_actor_loss, atol=1e-3), (
         "PPO loss equals unclipped loss despite extreme ratio — clipping may not be active"
     )
+
+
+@pytest.mark.unit
+def test_minibatch_size_greater_than_collect_size_raises():
+    """PPO.__init__ raises ValueError when minibatch_size > collect_size.
+
+    Without the guard ``buffer_shuffle_into_minibatches`` would truncate to
+    zero minibatches and the epoch loop would silently skip training.
+    """
+    # Given the OnPolicyAgent default collect_size of 256
+    k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
+
+    # When PPO is built with a minibatch_size larger than collect_size,
+    # the validator raises a ValueError naming both values
+    with pytest.raises(ValueError, match="minibatch_size <= collect_size"):
+        PPO(
+            actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
+            action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+            critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
+            optimizer=optax.adam(1e-3),
+            gamma=0.99,
+            tau=0.01,
+            beta_critic=0.5,
+            lambda_gae=0.95,
+            eps_clip=0.2,
+            num_epochs=1,
+            minibatch_size=512,  # > default collect_size=256
+        )

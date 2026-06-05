@@ -106,6 +106,11 @@ class PPO(OnPolicyAgent):
         epoch_terminators: tuple[EpochTerminator, ...] = (),
     ):
         """Initialise PPO and bake the terminator chain into a single callable."""
+        if minibatch_size > self.collect_size:
+            raise ValueError(
+                f"PPO requires minibatch_size <= collect_size, got "
+                f"minibatch_size={minibatch_size} and collect_size={self.collect_size}."
+            )
         self.actor = actor
         self.action_head = action_head
         self.optimizer = optimizer

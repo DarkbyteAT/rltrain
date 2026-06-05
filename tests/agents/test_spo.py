@@ -216,3 +216,27 @@ def test_spo_loss_differs_from_ppo():
         f"SPO loss ({float(spo_loss):.4f}) equals PPO loss ({float(ppo_loss):.4f}) "
         "despite different surrogate objectives"
     )
+
+
+@pytest.mark.unit
+def test_minibatch_size_greater_than_collect_size_raises():
+    """SPO construction raises ValueError when minibatch_size > collect_size."""
+    # Given the OnPolicyAgent default collect_size of 256
+    k1, k2, k3 = jax.random.split(jax.random.PRNGKey(0), 3)
+
+    # When SPO is built with a minibatch_size larger than collect_size,
+    # __check_init__ raises a ValueError
+    with pytest.raises(ValueError, match="minibatch_size <= collect_size"):
+        SPO(
+            actor=MLP(OBS_DIM, HIDDEN, width_size=HIDDEN, depth=1, key=k1),
+            action_head=DiscreteHead(HIDDEN, NUM_ACTIONS, key=k2),
+            critic=MLP(OBS_DIM, 1, width_size=HIDDEN, depth=1, key=k3),
+            optimizer=optax.adam(1e-3),
+            gamma=0.99,
+            tau=0.01,
+            beta_critic=0.5,
+            lambda_gae=0.95,
+            eps_clip=0.2,
+            num_epochs=1,
+            minibatch_size=512,  # > default collect_size=256
+        )

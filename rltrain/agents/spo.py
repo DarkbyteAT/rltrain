@@ -45,6 +45,14 @@ class SPO(OnPolicyAgent):
     num_epochs: int = eqx.field(static=True)
     minibatch_size: int = eqx.field(static=True)
 
+    def __check_init__(self):
+        """Validate hyperparameter constraints after dataclass init."""
+        if self.minibatch_size > self.collect_size:
+            raise ValueError(
+                f"SPO requires minibatch_size <= collect_size, got "
+                f"minibatch_size={self.minibatch_size} and collect_size={self.collect_size}."
+            )
+
     # --------------- Protocol methods ---------------
 
     def learn(
