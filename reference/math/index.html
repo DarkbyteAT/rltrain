@@ -1,0 +1,1434 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular JAX framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/reference/math/">
+      
+      
+        <link rel="prev" href="../heads/">
+      
+      
+        <link rel="next" href="../networks/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>math - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rltrain.math" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              math
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rltrain.math" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        math
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="math">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.center" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        center
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.lerp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lerp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.discount" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discount
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.gae" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gae
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.q_values_from_pmf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        q_values_from_pmf
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rltrain.math.project_distribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        project_distribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>math</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="rltrain.math" class="doc doc-heading">
+            <code>rltrain.math</code>
+
+
+<a href="#rltrain.math" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>RL math primitives — pure functions for discounting, advantage estimation, and distributional RL.</p>
+<p>All functions are jittable and composable with <code>jax.grad</code>, <code>vmap</code>, and <code>lax.scan</code>.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.center" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">center</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-08</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.center" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Standardise to zero mean and unit variance: <span class="arithmatex">\((x - \mu) / (\sigma + \epsilon)\)</span>.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">center</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Standardise to zero mean and unit variance: $(x - \mu) / (\sigma + \epsilon)$.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.lerp" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">lerp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">tau</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.lerp" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Polyak interpolation <span class="arithmatex">\(\tau x + (1 - \tau) y\)</span> — used for target network soft updates.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lerp</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">y</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Polyak interpolation $\tau x + (1 - \tau) y$ — used for target network soft updates.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tau</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">tau</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.discount" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">discount</span><span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">dones</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.discount" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Compute discounted returns <span class="arithmatex">\(G_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k}\)</span>.</p>
+<p>Uses <code>jax.lax.scan</code> in reverse so the operation is jittable.
+Episode boundaries (<code>dones == 1</code>) reset the accumulator.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">discount</span><span class="p">(</span>
+    <span class="n">rewards</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">],</span>
+    <span class="n">dones</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">],</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute discounted returns $G_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k}$.</span>
+
+<span class="sd">    Uses ``jax.lax.scan`` in reverse so the operation is jittable.</span>
+<span class="sd">    Episode boundaries (``dones == 1``) reset the accumulator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_step</span><span class="p">(</span>
+        <span class="n">acc</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
+        <span class="n">xs</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]]:</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">xs</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">r</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">acc</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">acc</span><span class="p">,</span> <span class="n">acc</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">returns</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">_step</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(()),</span> <span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">dones</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">returns</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.gae" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">gae</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">rewards</span><span class="p">,</span> <span class="n">dones</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">lambda_gae</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.gae" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Compute GAE advantages and returns via reverse <code>lax.scan</code>.</p>
+<p>The TD residuals are</p>
+<div class="arithmatex">\[\delta_t = r_t + \gamma\,V(s_{t+1})\,(1 - d_t) - V(s_t)\]</div>
+<p>and the advantages are the exponentially-weighted sum</p>
+<div class="arithmatex">\[A_t = \sum_{k=0}^{T-t} (\gamma\lambda)^k \delta_{t+k}\]</div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>values</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; T_plus_1&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Value estimates of length <code>T+1</code>.  <code>values[T]</code> is the
+bootstrap value <span class="arithmatex">\(V(s_{T+1})\)</span> — pass zero if the episode ended.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>rewards</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; T&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rewards of length <code>T</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dones</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; T&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Done flags of length <code>T</code> (1.0 at episode boundaries).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>gamma</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Discount factor <span class="arithmatex">\(\gamma \in [0, 1]\)</span>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>lambda_gae</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>GAE mixing parameter <span class="arithmatex">\(\lambda \in [0, 1]\)</span>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; T&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>(advantages, returns)</code> both of length <code>T</code>, where</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; T&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>returns = advantages + values[:-1]</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>Advantages used in the actor loss <strong>must</strong> be wrapped in
+<code>jax.lax.stop_gradient</code> to prevent the actor gradient from
+flowing through the critic's value estimates.</p>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">gae</span><span class="p">(</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T_plus_1&quot;</span><span class="p">],</span>
+    <span class="n">rewards</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">],</span>
+    <span class="n">dones</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">],</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">lambda_gae</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; T&quot;</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute GAE advantages and returns via reverse ``lax.scan``.</span>
+
+<span class="sd">    The TD residuals are</span>
+
+<span class="sd">    $$\delta_t = r_t + \gamma\,V(s_{t+1})\,(1 - d_t) - V(s_t)$$</span>
+
+<span class="sd">    and the advantages are the exponentially-weighted sum</span>
+
+<span class="sd">    $$A_t = \sum_{k=0}^{T-t} (\gamma\lambda)^k \delta_{t+k}$$</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        values: Value estimates of length ``T+1``.  ``values[T]`` is the</span>
+<span class="sd">            bootstrap value $V(s_{T+1})$ — pass zero if the episode ended.</span>
+<span class="sd">        rewards: Rewards of length ``T``.</span>
+<span class="sd">        dones: Done flags of length ``T`` (1.0 at episode boundaries).</span>
+<span class="sd">        gamma: Discount factor $\gamma \in [0, 1]$.</span>
+<span class="sd">        lambda_gae: GAE mixing parameter $\lambda \in [0, 1]$.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``(advantages, returns)`` both of length ``T``, where</span>
+<span class="sd">        ``returns = advantages + values[:-1]``.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Advantages used in the actor loss **must** be wrapped in</span>
+<span class="sd">        ``jax.lax.stop_gradient`` to prevent the actor gradient from</span>
+<span class="sd">        flowing through the critic&#39;s value estimates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values_t</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># V(s_t), shape (T,)</span>
+    <span class="n">values_tp1</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># V(s_{t+1}), shape (T,)</span>
+
+    <span class="n">deltas</span> <span class="o">=</span> <span class="n">rewards</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">values_tp1</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">dones</span><span class="p">)</span> <span class="o">-</span> <span class="n">values_t</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_step</span><span class="p">(</span>
+        <span class="n">acc</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
+        <span class="n">xs</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]]:</span>
+        <span class="n">delta</span><span class="p">,</span> <span class="n">done</span> <span class="o">=</span> <span class="n">xs</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">lambda_gae</span> <span class="o">*</span> <span class="n">acc</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">done</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">acc</span><span class="p">,</span> <span class="n">acc</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">advantages</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">_step</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(()),</span> <span class="p">(</span><span class="n">deltas</span><span class="p">,</span> <span class="n">dones</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">returns</span> <span class="o">=</span> <span class="n">advantages</span> <span class="o">+</span> <span class="n">values_t</span>
+    <span class="k">return</span> <span class="n">advantages</span><span class="p">,</span> <span class="n">returns</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.q_values_from_pmf" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">q_values_from_pmf</span><span class="p">(</span><span class="n">pmf</span><span class="p">,</span> <span class="n">atoms</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.q_values_from_pmf" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Compute expected Q-values from a categorical distribution over atoms.</p>
+<div class="arithmatex">\[Q(s, a) = \sum_i z_i \, p_i(s, a)\]</div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>pmf</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;... num_atoms&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Probability mass function over atoms.  Trailing axis is the
+atom dimension; leading axes are batch and/or action dimensions.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>atoms</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; num_atoms&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fixed support vector <span class="arithmatex">\([V_{\min}, \ldots, V_{\max}]\)</span>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, ...]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected Q-values with the atom dimension contracted.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">q_values_from_pmf</span><span class="p">(</span>
+    <span class="n">pmf</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;... num_atoms&quot;</span><span class="p">],</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; num_atoms&quot;</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute expected Q-values from a categorical distribution over atoms.</span>
+
+<span class="sd">    $$Q(s, a) = \sum_i z_i \, p_i(s, a)$$</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pmf: Probability mass function over atoms.  Trailing axis is the</span>
+<span class="sd">            atom dimension; leading axes are batch and/or action dimensions.</span>
+<span class="sd">        atoms: Fixed support vector $[V_{\min}, \ldots, V_{\max}]$.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Expected Q-values with the atom dimension contracted.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">pmf</span> <span class="o">*</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rltrain.math.project_distribution" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">project_distribution</span><span class="p">(</span><span class="n">target_pmf</span><span class="p">,</span> <span class="n">rewards</span><span class="p">,</span> <span class="n">dones</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">atoms</span><span class="p">)</span></code>
+
+<a href="#rltrain.math.project_distribution" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Distributional Bellman projection onto fixed atom support.</p>
+<p>Shifts each target atom by <span class="arithmatex">\(r + \gamma z_j\)</span> (zeroing the discount at
+episode boundaries), clips to <span class="arithmatex">\([V_{\min}, V_{\max}]\)</span>, and distributes
+probability mass to the two nearest atoms via linear interpolation.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>target_pmf</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;B num_atoms&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target network's PMF for the selected action, shape <code>(B, N)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>rewards</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; B&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Batch rewards, shape <code>(B,)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dones</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; B&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Done flags, shape <code>(B,)</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>gamma</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Discount factor.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>atoms</code>
+            </td>
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39; num_atoms&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fixed support vector of length <code>N</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="jaxtyping.Float">Float</span>[<span title="jaxtyping.Array">Array</span>, &#39;B num_atoms&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Projected PMF of shape <code>(B, N)</code> summing to 1 along the atom axis.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>rltrain/math.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">project_distribution</span><span class="p">(</span>
+    <span class="n">target_pmf</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;B num_atoms&quot;</span><span class="p">],</span>
+    <span class="n">rewards</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; B&quot;</span><span class="p">],</span>
+    <span class="n">dones</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; B&quot;</span><span class="p">],</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot; num_atoms&quot;</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;B num_atoms&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Distributional Bellman projection onto fixed atom support.</span>
+
+<span class="sd">    Shifts each target atom by $r + \gamma z_j$ (zeroing the discount at</span>
+<span class="sd">    episode boundaries), clips to $[V_{\min}, V_{\max}]$, and distributes</span>
+<span class="sd">    probability mass to the two nearest atoms via linear interpolation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        target_pmf: Target network&#39;s PMF for the selected action, shape ``(B, N)``.</span>
+<span class="sd">        rewards: Batch rewards, shape ``(B,)``.</span>
+<span class="sd">        dones: Done flags, shape ``(B,)``.</span>
+<span class="sd">        gamma: Discount factor.</span>
+<span class="sd">        atoms: Fixed support vector of length ``N``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Projected PMF of shape ``(B, N)`` summing to 1 along the atom axis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">v_min</span><span class="p">,</span> <span class="n">v_max</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">atoms</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">delta_z</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_max</span> <span class="o">-</span> <span class="n">v_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_atoms</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Bellman shift: T_z = r + γ·z (clipped to support)</span>
+    <span class="n">tz</span> <span class="o">=</span> <span class="n">rewards</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">dones</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">*</span> <span class="n">atoms</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">tz</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">tz</span><span class="p">,</span> <span class="n">v_min</span><span class="p">,</span> <span class="n">v_max</span><span class="p">)</span>
+
+    <span class="c1"># Fractional atom indices</span>
+    <span class="n">b_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">tz</span> <span class="o">-</span> <span class="n">v_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta_z</span>  <span class="c1"># (B, N), continuous indices</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">b_idx</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">b_idx</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="c1"># Clamp to valid range (handles edge case where b_idx is exactly an integer)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num_atoms</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num_atoms</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Linear interpolation weights</span>
+    <span class="n">upper_weight</span> <span class="o">=</span> <span class="n">b_idx</span> <span class="o">-</span> <span class="n">lower</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>  <span class="c1"># fraction toward upper</span>
+    <span class="n">lower_weight</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">upper_weight</span>
+
+    <span class="c1"># Scatter probability mass to lower and upper atoms</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">target_pmf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">projected</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">num_atoms</span><span class="p">))</span>
+
+    <span class="n">batch_idx</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># (B, 1)</span>
+
+    <span class="c1"># Add mass to lower atoms</span>
+    <span class="n">projected</span> <span class="o">=</span> <span class="n">projected</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">,</span> <span class="n">lower</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">target_pmf</span> <span class="o">*</span> <span class="n">lower_weight</span><span class="p">)</span>
+    <span class="c1"># Add mass to upper atoms</span>
+    <span class="n">projected</span> <span class="o">=</span> <span class="n">projected</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">,</span> <span class="n">upper</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">target_pmf</span> <span class="o">*</span> <span class="n">upper_weight</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">projected</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

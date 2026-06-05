@@ -1,0 +1,1268 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular JAX framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/superpowers/handovers/2026-04-21-jax-spike-final-handover/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>JAX Spike Final Handover - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#jax-spike-final-handover" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              JAX Spike Final Handover
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ground-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ground Yourself
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Was Built
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Was Built">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agents-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents (11)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests-193-test-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests (193 test functions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trainer-3-loop-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trainer (3 loop strategies)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#callbacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Callbacks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples (11)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-criteria-scorecard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Success Criteria Scorecard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Summary
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onpolicyagent-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OnPolicyAgent Base Class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trainer-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trainer Decomposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trainingloop-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TrainingLoop Protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-stop-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structural stop-gradient
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-policy-vs-off-policy-derived-from-collect_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On-policy vs off-policy derived from collect_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jaxeval_shape-for-metrics-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jax.eval_shape for metrics discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optaxpartition-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        optax.partition deferred
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#squashednormal-over-distreqx-transformed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SquashedNormal over distreqx Transformed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eqxpartition-eqxcombine-for-param-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eqx.partition / eqx.combine for param extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-left-tech-debt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's Left / Tech Debt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s Left / Tech Debt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_loopspy-at-534-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _loops.py at 534 lines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-input-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No input validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-config-fqn-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No config / FQN system
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#videorecordercallback-captures-agent-at-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VideoRecorderCallback captures agent at construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cartpole_multi_envpy-docstring-may-be-misleading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cartpole_multi_env.py docstring may be misleading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#showcase_scan_benchmarkpy-is-broken" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        showcase_scan_benchmark.py is broken
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-spike-specific-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No spike-specific documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trainstate-naming-is-misleading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TrainState naming is misleading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-off-policy-base-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No off-policy base class
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-continue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Continue
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to Continue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-before-merging-spike-to-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate (before merging spike to main)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#short-term-real-jax-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Short-term (real JAX port)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-term-production-readiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium-term (production readiness)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="jax-spike-final-handover">JAX Spike Final Handover<a class="headerlink" href="#jax-spike-final-handover" title="Permanent link">&para;</a></h1>
+<p>Date: 2026-04-21</p>
+<h2 id="ground-yourself">Ground Yourself<a class="headerlink" href="#ground-yourself" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/Users/ammar/Documents/Research/rltrain/.worktrees/spike-jax-port/
+git<span class="w"> </span>branch<span class="w">   </span><span class="c1"># spike/jax-port</span>
+
+<span class="c1"># Activate the spike venv (not the main rltrain venv)</span>
+<span class="nb">source</span><span class="w"> </span>.venv-spike/bin/activate
+<span class="c1"># Or install from scratch:</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-spike.txt
+
+<span class="c1"># Run the test suite</span>
+pytest<span class="w"> </span>tests/spike/<span class="w"> </span>-v
+
+<span class="c1"># Run a quick training example</span>
+python<span class="w"> </span>-m<span class="w"> </span>spike.examples.cartpole_dqn
+python<span class="w"> </span>-m<span class="w"> </span>spike.examples.cartpole_ppo
+python<span class="w"> </span>-m<span class="w"> </span>spike.examples.cartpole_sac
+</code></pre></div>
+<p>The spike lives entirely under <code>spike/</code> and <code>tests/spike/</code>. It shares the repo with the existing PyTorch <code>rltrain/</code> package but has no import dependencies on it. The top-level <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>README.md</code>, and <code>CONTRIBUTING.md</code> describe the PyTorch codebase, not the spike.</p>
+<h2 id="what-was-built">What Was Built<a class="headerlink" href="#what-was-built" title="Permanent link">&para;</a></h2>
+<p>A self-contained JAX/Equinox deep RL framework proving that the rltrain agent contract ports cleanly from PyTorch mutation-based design to JAX pure-functional design. The spike validates the core hypothesis: static agent modules + external TrainState pytrees compose with <code>jax.jit</code>, <code>jax.vmap</code>, <code>jax.lax.scan</code>, and <code>jax.pmap</code> without adapter code.</p>
+<h3 id="agents-11">Agents (11)<a class="headerlink" href="#agents-11" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Family</th>
+<th>File</th>
+<th>State Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VanillaPG</td>
+<td>On-policy PG</td>
+<td><code>agents/vanilla_pg.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>REINFORCE</td>
+<td>On-policy PG</td>
+<td><code>agents/reinforce.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>VanillaAC</td>
+<td>On-policy AC</td>
+<td><code>agents/vanilla_ac.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>AdvantageAC</td>
+<td>On-policy AC</td>
+<td><code>agents/advantage_ac.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>PPO</td>
+<td>On-policy AC</td>
+<td><code>agents/ppo.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>SPO</td>
+<td>On-policy AC</td>
+<td><code>agents/spo.py</code></td>
+<td><code>TrainState</code></td>
+</tr>
+<tr>
+<td>VanillaDQN</td>
+<td>Off-policy Q</td>
+<td><code>agents/vanilla_dqn.py</code></td>
+<td><code>DQNState</code></td>
+</tr>
+<tr>
+<td>DoubleDQN</td>
+<td>Off-policy Q</td>
+<td><code>agents/double_dqn.py</code></td>
+<td><code>DQNState</code></td>
+</tr>
+<tr>
+<td>DistributionalDQN</td>
+<td>Off-policy Q</td>
+<td><code>agents/distributional_dqn.py</code></td>
+<td><code>DQNState</code></td>
+</tr>
+<tr>
+<td>SAC (discrete)</td>
+<td>Off-policy AC</td>
+<td><code>agents/sac.py</code></td>
+<td><code>SACState</code></td>
+</tr>
+<tr>
+<td>SAC (continuous)</td>
+<td>Off-policy AC</td>
+<td><code>agents/sac.py</code></td>
+<td><code>SACState</code></td>
+</tr>
+</tbody>
+</table>
+<p>On-policy agents share the <code>OnPolicyAgent</code> base class (<code>agent.py:221-293</code>), which provides default <code>init</code>, <code>learn</code>, and <code>act</code> implementations. Off-policy agents implement the <code>Agent</code> Protocol directly.</p>
+<h3 id="tests-193-test-functions">Tests (193 test functions)<a class="headerlink" href="#tests-193-test-functions" title="Permanent link">&para;</a></h3>
+<p>26 test files under <code>tests/spike/</code>, covering:
+- Per-agent unit tests (loss shape, gradient flow, param updates, protocol conformance)
+- Gradient isolation tests for multi-objective agents (SAC critic/actor independence)
+- Buffer operations (add, sample, drain, circular overwrite, PER integration)
+- Distribution stability (SquashedNormal vs distreqx NaN demonstration)
+- Env wrappers (GymnaxEnv, GymnasiumFallback)
+- Trainer integration (PythonLoop, ScanLoop)
+- Scan-based training (on-policy and off-policy lax.scan convergence)
+- End-to-end training (DQN CartPole to return &gt;50 in 50K steps)
+- Head modules (DiscreteHead, GaussianHead, SquashedGaussianHead, BetaHead, GammaHead)</p>
+<h3 id="trainer-3-loop-strategies">Trainer (3 loop strategies)<a class="headerlink" href="#trainer-3-loop-strategies" title="Permanent link">&para;</a></h3>
+<p>The Trainer (<code>spike/trainer/</code>) is decomposed into four files:
+- <code>_trainer.py</code> (205 lines) -- orchestrator: config derivation, action-shape detection, loop dispatch
+- <code>_loops.py</code> (534 lines) -- three <code>TrainingLoop</code> implementations
+- <code>_carry.py</code> (63 lines) -- <code>TrainCarry</code>, <code>TrainConfig</code>, <code>StepOutput</code> dataclasses
+- <code>__init__.py</code> -- public re-exports</p>
+<p>Loop strategies:
+- <strong>PythonLoop</strong> -- Python for-loop with JIT'd agent methods. Works with any env (gymnasium or gymnax). Fires callbacks inline.
+- <strong>ScanLoop</strong> -- <code>jax.lax.scan</code> inner loop with Python checkpoint boundaries. Uses <code>jax.eval_shape</code> for zero-cost metrics shape discovery. Callbacks fire at segment boundaries.
+- <strong>PmapLoop</strong> -- Multi-device parallel training via <code>jax.pmap</code>. Each device runs an independent scan loop. Metrics averaged across devices at checkpoint boundaries. Falls back to ScanLoop on single-device.</p>
+<p>The Trainer auto-selects: gymnax envs get ScanLoop, gymnasium envs get PythonLoop. Users override via <code>loop=</code> kwarg.</p>
+<h3 id="callbacks">Callbacks<a class="headerlink" href="#callbacks" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>Callback</code> Protocol (<code>spike/callbacks/__init__.py</code>) -- 5-hook observer protocol (<code>on_train_start</code>, <code>on_step</code>, <code>on_episode_end</code>, <code>on_checkpoint</code>, <code>on_train_end</code>). All hooks receive Python values, not JAX arrays.</li>
+<li><code>CSVLoggerCallback</code> -- episode metrics to CSV, flushed at checkpoints.</li>
+<li><code>VideoRecorderCallback</code> -- MP4 eval rollouts via a separate gymnasium env at checkpoint boundaries. Requires moviepy.</li>
+</ul>
+<h3 id="other-modules">Other modules<a class="headerlink" href="#other-modules" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>spike/buffer.py</code> -- fixed-capacity ring buffer as a <code>chex.dataclass</code> pytree. Supports <code>add</code>, <code>sample</code> (uniform with IS weights for PER), and <code>drain</code> (on-policy). All operations are pure functions compatible with <code>lax.scan</code>.</li>
+<li><code>spike/distributions.py</code> -- <code>SquashedNormal</code> with numerically stable <code>log_prob</code> using the identity <code>log(1 - tanh^2(x)) = 2(log2 - x - softplus(-2x))</code>. Replaces distreqx's <code>Transformed(Normal, Tanh)</code> which produces NaN at moderate feature magnitudes.</li>
+<li><code>spike/heads.py</code> -- Action head modules: <code>DiscreteHead</code>, <code>GaussianHead</code>, <code>SquashedGaussianHead</code>, <code>BetaHead</code>, <code>GammaHead</code>. Each maps network features to a distribution.</li>
+<li><code>spike/networks.py</code> -- <code>MLP</code> module (Equinox).</li>
+<li><code>spike/math.py</code> -- <code>discount()</code> for GAE/returns, <code>center()</code> for whitening.</li>
+<li><code>spike/transitions.py</code> -- <code>Transition</code> dataclass and <code>make_transition</code> factory.</li>
+<li><code>spike/env.py</code> -- <code>GymnaxEnv</code> (pure-functional, JIT/vmap/scan-compatible) and <code>GymnasiumFallback</code> (Python-loop only). <code>EnvCapabilities</code> NamedTuple drives Trainer dispatch.</li>
+</ul>
+<h3 id="examples-11">Examples (11)<a class="headerlink" href="#examples-11" title="Permanent link">&para;</a></h3>
+<p>Under <code>spike/examples/</code>:
+- <code>cartpole_dqn.py</code>, <code>cartpole_ppo.py</code>, <code>cartpole_sac.py</code> -- basic training scripts
+- <code>cartpole_full_demo.py</code> -- full Trainer API with callbacks and CSV logging
+- <code>cartpole_multi_env.py</code> -- gymnasium multi-env (note: docstring may be misleading, see tech debt)
+- <code>pendulum_ppo.py</code>, <code>pendulum_sac.py</code> -- continuous control
+- <code>showcase_jit_trace.py</code> -- demonstrates JIT compilation of agent methods
+- <code>showcase_scan_benchmark.py</code> -- PythonLoop vs ScanLoop speed comparison (currently broken, see tech debt)
+- <code>showcase_maml_ppo.py</code> -- MAML meta-learning with PPO inner loop
+- <code>showcase_vmap_seed_sweep.py</code> -- vectorised seed sweep via <code>jax.vmap</code></p>
+<h2 id="success-criteria-scorecard">Success Criteria Scorecard<a class="headerlink" href="#success-criteria-scorecard" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Port all 6 PyTorch agents to JAX</td>
+<td><strong>PASS</strong></td>
+<td>11 agents implemented (6 original + DoubleDQN, DistributionalDQN, SAC discrete/continuous, SPO). Exceeds the original 6.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Pure-functional agent contract (init/learn/act)</td>
+<td><strong>PASS</strong></td>
+<td><code>Agent</code> Protocol in <code>agent.py:71-100</code>. All agents satisfy it (tested via <code>isinstance(agent, Agent)</code> in protocol tests). Static module + external state pytree.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Compose with jit, vmap, scan</td>
+<td><strong>PASS</strong></td>
+<td>ScanLoop runs the full train loop inside <code>lax.scan</code>. <code>showcase_vmap_seed_sweep.py</code> vmaps across seeds. <code>showcase_jit_trace.py</code> demonstrates JIT. All agents JIT-compatible (tested).</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Trainer with callback hooks</td>
+<td><strong>PASS</strong></td>
+<td><code>Trainer</code> class with 5-hook <code>Callback</code> Protocol. Two built-in callbacks (CSV, Video). Three loop strategies (Python, Scan, Pmap).</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Test suite with unit + integration + e2e</td>
+<td><strong>PASS</strong></td>
+<td>193 tests across 26 files. Unit tests per agent, integration tests for scan training, e2e test for DQN CartPole convergence.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Support both gymnax and gymnasium envs</td>
+<td><strong>PASS</strong></td>
+<td><code>GymnaxEnv</code> for pure-functional envs, <code>GymnasiumFallback</code> for classic gymnasium. Trainer auto-dispatches via <code>env.capabilities</code>.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Numerically stable continuous SAC</td>
+<td><strong>PASS</strong></td>
+<td>Custom <code>SquashedNormal</code> replaces distreqx. Test proves distreqx NaN, proves custom implementation is finite. SAC continuous trains on Pendulum.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>No dependency on PyTorch rltrain</td>
+<td><strong>PASS</strong></td>
+<td><code>spike/</code> has zero imports from <code>rltrain/</code>. Separate <code>requirements-spike.txt</code>. Can be extracted to a standalone package.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="architecture-summary">Architecture Summary<a class="headerlink" href="#architecture-summary" title="Permanent link">&para;</a></h2>
+<h3 id="agent-protocol">Agent Protocol<a class="headerlink" href="#agent-protocol" title="Permanent link">&para;</a></h3>
+<p>The core contract is three methods on a static <code>eqx.Module</code>:</p>
+<div class="highlight"><pre><span></span><code>init(key) -&gt; S           # construct initial training state
+learn(state, batch, key) -&gt; (state, metrics)  # one optimisation step
+act(state, obs, key) -&gt; action               # action selection
+</code></pre></div>
+<p>The agent module holds hyperparameters and network architecture (static at JIT trace time). All mutable state (parameters, optimizer state, target parameters) lives in a <code>TrainState</code> pytree that flows through <code>lax.scan</code> as the carry. This separation means JIT traces the agent once, and <code>jax.grad</code> composes through <code>learn</code> because the state is a pure pytree.</p>
+<h3 id="state-types">State Types<a class="headerlink" href="#state-types" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>TrainState</code> -- canonical state with <code>params</code>, <code>opt_state</code>, <code>target_params</code>. Used by all on-policy agents and DQN variants.</li>
+<li><code>DQNState(TrainState)</code> -- adds <code>epsilon</code> for epsilon-greedy decay.</li>
+<li><code>SACState</code> -- standalone state with separate <code>actor_params</code>, <code>critic_params</code>, <code>log_alpha</code>, three optimizer states, and <code>target_critic_params</code>. Does not extend <code>TrainState</code> because the field structure is fundamentally different.</li>
+</ul>
+<h3 id="onpolicyagent-base-class">OnPolicyAgent Base Class<a class="headerlink" href="#onpolicyagent-base-class" title="Permanent link">&para;</a></h3>
+<p><code>OnPolicyAgent</code> (<code>agent.py:221-293</code>) provides shared <code>init</code>, <code>learn</code>, and <code>act</code> for policy gradient and actor-critic agents. Subclasses override <code>_loss(batch)</code> only. PPO and SPO override <code>learn</code> for their epoch loops but inherit <code>init</code> and <code>act</code>.</p>
+<p>The <code>collect_size</code> ClassVar (default 256) tells the Trainer how many transitions to accumulate before calling <code>learn</code>. Off-policy agents default to 1 (via <code>getattr(agent, 'collect_size', 1)</code> in the Trainer).</p>
+<h3 id="trainer-decomposition">Trainer Decomposition<a class="headerlink" href="#trainer-decomposition" title="Permanent link">&para;</a></h3>
+<p>The Trainer owns configuration derivation and delegates the training loop:</p>
+<div class="highlight"><pre><span></span><code>Trainer.__init__()       # derives collect_size, buffer_capacity, action_shape, selects loop
+Trainer.fit(key)         # builds initial carry, delegates to loop.run()
+Trainer.make_initial_state(key)  # builds TrainCarry for checkpoint resume
+
+TrainingLoop.run(agent, env, initial_carry, config, callbacks)  # strategy pattern
+</code></pre></div>
+<p>The <code>TrainCarry</code> chex dataclass carries <code>agent_state</code>, <code>env_state</code>, <code>buffer</code>, <code>step_count</code>, and <code>key</code> through <code>lax.scan</code>. <code>TrainConfig</code> is a frozen Python dataclass bundling loop-invariant hyperparameters. <code>StepOutput</code> accumulates per-step data (done, return, length, metrics, did_learn) for deferred callback dispatch at segment boundaries.</p>
+<h3 id="trainingloop-protocol">TrainingLoop Protocol<a class="headerlink" href="#trainingloop-protocol" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TrainingLoop</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">initial_carry</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">callbacks</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Three implementations: PythonLoop (any env), ScanLoop (gymnax only), PmapLoop (multi-device). The Trainer selects based on <code>env.capabilities.scan_rollout</code>.</p>
+<h2 id="key-design-decisions">Key Design Decisions<a class="headerlink" href="#key-design-decisions" title="Permanent link">&para;</a></h2>
+<h3 id="structural-stop-gradient">Structural stop-gradient<a class="headerlink" href="#structural-stop-gradient" title="Permanent link">&para;</a></h3>
+<p>SAC's three losses (critic, actor, alpha) are differentiated with respect to separate parameter groups. Stop-gradient is structural: parameters not passed as arguments to a loss function cannot receive gradients. No <code>jax.lax.stop_gradient</code> calls needed. This is cleaner than PyTorch's <code>detach()</code> pattern and impossible to forget.</p>
+<h3 id="on-policy-vs-off-policy-derived-from-collect_size">On-policy vs off-policy derived from collect_size<a class="headerlink" href="#on-policy-vs-off-policy-derived-from-collect_size" title="Permanent link">&para;</a></h3>
+<p>The Trainer never inspects an <code>on_policy</code> flag. Instead, <code>collect_size &gt; 1</code> means on-policy (drain the buffer), <code>collect_size == 1</code> means off-policy (sample from the buffer). This is resolved at Python level (trace time), so JAX tracing sees only one branch. The distinction is emergent from the agent's hyperparameters, not a type hierarchy.</p>
+<h3 id="jaxeval_shape-for-metrics-discovery">jax.eval_shape for metrics discovery<a class="headerlink" href="#jaxeval_shape-for-metrics-discovery" title="Permanent link">&para;</a></h3>
+<p>ScanLoop uses <code>jax.eval_shape</code> to discover the metrics pytree structure from <code>agent.learn</code> without executing any FLOPs. This lets the loop pre-allocate zero-filled metrics for the <code>_skip_learn</code> branch inside <code>lax.cond</code>, ensuring both branches return identical pytree structures. Non-scalar metrics are warned and dropped.</p>
+<h3 id="optaxpartition-deferred">optax.partition deferred<a class="headerlink" href="#optaxpartition-deferred" title="Permanent link">&para;</a></h3>
+<p>The spike uses optax directly rather than porting the FQN builder / JSON config system. Agents construct their own optimizers. This was intentional -- the spike validates the pure-functional agent contract, not the configuration system. The FQN builder is orthogonal and can be layered on top.</p>
+<h3 id="squashednormal-over-distreqx-transformed">SquashedNormal over distreqx Transformed<a class="headerlink" href="#squashednormal-over-distreqx-transformed" title="Permanent link">&para;</a></h3>
+<p>distreqx's <code>Transformed(Normal, Tanh)</code> produces NaN <code>log_prob</code> at moderate feature magnitudes due to catastrophic cancellation in <code>log(1 - tanh^2(x))</code>. The custom <code>SquashedNormal</code> uses the algebraically equivalent <code>2(log2 - x - softplus(-2x))</code> which is stable for all <code>x</code>. A test (<code>test_sac.py:493</code>) demonstrates the distreqx failure to justify the custom implementation.</p>
+<h3 id="eqxpartition-eqxcombine-for-param-extraction">eqx.partition / eqx.combine for param extraction<a class="headerlink" href="#eqxpartition-eqxcombine-for-param-extraction" title="Permanent link">&para;</a></h3>
+<p>Every agent uses <code>eqx.partition(self, eqx.is_array)</code> to split the module into trainable parameters and static structure, then <code>eqx.combine(params, static)</code> to reconstruct a live module for forward passes. This is the Equinox idiom for "extract params, run optimizer, put params back" without mutation.</p>
+<h2 id="whats-left-tech-debt">What's Left / Tech Debt<a class="headerlink" href="#whats-left-tech-debt" title="Permanent link">&para;</a></h2>
+<h3 id="_loopspy-at-534-lines"><code>_loops.py</code> at 534 lines<a class="headerlink" href="#_loopspy-at-534-lines" title="Permanent link">&para;</a></h3>
+<p>Contains three loop implementations, shared predicates, shape discovery, and the pure scan body <code>_train_step</code>. Should be split into separate files (<code>_python_loop.py</code>, <code>_scan_loop.py</code>, <code>_pmap_loop.py</code>, <code>_shared.py</code>) for production. Currently manageable but will grow as loop features are added.</p>
+<h3 id="no-input-validation">No input validation<a class="headerlink" href="#no-input-validation" title="Permanent link">&para;</a></h3>
+<p>Agents accept any kwargs without validation. No checks for negative gamma, invalid learning rates, mismatched network dimensions, etc. The Trainer doesn't validate that <code>num_steps % checkpoint_steps == 0</code> (it warns but truncates silently). Production code needs explicit validation at construction time.</p>
+<h3 id="no-config-fqn-system">No config / FQN system<a class="headerlink" href="#no-config-fqn-system" title="Permanent link">&para;</a></h3>
+<p>The spike has no JSON config system, no FQN builder, no CLI. Agents are constructed programmatically in Python scripts. This is appropriate for a spike but means the JAX port cannot yet be driven by the same JSON configs as PyTorch rltrain.</p>
+<h3 id="videorecordercallback-captures-agent-at-construction">VideoRecorderCallback captures agent at construction<a class="headerlink" href="#videorecordercallback-captures-agent-at-construction" title="Permanent link">&para;</a></h3>
+<p>The <code>VideoRecorderCallback</code> receives the agent's <code>act</code> function and state at checkpoint time, which works. However, the callback protocol receives <code>agent_state</code> but not the agent module itself at <code>on_checkpoint</code>. For video recording, the callback needs both the agent (for <code>act</code>) and the current state. The current design works around this by storing the agent reference at construction, but this is a protocol gap -- the agent reference is captured once and never updated.</p>
+<h3 id="cartpole_multi_envpy-docstring-may-be-misleading"><code>cartpole_multi_env.py</code> docstring may be misleading<a class="headerlink" href="#cartpole_multi_envpy-docstring-may-be-misleading" title="Permanent link">&para;</a></h3>
+<p>The example is about gymnasium multi-env training, but the docstring should be checked for accuracy against the actual implementation. May reference patterns from before the Trainer decomposition.</p>
+<h3 id="showcase_scan_benchmarkpy-is-broken"><code>showcase_scan_benchmark.py</code> is broken<a class="headerlink" href="#showcase_scan_benchmarkpy-is-broken" title="Permanent link">&para;</a></h3>
+<p>After the Trainer decomposition into <code>_trainer.py</code> / <code>_loops.py</code> / <code>_carry.py</code>, this showcase script references the old monolithic Trainer API. Needs updating to use the new <code>TrainingLoop</code> strategy pattern.</p>
+<h3 id="no-spike-specific-documentation">No spike-specific documentation<a class="headerlink" href="#no-spike-specific-documentation" title="Permanent link">&para;</a></h3>
+<p>Zero <code>.md</code> files under <code>spike/</code>. The top-level docs describe PyTorch rltrain. A <code>spike/README.md</code> with the architecture diagram, agent table, and "How to Add an Agent" guide is needed. (Task #5 is addressing this.)</p>
+<h3 id="trainstate-naming-is-misleading">TrainState naming is misleading<a class="headerlink" href="#trainstate-naming-is-misleading" title="Permanent link">&para;</a></h3>
+<p><code>TrainState</code> is used by on-policy agents and DQN. SAC defines <code>SACState</code> from scratch. The name suggests it's the canonical state for all agents, but it's really "simple agent state." Consider renaming to <code>SimpleTrainState</code> or documenting that complex agents define their own state types.</p>
+<h3 id="no-off-policy-base-class">No off-policy base class<a class="headerlink" href="#no-off-policy-base-class" title="Permanent link">&para;</a></h3>
+<p><code>OnPolicyAgent</code> provides shared <code>init</code>/<code>learn</code>/<code>act</code> for on-policy agents. Off-policy agents (VanillaDQN, SAC) reimplement the <code>eqx.partition</code>/<code>eqx.combine</code> dance, Polyak averaging, and target network init independently. Common patterns could be extracted.</p>
+<h2 id="how-to-continue">How to Continue<a class="headerlink" href="#how-to-continue" title="Permanent link">&para;</a></h2>
+<h3 id="immediate-before-merging-spike-to-main">Immediate (before merging spike to main)<a class="headerlink" href="#immediate-before-merging-spike-to-main" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Fix <code>showcase_scan_benchmark.py</code> (task #7)</li>
+<li>Write <code>spike/README.md</code> (task #5)</li>
+<li>Decide on package naming: does <code>spike/</code> become <code>rltrain_jax/</code> or replace <code>rltrain/</code>?</li>
+</ol>
+<h3 id="short-term-real-jax-port">Short-term (real JAX port)<a class="headerlink" href="#short-term-real-jax-port" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add the FQN builder / JSON config system for JAX agents</li>
+<li>Add a CLI (<code>run.py</code> equivalent) that drives training from JSON configs</li>
+<li>Port the experiment tracking system (<code>TrackingCallback</code> + <code>MetricsLogger</code> backends)</li>
+<li>Add <code>CheckpointCallback</code> for JAX (serialize with <code>eqx.tree_serialise_leaves</code>)</li>
+<li>Add input validation to agent constructors and Trainer</li>
+</ol>
+<h3 id="medium-term-production-readiness">Medium-term (production readiness)<a class="headerlink" href="#medium-term-production-readiness" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Split <code>_loops.py</code> into separate files per loop strategy</li>
+<li>Extract an <code>OffPolicyAgent</code> base class or shared helpers for the partition/combine/Polyak pattern</li>
+<li>Add continuous-action on-policy agents (PPO with Gaussian policy)</li>
+<li>Add CI/CD pipeline for the JAX test suite</li>
+<li>Update top-level <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>README.md</code> to cover the JAX backend</li>
+<li>Benchmark against CleanRL / PureJaxRL baselines for correctness and speed validation</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

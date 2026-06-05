@@ -1,0 +1,1149 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A modular JAX framework for deep reinforcement learning research">
+      
+      
+      
+        <link rel="canonical" href="https://darkbyteat.github.io/rltrain/superpowers/handovers/2026-04-05-documentation-waves-handover/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Handover: Ecosystem Documentation Improvement (Waves 0-2) - RLTrain</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#handover-ecosystem-documentation-improvement-waves-0-2" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="RLTrain" class="md-header__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RLTrain
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Handover: Ecosystem Documentation Improvement (Waves 0-2)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="RLTrain" class="md-nav__button md-logo" aria-label="RLTrain" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    RLTrain
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DarkbyteAT/rltrain" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DarkbyteAT/rltrain
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../algorithms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Algorithms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Progress
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Values
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boards-and-card-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boards and Card IDs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependency-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Graph
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execution-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution Plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Execution Plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-ecosystem-guide-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Ecosystem Guide — DONE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-15-docstring-conversion-4-way-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1.5: Docstring Conversion (4-way parallel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-claudeagents-refresh-5-way-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: CLAUDE/AGENTS Refresh (5-way parallel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-math-composability-3-way-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Math + Composability (3-way parallel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-extension-guides-3-way-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Extension Guides (3-way parallel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deferred-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred Work
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deferred Work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ecosystem-guide-update-for-metaoptimizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ecosystem guide update for MetaOptimizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecosystem-guide-convention-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ecosystem guide convention update
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Conventions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Conventions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#google-style-docstrings-all-new-docstrings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google-Style Docstrings (all new docstrings)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collapsible-math-pattern-wave-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collapsible Math Pattern (Wave 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#citation-comment-pattern-wave-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citation Comment Pattern (Wave 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-readme-pattern-wave-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module README Pattern (Wave 2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claudemd-pattern-wave-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLAUDE.md Pattern (Wave 0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-guidelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content Guidelines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-card-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Card Execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="handover-ecosystem-documentation-improvement-waves-0-2">Handover: Ecosystem Documentation Improvement (Waves 0-2)<a class="headerlink" href="#handover-ecosystem-documentation-improvement-waves-0-2" title="Permanent link">&para;</a></h1>
+<p>Last updated: 2026-04-06</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>The research ecosystem (rltrain, samgria, toblox, xptrack, fractal-weight-spaces) has strong per-repo documentation but three systemic gaps identified through engineering team review:</p>
+<ol>
+<li><strong>No ecosystem-level documentation</strong> — each repo documents itself, nothing explains how they connect</li>
+<li><strong>Mathematical "why" missing</strong> — code mirrors the math, docs describe "what" not "why"</li>
+<li><strong>Extension guides missing</strong> — protocols exist (GradientTransform, Store, Reader, Hook, View), no user-facing guide on implementing against them</li>
+</ol>
+<h2 id="progress">Progress<a class="headerlink" href="#progress" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Card</th>
+<th>Status</th>
+<th>PR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Ecosystem guide (rltrain)</td>
+<td><strong>Done</strong></td>
+<td>DarkbyteAT/rltrain#26, merged to main</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>Docstring conversion (rltrain)</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>Docstring conversion (xptrack)</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>Docstring conversion (samgria)</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>Docstring conversion (toblox)</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>rltrain CLAUDE refresh</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>xptrack CLAUDE refresh</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>samgria CLAUDE refresh</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>toblox CLAUDE refresh</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>fws CLAUDE creation</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>samgria math formulations</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>toblox math formulations</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>rltrain composability guide</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>xptrack module READMEs</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>samgria extension guide</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>rltrain tracking guide</td>
+<td>Todo</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="design-values">Design Values<a class="headerlink" href="#design-values" title="Permanent link">&para;</a></h2>
+<p>All documentation must:
+- <strong>Mirror mathematical structure</strong> — equations in collapsible blocks, citation comments in code
+- <strong>Cross-link with full paths</strong> — never "see above", always relative links
+- <strong>Be scannable</strong> — tables over prose, structured headings, collapsible detail
+- <strong>Work for humans and agents</strong> — CLAUDE.md/AGENTS.md are agent entry points, READMEs are human entry points
+- <strong>Be additive not brittle</strong> — new features (MAML, implicit params) should slot in without rewriting</p>
+<h2 id="boards-and-card-ids">Boards and Card IDs<a class="headerlink" href="#boards-and-card-ids" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Board</th>
+<th>Board ID</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~~<strong>W0</strong> Ecosystem guide~~</td>
+<td>rltrain</td>
+<td><code>69cafa92b7759bad35d0801f</code></td>
+<td>https://trello.com/c/PKMYhOp7</td>
+</tr>
+<tr>
+<td><strong>DS</strong> rltrain docstrings</td>
+<td>rltrain</td>
+<td><code>69cafa92b7759bad35d0801f</code></td>
+<td>https://trello.com/c/nBaSb3rA</td>
+</tr>
+<tr>
+<td><strong>DS</strong> xptrack docstrings</td>
+<td>xptrack</td>
+<td><code>69cb09a0f5627e88d4b651d2</code></td>
+<td>https://trello.com/c/k0BlLEMa</td>
+</tr>
+<tr>
+<td><strong>DS</strong> samgria docstrings</td>
+<td>samgria</td>
+<td><code>69d2790d39ed1f3a6ddd37c8</code></td>
+<td>https://trello.com/c/0aLB7SHa</td>
+</tr>
+<tr>
+<td><strong>DS</strong> toblox docstrings</td>
+<td>toblox</td>
+<td><code>69d2556094795017e80e996d</code></td>
+<td>https://trello.com/c/vtI8R6Ww</td>
+</tr>
+<tr>
+<td><strong>W0</strong> rltrain CLAUDE refresh</td>
+<td>rltrain</td>
+<td><code>69cafa92b7759bad35d0801f</code></td>
+<td>https://trello.com/c/cxpMHScj</td>
+</tr>
+<tr>
+<td><strong>W0</strong> xptrack CLAUDE refresh</td>
+<td>xptrack</td>
+<td><code>69cb09a0f5627e88d4b651d2</code></td>
+<td>https://trello.com/c/zZw4ekb4</td>
+</tr>
+<tr>
+<td><strong>W0</strong> samgria CLAUDE refresh</td>
+<td>samgria</td>
+<td><code>69d2790d39ed1f3a6ddd37c8</code></td>
+<td>https://trello.com/c/o3SGjjf2</td>
+</tr>
+<tr>
+<td><strong>W0</strong> toblox CLAUDE refresh</td>
+<td>toblox</td>
+<td><code>69d2556094795017e80e996d</code></td>
+<td>https://trello.com/c/ENUTUn2e</td>
+</tr>
+<tr>
+<td><strong>W0</strong> fws CLAUDE creation</td>
+<td>fractal-weight-spaces</td>
+<td><code>69c97b7671b2621142b242cf</code></td>
+<td>https://trello.com/c/79ILWR1E</td>
+</tr>
+<tr>
+<td><strong>W1</strong> samgria math formulations</td>
+<td>samgria</td>
+<td><code>69d2790d39ed1f3a6ddd37c8</code></td>
+<td>https://trello.com/c/d0v0cb6x</td>
+</tr>
+<tr>
+<td><strong>W1</strong> toblox math formulations</td>
+<td>toblox</td>
+<td><code>69d2556094795017e80e996d</code></td>
+<td>https://trello.com/c/MsmMtF7N</td>
+</tr>
+<tr>
+<td><strong>W1</strong> rltrain composability guide</td>
+<td>rltrain</td>
+<td><code>69cafa92b7759bad35d0801f</code></td>
+<td>https://trello.com/c/lNy1TNtE</td>
+</tr>
+<tr>
+<td><strong>W2</strong> xptrack module READMEs</td>
+<td>xptrack</td>
+<td><code>69cb09a0f5627e88d4b651d2</code></td>
+<td>https://trello.com/c/J5ASeJYM</td>
+</tr>
+<tr>
+<td><strong>W2</strong> samgria extension guide</td>
+<td>samgria</td>
+<td><code>69d2790d39ed1f3a6ddd37c8</code></td>
+<td>https://trello.com/c/n4stAK7B</td>
+</tr>
+<tr>
+<td><strong>W2</strong> rltrain tracking guide</td>
+<td>rltrain</td>
+<td><code>69cafa92b7759bad35d0801f</code></td>
+<td>https://trello.com/c/Vt0ryuPL</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dependency-graph">Dependency Graph<a class="headerlink" href="#dependency-graph" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>[W0] Ecosystem guide (rltrain)                    ✅ DONE, merged
+  │
+  ├─ [DS] Docstring conversion (4-way parallel, no deps)
+  │    ├─ rltrain   https://trello.com/c/nBaSb3rA
+  │    ├─ xptrack   https://trello.com/c/k0BlLEMa
+  │    ├─ samgria   https://trello.com/c/0aLB7SHa
+  │    └─ toblox    https://trello.com/c/vtI8R6Ww
+  │
+  ├→ [W0] CLAUDE/AGENTS refresh (5-way parallel, after docstrings per repo)
+  │    ├─ rltrain   (after rltrain docstrings merge)
+  │    ├─ xptrack   (after xptrack docstrings merge)
+  │    ├─ samgria   (after samgria docstrings merge)
+  │    ├─ toblox    (after toblox docstrings merge)
+  │    └─ fws       (no docstrings, unblocked now)
+  │
+  ├→ [W1] Math + Composability (3-way parallel, after CLAUDE refresh per repo)
+  │    ├─ samgria math formulations   (after samgria CLAUDE refresh)
+  │    ├─ toblox math formulations    (after toblox CLAUDE refresh)
+  │    └─ rltrain composability guide (after rltrain CLAUDE refresh)
+  │
+  └→ [W2] Extension Guides (3-way parallel, after W1 per repo)
+       ├─ xptrack module READMEs      (after xptrack CLAUDE refresh)
+       ├─ samgria extension guide     (after samgria math formulations)
+       └─ rltrain tracking guide      (after rltrain composability guide)
+</code></pre></div>
+<h2 id="execution-plan">Execution Plan<a class="headerlink" href="#execution-plan" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-ecosystem-guide-done">Phase 1: Ecosystem Guide — DONE<a class="headerlink" href="#phase-1-ecosystem-guide-done" title="Permanent link">&para;</a></h3>
+<p>Created <code>docs/ecosystem.md</code> with vision, repo table, Mermaid data flow, paper-to-repo mapping, protocol integration points, and getting-started instructions. Merged via DarkbyteAT/rltrain#26. Reviewed through 5 rounds of engineering team review (advocate, architect, contrarian, ML engineer, data scientist, data engineer, research intern).</p>
+<h3 id="phase-15-docstring-conversion-4-way-parallel">Phase 1.5: Docstring Conversion (4-way parallel)<a class="headerlink" href="#phase-15-docstring-conversion-4-way-parallel" title="Permanent link">&para;</a></h3>
+<p>Convert all docstrings from NumPy style to Google style across rltrain, samgria, toblox, and xptrack. Each repo gets its own card, branch, and PR. Must land before CLAUDE refresh so the refreshed docs reference "Google-style docstrings" as the convention.</p>
+<p>Scope per repo: all <code>.py</code> files in source and tests. Update CONTRIBUTING.md with a docstring style guide.</p>
+<h3 id="phase-2-claudeagents-refresh-5-way-parallel">Phase 2: CLAUDE/AGENTS Refresh (5-way parallel)<a class="headerlink" href="#phase-2-claudeagents-refresh-5-way-parallel" title="Permanent link">&para;</a></h3>
+<p>Once docstrings merge per repo, dispatch parallel agents. Each refreshes CLAUDE.md and AGENTS.md with ecosystem links, current conventions (Google docstrings), and current state. The fws card creates CLAUDE.md from scratch (no docstrings to convert, so unblocked immediately).</p>
+<h3 id="phase-3-math-composability-3-way-parallel">Phase 3: Math + Composability (3-way parallel)<a class="headerlink" href="#phase-3-math-composability-3-way-parallel" title="Permanent link">&para;</a></h3>
+<p>Once the relevant W0 card merges per repo:
+- samgria: collapsible math blocks, citation comments, comparison table
+- toblox: orthogonal init rationale, D2RL citation, RFF bandwidth docs, enhanced catalogue
+- rltrain: composability explanation, JSON config examples, Mermaid execution diagram</p>
+<h3 id="phase-4-extension-guides-3-way-parallel">Phase 4: Extension Guides (3-way parallel)<a class="headerlink" href="#phase-4-extension-guides-3-way-parallel" title="Permanent link">&para;</a></h3>
+<p>Once the relevant W1 card merges per repo:
+- xptrack: store/README.md, ui/README.md, rl/README.md with protocol contracts and examples
+- samgria: docs/extending.md with custom transform guide and FQN config examples
+- rltrain: docs/experiment-tracking.md with backend comparison and MetricsLogger guide</p>
+<h2 id="deferred-work">Deferred Work<a class="headerlink" href="#deferred-work" title="Permanent link">&para;</a></h2>
+<h3 id="ecosystem-guide-update-for-metaoptimizer">Ecosystem guide update for MetaOptimizer<a class="headerlink" href="#ecosystem-guide-update-for-metaoptimizer" title="Permanent link">&para;</a></h3>
+<p>When the <code>MetaOptimizer</code> protocol merges to samgria, update <code>docs/ecosystem.md</code> in the same PR or as part of the samgria extension guide (W2). Changes needed:
+- New row in the Protocols table for <code>MetaOptimizer</code>
+- Update samgria repo table entry to mention meta-learning support
+- Possibly a new edge in the Mermaid diagram if it changes the data flow</p>
+<h3 id="ecosystem-guide-convention-update">Ecosystem guide convention update<a class="headerlink" href="#ecosystem-guide-convention-update" title="Permanent link">&para;</a></h3>
+<p>The ecosystem guide currently lists "NumPy-style docstrings" in the shared conventions table. This should be updated to "Google-style docstrings" when the docstring conversion cards land. Can be done as part of the rltrain CLAUDE refresh card since that card already touches rltrain documentation.</p>
+<h2 id="key-conventions">Key Conventions<a class="headerlink" href="#key-conventions" title="Permanent link">&para;</a></h2>
+<h3 id="google-style-docstrings-all-new-docstrings">Google-Style Docstrings (all new docstrings)<a class="headerlink" href="#google-style-docstrings-all-new-docstrings" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Summary line.</span>
+
+<span class="sd">Args:</span>
+<span class="sd">    param: Description of param.</span>
+
+<span class="sd">Returns:</span>
+<span class="sd">    Description of return value.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="collapsible-math-pattern-wave-1">Collapsible Math Pattern (Wave 1)<a class="headerlink" href="#collapsible-math-pattern-wave-1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>Plain English explanation of the transform.
+
+&lt;details&gt;&lt;summary&gt;Mathematical formulation&lt;/summary&gt;
+
+$$\epsilon^* \approx \rho \frac{\nabla L(\theta)}{\|\nabla L(\theta)\|}$$
+
+Reference: Foret et al. (2021), Algorithm 1.
+&lt;/details&gt;
+</code></pre></div>
+<h3 id="citation-comment-pattern-wave-1">Citation Comment Pattern (Wave 1)<a class="headerlink" href="#citation-comment-pattern-wave-1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># SAM perturbation: ε* ≈ ρ · ∇L/||∇L||, Foret et al. 2021 Eq. 1</span>
+<span class="n">adv_params</span> <span class="o">=</span> <span class="n">init_params</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">*</span> <span class="n">init_grad</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="module-readme-pattern-wave-2">Module README Pattern (Wave 2)<a class="headerlink" href="#module-readme-pattern-wave-2" title="Permanent link">&para;</a></h3>
+<p>Follow rltrain's existing module READMEs: architecture overview, protocol contract table, "How to add your own X" section, link to tests as executable examples.</p>
+<h3 id="claudemd-pattern-wave-0">CLAUDE.md Pattern (Wave 0)<a class="headerlink" href="#claudemd-pattern-wave-0" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="ni">@AGENTS</span>.md
+
+<span class="gu">## Project Context</span>
+[2-3 sentences]
+
+<span class="gu">## Scope</span>
+| In scope | Out of scope |
+|----------|-------------|
+
+<span class="gu">## Ecosystem</span>
+Part of [<span class="nt">research ecosystem</span>](<span class="na">link</span>). See docs/ecosystem.md.
+<span class="k">-</span><span class="w"> </span>[<span class="nl">repo</span>]: <span class="na">[how this repo connects]</span>
+
+<span class="gu">## Known Constraints</span>
+[honest status of anything incomplete]
+</code></pre></div>
+<h2 id="content-guidelines">Content Guidelines<a class="headerlink" href="#content-guidelines" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Don't describe features that might change</strong> — reference the protocol contract, not the current implementation list. New transforms, views, or backends can be added without updating the guide.</li>
+<li><strong>Do describe the mathematical principles</strong> — these are stable. SAM's perturbation equation won't change. Orthogonal init's rationale won't change.</li>
+<li><strong>Do describe the extension pattern</strong> — "implement these methods, wire via FQN config" is stable regardless of what implementations exist.</li>
+<li><strong>Don't hardcode lists of implementations</strong> — use "see <code>samgria/__init__.py</code> for current exports" rather than listing SAM, ASAM, LAMP explicitly in guides (new transforms like MAML will land in parallel sessions).</li>
+</ul>
+<h2 id="per-card-execution">Per-Card Execution<a class="headerlink" href="#per-card-execution" title="Permanent link">&para;</a></h2>
+<p>For each card:
+1. Read the Trello card description and Definition of Done checklist
+2. Check dependency card is in Done and merged to main
+3. Create a branch, implement, PR
+4. Run <code>/gemini review</code> and iterate until convergence (or engineering team review if Gemini quota exhausted)
+5. Tick checklist items as completed
+6. Move card Todo, Doing, Reviewing, Done</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
