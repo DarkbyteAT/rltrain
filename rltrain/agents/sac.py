@@ -356,9 +356,12 @@ class SAC(eqx.Module):
             # V(s') = sum_a pi(a|s') * (min_Q(s',a) - alpha * log pi(a|s'))
             v_next = jnp.sum(next_probs * (min_q_next - alpha * next_log_probs), axis=-1)
         else:
-            # Continuous: Q(s, a) -> scalar (squeeze (1,) -> ())
-            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])).squeeze())(batch.obs, batch.action)
-            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])).squeeze())(batch.obs, batch.action)
+            # Continuous: Q(s, a) -> scalar. Concat-then-vmap is one vmap pass
+            # over a single (B, obs_dim + action_dim) input rather than a vmap
+            # closure that concats per element.
+            obs_act = jnp.concatenate([batch.obs, batch.action], axis=-1)
+            q1_val = jax.vmap(q1)(obs_act).squeeze(-1)
+            q2_val = jax.vmap(q2)(obs_act).squeeze(-1)
 
             # Sample next action from current policy using stable sample_and_log_prob
             next_features = jax.vmap(actor)(batch.next_obs)
@@ -366,8 +369,9 @@ class SAC(eqx.Module):
             next_actions, next_per_dim_lp = next_dists.sample_and_log_prob(key)
             next_log_probs = jnp.sum(next_per_dim_lp, axis=-1)
 
-            t_q1_next = jax.vmap(lambda o, a: t_q1(jnp.concatenate([o, a])).squeeze())(batch.next_obs, next_actions)
-            t_q2_next = jax.vmap(lambda o, a: t_q2(jnp.concatenate([o, a])).squeeze())(batch.next_obs, next_actions)
+            next_obs_act = jnp.concatenate([batch.next_obs, next_actions], axis=-1)
+            t_q1_next = jax.vmap(t_q1)(next_obs_act).squeeze(-1)
+            t_q2_next = jax.vmap(t_q2)(next_obs_act).squeeze(-1)
             min_q_next = jnp.minimum(t_q1_next, t_q2_next)
             v_next = min_q_next - alpha * next_log_probs
 
@@ -422,8 +426,9 @@ class SAC(eqx.Module):
             actions, per_dim_lp = dists.sample_and_log_prob(key)
             log_probs = jnp.sum(per_dim_lp, axis=-1)
 
-            q1_val = jax.vmap(lambda o, a: q1(jnp.concatenate([o, a])).squeeze())(batch.obs, actions)
-            q2_val = jax.vmap(lambda o, a: q2(jnp.concatenate([o, a])).squeeze())(batch.obs, actions)
+            obs_act = jnp.concatenate([batch.obs, actions], axis=-1)
+            q1_val = jax.vmap(q1)(obs_act).squeeze(-1)
+            q2_val = jax.vmap(q2)(obs_act).squeeze(-1)
             min_q = jnp.minimum(q1_val, q2_val)
 
             actor_loss = jnp.mean(alpha * log_probs - min_q)
