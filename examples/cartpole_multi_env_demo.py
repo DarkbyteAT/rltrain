@@ -48,7 +48,11 @@ def main() -> None:
     key = jax.random.key(SEED)
     k_agent, k_fit = jax.random.split(key)
 
-    agent = build_agent(**AGENT_CFG, key=k_agent)
+    # Inject num_envs into the agent config so PPO's per-env GAE reshape
+    # bootstraps within each env's trajectory rather than across env
+    # boundaries.
+    agent_cfg = {**AGENT_CFG, "num_envs": NUM_ENVS}
+    agent = build_agent(**agent_cfg, key=k_agent)
     # Force gymnasium backend; env.json's backend key is overridden inline
     # so a single shared cartpole/env.json can serve both demos.
     env = GymnasiumEnv(env_id=ENV_CFG["id"], num_envs=NUM_ENVS)

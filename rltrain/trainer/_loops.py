@@ -329,6 +329,11 @@ class PythonLoop:
         episode_length = 0
         running_return = 0.0
         steps_since_learn = 0
+        # Multi-env staging: collect (obs, action, reward, next_obs, done)
+        # tuples per step, each of shape (num_envs, ...). Flushed in env-
+        # contiguous order on learn boundaries so on-policy GAE doesn't leak
+        # across env boundaries.
+        pending_per_env_step: list = []
 
         cb_config = {"num_steps": config.num_steps, "seed": config.seed}
         for cb in callbacks:
@@ -367,23 +372,14 @@ class PythonLoop:
                 next_obs, reward, done, _info = env.step(action)
 
                 if obs.ndim > 1:
-                    # Multi-env (num_envs > 1): unroll N batched transitions
-                    # into N sequential buffer adds. Episode statistics are
-                    # aggregated across envs — `reward` and `done` are
-                    # treated as a sum and an any-done respectively. Per-env
-                    # episode tracking would require parallel counters; this
-                    # aggregate view is sufficient for the demo and matches
-                    # the original MDP wrapper's behaviour at num_envs > 1.
+                    # Multi-env (num_envs > 1): accumulate per-env transition
+                    # rows in a Python pending list, then flush in env-
+                    # contiguous order so on-policy GAE per-env reshape inside
+                    # the agent matches the buffer layout. Without this, GAE
+                    # would bootstrap across env boundaries — see commit
+                    # message for the bug history.
                     num_envs = obs.shape[0]
-                    for i in range(num_envs):
-                        per_env_transition = make_transition(
-                            obs=obs[i],
-                            action=action[i],
-                            reward=reward[i],
-                            next_obs=next_obs[i],
-                            done=done[i],
-                        )
-                        buffer = buffer_add(buffer, per_env_transition)
+                    pending_per_env_step.append((obs, action, reward, next_obs, done))
                     steps_since_learn += num_envs
 
                     step_reward = float(jnp.sum(reward))
@@ -428,6 +424,27 @@ class PythonLoop:
 
             # Learn step
             if should_learn(steps_since_learn, int(buffer.size), config.collect_size, config.min_buffer_size):
+                # Multi-env: flush the staged per-step rows into the buffer
+                # in env-contiguous order BEFORE the drain. Each entry of
+                # ``pending_per_env_step`` is a tuple of (obs, action,
+                # reward, next_obs, done) with leading axis num_envs.
+                # We add env 0's full trajectory first, then env 1's, etc.
+                if pending_per_env_step:
+                    pending_num_envs = pending_per_env_step[0][0].shape[0]
+                    for e in range(pending_num_envs):
+                        for obs_b, act_b, rew_b, nobs_b, done_b in pending_per_env_step:
+                            buffer = buffer_add(
+                                buffer,
+                                make_transition(
+                                    obs=obs_b[e],
+                                    action=act_b[e],
+                                    reward=rew_b[e],
+                                    next_obs=nobs_b[e],
+                                    done=done_b[e],
+                                ),
+                            )
+                    pending_per_env_step = []
+
                 batch, buffer = collect_batch(
                     buffer,
                     k_learn,

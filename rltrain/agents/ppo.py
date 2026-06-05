@@ -84,6 +84,7 @@ class PPO(OnPolicyAgent):
     eps_clip: float = eqx.field(static=True)
     num_epochs: int = eqx.field(static=True)
     minibatch_size: int = eqx.field(static=True)
+    num_envs: int = eqx.field(static=True, default=1)
     epoch_terminators: tuple[EpochTerminator, ...] = eqx.field(static=True, default=())
     # Closure baked at construction time over ``epoch_terminators``. The scan
     # body calls this single opaque callable instead of iterating the static
@@ -103,6 +104,7 @@ class PPO(OnPolicyAgent):
         eps_clip: float,
         num_epochs: int,
         minibatch_size: int,
+        num_envs: int = 1,
         epoch_terminators: tuple[EpochTerminator, ...] = (),
     ):
         """Initialise PPO and bake the terminator chain into a single callable."""
@@ -110,6 +112,11 @@ class PPO(OnPolicyAgent):
             raise ValueError(
                 f"PPO requires minibatch_size <= collect_size, got "
                 f"minibatch_size={minibatch_size} and collect_size={self.collect_size}."
+            )
+        if num_envs < 1 or self.collect_size % num_envs != 0:
+            raise ValueError(
+                f"PPO requires num_envs >= 1 and collect_size % num_envs == 0, got "
+                f"num_envs={num_envs} and collect_size={self.collect_size}."
             )
         self.actor = actor
         self.action_head = action_head
@@ -122,6 +129,7 @@ class PPO(OnPolicyAgent):
         self.eps_clip = eps_clip
         self.num_epochs = num_epochs
         self.minibatch_size = minibatch_size
+        self.num_envs = num_envs
         self.epoch_terminators = tuple(epoch_terminators)
         self._check_stop = _bake_terminator_chain(self.epoch_terminators)
 
@@ -165,22 +173,32 @@ class PPO(OnPolicyAgent):
         old_dists = jax.vmap(agent_old.action_head)(old_features)
         old_log_probs = jax.lax.stop_gradient(old_dists.log_prob(batch.action))
 
-        # 2. Values + GAE.
+        # 2. Values + GAE. The buffer lays out multi-env transitions in
+        # env-contiguous order (env0's full trajectory, then env1's, etc.).
+        # Reshape into (num_envs, T, ...) and vmap GAE over the env axis so
+        # bootstrap doesn't leak across env boundaries.
         values = jax.vmap(lambda o: agent_old.critic(o).squeeze(-1))(batch.obs)
-        bootstrap_value = agent_old.critic(batch.next_obs[-1]).squeeze(-1)
-        values_t_plus_1 = jnp.concatenate([values, bootstrap_value[None]])
+        horizon_size = batch.obs.shape[0]
+        per_env_T = horizon_size // self.num_envs
 
-        advantages, returns = gae(
-            values_t_plus_1,
-            batch.reward,
-            batch.done.astype(jnp.float32),
-            self.gamma,
-            self.lambda_gae,
-        )
+        values_per_env = values.reshape(self.num_envs, per_env_T)
+        # Bootstrap value for each env is V(s_{T+1}) from that env's last next_obs.
+        last_next_obs = batch.next_obs.reshape(self.num_envs, per_env_T, *batch.next_obs.shape[1:])[:, -1]
+        bootstrap_values = jax.vmap(lambda o: agent_old.critic(o).squeeze(-1))(last_next_obs)
+        values_t_plus_1 = jnp.concatenate([values_per_env, bootstrap_values[:, None]], axis=1)
+
+        rewards_per_env = batch.reward.reshape(self.num_envs, per_env_T)
+        dones_per_env = batch.done.reshape(self.num_envs, per_env_T).astype(jnp.float32)
+
+        advantages_per_env, returns_per_env = jax.vmap(
+            lambda v, r, d: gae(v, r, d, self.gamma, self.lambda_gae)
+        )(values_t_plus_1, rewards_per_env, dones_per_env)
+
+        advantages = advantages_per_env.reshape(horizon_size)
+        returns = returns_per_env.reshape(horizon_size)
         advantages = jax.lax.stop_gradient(center(advantages))
         returns = jax.lax.stop_gradient(returns)
 
-        horizon_size = batch.obs.shape[0]
         num_minibatches = horizon_size // self.minibatch_size
 
         def _minibatch_body(mb_carry, xs):
