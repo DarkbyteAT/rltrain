@@ -154,7 +154,7 @@ def _discover_metrics_shape(
         decide whether to do the PER segment-boundary update.
     """
     try:
-        _, metrics_shapes = jax.eval_shape(agent.learn, state, dummy_batch, jax.random.PRNGKey(0))
+        _, metrics_shapes = jax.eval_shape(agent.learn, state, dummy_batch, jax.random.key(0))
     except Exception as e:
         raise RuntimeError(f"Shape discovery failed: {e}. Check agent.learn() works with zero inputs.") from e
 
@@ -487,7 +487,7 @@ class ScanLoop:
         batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
         dummy_batch = _make_dummy_batch(
             obs_shape=env_state.obs.shape,
-            action_shape=agent.act(state, env_state.obs, jax.random.PRNGKey(0)).shape,
+            action_shape=agent.act(state, env_state.obs, jax.random.key(0)).shape,
             batch_size=batch_size,
         )
         zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(
@@ -628,7 +628,7 @@ class PmapLoop:
         batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
         dummy_batch = _make_dummy_batch(
             obs_shape=env_state.obs.shape,
-            action_shape=agent.act(state, env_state.obs, jax.random.PRNGKey(0)).shape,
+            action_shape=agent.act(state, env_state.obs, jax.random.key(0)).shape,
             batch_size=batch_size,
         )
         zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(

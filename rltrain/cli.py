@@ -88,7 +88,7 @@ def train(
         agent_cfg = json.loads(agent_str)
 
         start_time = time.time()
-        key = jax.random.PRNGKey(seed)
+        key = jax.random.key(seed)
         k_build, k_fit = jax.random.split(key)
 
         rl_agent = mk.agent(key=k_build, **agent_cfg)

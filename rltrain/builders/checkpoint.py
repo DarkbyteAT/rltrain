@@ -50,7 +50,7 @@ def load_agent(
     cfg = json.loads(cfg_path.read_text())
 
     if key is None:
-        key = jax.random.PRNGKey(0)
+        key = jax.random.key(0)
     agent_module = build_agent(key=key, **cfg)
 
     template_state = agent_module.init(key)

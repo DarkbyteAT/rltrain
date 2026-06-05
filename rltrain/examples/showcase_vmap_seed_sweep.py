@@ -23,8 +23,8 @@ from rltrain.transitions import make_transition
 _env = GymnaxEnv("CartPole-v1")
 
 _agent = VanillaPG(
-    actor=MLP(4, 64, width_size=64, depth=1, key=jax.random.PRNGKey(0)),
-    action_head=DiscreteHead(64, 2, key=jax.random.PRNGKey(1)),
+    actor=MLP(4, 64, width_size=64, depth=1, key=jax.random.key(0)),
+    action_head=DiscreteHead(64, 2, key=jax.random.key(1)),
     optimizer=optax.adam(3e-3),
     gamma=0.99,
     tau=0.01,
@@ -107,7 +107,7 @@ def _train_one_seed(key):
 
 def main():  # noqa: D103
     num_seeds = 8
-    keys = jax.random.split(jax.random.PRNGKey(42), num_seeds)
+    keys = jax.random.split(jax.random.key(42), num_seeds)
 
     print("Compiling vmapped training loop...")
     vmapped_train = jax.jit(jax.vmap(_train_one_seed))

@@ -29,7 +29,7 @@ def train_one(name, agent, env, key, num_steps=5_000):
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
     env = GymnaxEnv("CartPole-v1")
     obs_dim = env.obs_shape[0]
     n_actions = env.num_actions

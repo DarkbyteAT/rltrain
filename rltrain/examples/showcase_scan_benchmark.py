@@ -59,7 +59,7 @@ def _time_strategy(agent, env, num_steps, key, *, use_scan):
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(0)
+    key = jax.random.key(0)
     num_steps = 5120
 
     agent = _make_agent(key)
