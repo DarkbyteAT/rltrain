@@ -33,7 +33,7 @@ def _make_batch(key, horizon=64):
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(0)
+    key = jax.random.key(0)
     k1, k2, k_data = jax.random.split(key, 3)
 
     agent = VanillaPG(
@@ -53,7 +53,7 @@ def main():  # noqa: D103
 
     def learn_from_params(p):
         s = TrainState(params=p, opt_state=state.opt_state, target_params=state.target_params)
-        new_s, metrics = agent.learn(s, batch, jax.random.PRNGKey(0))
+        new_s, metrics = agent.learn(s, batch, jax.random.key(0))
         return metrics["loss"]
 
     jaxpr = jax.make_jaxpr(learn_from_params)(state.params)
@@ -69,7 +69,7 @@ def main():  # noqa: D103
 
     # ---- 2. Time compilation vs execution ----
     learn_jit = eqx.filter_jit(agent.learn)
-    k_learn = jax.random.PRNGKey(0)
+    k_learn = jax.random.key(0)
 
     # First call: includes XLA compilation
     start = time.perf_counter()

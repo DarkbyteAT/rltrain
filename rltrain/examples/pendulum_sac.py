@@ -16,7 +16,7 @@ from rltrain.networks import MLP
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
 
     # Pendulum: obs_dim=3 (cos, sin, angular velocity), action_dim=1
     env = GymnasiumEnv("Pendulum-v1")

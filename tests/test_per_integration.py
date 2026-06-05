@@ -277,6 +277,80 @@ def test_trainer_prioritised_updates_buffer_priorities():
 
 
 @pytest.mark.unit
+def test_scan_loop_per_segment_helper_updates_buffer_priorities():
+    """ScanLoop's segment-boundary PER helper writes td_errors to buffer.priorities.
+
+    Direct unit test on ``_apply_per_updates_segment`` so we can intercept
+    the post-segment buffer state (``Trainer.fit`` returns only agent
+    state). Builds a sized buffer + synthetic ``(sample_indices,
+    td_errors, did_learn)`` tensors of shape
+    ``(checkpoint_steps, batch_size)`` and asserts every targeted slot
+    receives the right priority value.
+    """
+    from rltrain.trainer._loops import _apply_per_updates_segment
+
+    # Given a 32-slot buffer pre-filled with 10 transitions
+    buf = _fill_buffer_with_distinct_transitions(capacity=32, count=10)
+    assert jnp.all(buf.priorities == 1.0), "All slots should start at uniform priority"
+
+    # And a segment of synthetic PER state: 4 learn steps, each touching
+    # 2 distinct slots with a known TD error value.
+    checkpoint_steps = 4
+    sample_indices = jnp.array(
+        [
+            [0, 1],
+            [2, 3],
+            [4, 5],
+            [6, 7],
+        ],
+        dtype=jnp.int32,
+    )
+    td_errors = jnp.array(
+        [
+            [0.5, 0.6],
+            [0.7, 0.8],
+            [0.9, 1.0],
+            [1.1, 1.2],
+        ],
+        dtype=jnp.float32,
+    )
+    did_learn = jnp.ones(checkpoint_steps, dtype=jnp.bool_)
+
+    # When the helper runs
+    new_buf = _apply_per_updates_segment(buf, sample_indices, td_errors, did_learn)
+
+    # Then — slots 0..7 hold the matching TD error values; the rest stay at 1.0.
+    expected = jnp.ones(32).at[jnp.arange(8)].set(jnp.array([0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2]))
+    assert jnp.allclose(new_buf.priorities, expected, atol=1e-6), (
+        f"priorities mismatch:\n  got: {new_buf.priorities[:8]}\n  expected: {expected[:8]}"
+    )
+
+
+@pytest.mark.unit
+def test_scan_loop_per_segment_helper_respects_did_learn_mask():
+    """No-learn steps in the segment must NOT overwrite buffer.priorities."""
+    from rltrain.trainer._loops import _apply_per_updates_segment
+
+    # Given a buffer + a segment where only step 0 learned (steps 1-3 didn't)
+    buf = _fill_buffer_with_distinct_transitions(capacity=32, count=10)
+    sample_indices = jnp.array([[0, 1], [2, 3], [4, 5], [6, 7]], dtype=jnp.int32)
+    td_errors = jnp.array(
+        [[0.5, 0.6], [9.9, 9.9], [9.9, 9.9], [9.9, 9.9]],
+        dtype=jnp.float32,
+    )
+    did_learn = jnp.array([True, False, False, False])
+
+    # When the helper runs
+    new_buf = _apply_per_updates_segment(buf, sample_indices, td_errors, did_learn)
+
+    # Then — slots 0, 1 got the real td_errors; slots 2-7 unchanged at 1.0.
+    assert jnp.isclose(new_buf.priorities[0], 0.5)
+    assert jnp.isclose(new_buf.priorities[1], 0.6)
+    for i in range(2, 8):
+        assert jnp.isclose(new_buf.priorities[i], 1.0), f"slot {i} leaked masked td_error"
+
+
+@pytest.mark.unit
 def test_on_policy_agent_ignores_extended_transition_fields():
     """On-policy agents (PPO) train normally on a Transition that carries is_weights/indices.
 

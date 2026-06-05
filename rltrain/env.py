@@ -45,6 +45,10 @@ class Env(Protocol):
         """Step the environment. Signature varies by backend."""
         ...
 
+    def close(self) -> None:
+        """Release env resources (gymnasium subprocesses, etc.)."""
+        ...
+
 
 @chex.dataclass
 class EnvState:
@@ -162,12 +166,18 @@ class GymnasiumEnv:
         return int(n)
 
     def reset(self, key: PRNGKeyArray | None = None) -> chex.Array:
-        """Reset and return initial observation as a JAX array."""
+        """Reset and return initial observation as a JAX array.
+
+        Lazily constructs the underlying gymnasium env on first call and
+        reuses it on subsequent resets. Re-instantiating per reset
+        leaked the previous env's subprocess pool when ``num_envs > 1``.
+        """
         seed = int(jax.random.randint(key, (), 0, 2**30)) if key is not None else None
-        if self.num_envs > 1:
-            self._env = gymnasium.make_vec(self.env_id, num_envs=self.num_envs)
-        else:
-            self._env = gymnasium.make(self.env_id)
+        if self._env is None:
+            if self.num_envs > 1:
+                self._env = gymnasium.make_vec(self.env_id, num_envs=self.num_envs)
+            else:
+                self._env = gymnasium.make(self.env_id)
         obs, _ = self._env.reset(seed=seed)
         return jnp.asarray(obs, dtype=jnp.float32)
 

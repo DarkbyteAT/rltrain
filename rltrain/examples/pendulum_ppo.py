@@ -36,7 +36,7 @@ def train_one(name, agent, env, key, num_steps=10_000):
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
 
     # Pendulum: obs_dim=3, action_dim=1 (continuous torque)
     env = GymnasiumEnv("Pendulum-v1")

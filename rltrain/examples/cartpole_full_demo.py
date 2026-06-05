@@ -27,7 +27,7 @@ from rltrain.trainer import Trainer
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
     k1, k2, k3, key = jax.random.split(key, 4)
 
     # --- Environment ---

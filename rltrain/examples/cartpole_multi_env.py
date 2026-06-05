@@ -11,7 +11,7 @@ from rltrain.networks import MLP
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
 
     # Environment -- gymnax, auto-dispatches to scan rollout strategy
     env = GymnaxEnv("CartPole-v1")

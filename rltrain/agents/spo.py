@@ -44,6 +44,20 @@ class SPO(OnPolicyAgent):
     eps_clip: float = eqx.field(static=True)
     num_epochs: int = eqx.field(static=True)
     minibatch_size: int = eqx.field(static=True)
+    num_envs: int = eqx.field(static=True, default=1)
+
+    def __check_init__(self):
+        """Validate hyperparameter constraints after dataclass init."""
+        if self.minibatch_size > self.collect_size:
+            raise ValueError(
+                f"SPO requires minibatch_size <= collect_size, got "
+                f"minibatch_size={self.minibatch_size} and collect_size={self.collect_size}."
+            )
+        if self.num_envs < 1 or self.collect_size % self.num_envs != 0:
+            raise ValueError(
+                f"SPO requires num_envs >= 1 and collect_size % num_envs == 0, got "
+                f"num_envs={self.num_envs} and collect_size={self.collect_size}."
+            )
 
     # --------------- Protocol methods ---------------
 
@@ -72,22 +86,30 @@ class SPO(OnPolicyAgent):
         old_dists = jax.vmap(agent_old.action_head)(old_features)
         old_log_probs = jax.lax.stop_gradient(old_dists.log_prob(batch.action))
 
-        # 2. Compute values and GAE
+        # 2. Compute values and GAE. Multi-env buffers lay out transitions
+        # env-contiguous: reshape to (num_envs, T) and vmap GAE over the env
+        # axis so bootstrap doesn't leak across env boundaries.
         values = jax.vmap(lambda o: agent_old.critic(o).squeeze(-1))(batch.obs)
-        bootstrap_value = agent_old.critic(batch.next_obs[-1]).squeeze(-1)
-        values_t_plus_1 = jnp.concatenate([values, bootstrap_value[None]])
+        horizon_size = batch.obs.shape[0]
+        per_env_T = horizon_size // self.num_envs
 
-        advantages, returns = gae(
-            values_t_plus_1,
-            batch.reward,
-            batch.done.astype(jnp.float32),
-            self.gamma,
-            self.lambda_gae,
-        )
+        values_per_env = values.reshape(self.num_envs, per_env_T)
+        last_next_obs = batch.next_obs.reshape(self.num_envs, per_env_T, *batch.next_obs.shape[1:])[:, -1]
+        bootstrap_values = jax.vmap(lambda o: agent_old.critic(o).squeeze(-1))(last_next_obs)
+        values_t_plus_1 = jnp.concatenate([values_per_env, bootstrap_values[:, None]], axis=1)
+
+        rewards_per_env = batch.reward.reshape(self.num_envs, per_env_T)
+        dones_per_env = batch.done.reshape(self.num_envs, per_env_T).astype(jnp.float32)
+
+        advantages_per_env, returns_per_env = jax.vmap(
+            lambda v, r, d: gae(v, r, d, self.gamma, self.lambda_gae)
+        )(values_t_plus_1, rewards_per_env, dones_per_env)
+
+        advantages = advantages_per_env.reshape(horizon_size)
+        returns = returns_per_env.reshape(horizon_size)
         advantages = jax.lax.stop_gradient(center(advantages))
         returns = jax.lax.stop_gradient(returns)
 
-        horizon_size = batch.obs.shape[0]
         num_minibatches = horizon_size // self.minibatch_size
 
         def _minibatch_body(mb_carry, xs):

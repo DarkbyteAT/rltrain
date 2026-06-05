@@ -16,7 +16,7 @@ from rltrain.networks import MLP
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(42)
+    key = jax.random.key(42)
 
     # CartPole: obs_dim=4, 2 discrete actions
     env = GymnasiumEnv("CartPole-v1")

@@ -54,7 +54,16 @@ class StepOutput:
     """Per-step scan output for deferred callback dispatch.
 
     Accumulated over a checkpoint-sized segment by ``lax.scan``, then
-    processed by Python code at segment boundaries to fire callbacks.
+    processed by Python code at segment boundaries to fire callbacks
+    and (when the buffer is prioritised) write per-sample TD errors back
+    into ``buffer.priorities``.
+
+    ``td_errors`` and ``sample_indices`` are present every step regardless
+    of whether the agent supplied real values. On steps that didn't learn
+    or on agents that don't emit ``td_errors``, both are zero-filled
+    sentinels of shape ``(batch_size,)``; the ScanLoop's post-segment
+    dispatch ignores them via the ``did_learn`` mask plus the
+    ``config.prioritised`` Python flag.
     """
 
     done: Array
@@ -63,3 +72,5 @@ class StepOutput:
     running_return: Array
     metrics: PyTree[Array]  # scalar metrics, keys fixed at trace time
     did_learn: Array
+    td_errors: Array  # (batch_size,) per-sample TD errors or zero sentinel
+    sample_indices: Array  # (batch_size,) buffer positions sampled this step

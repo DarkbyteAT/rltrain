@@ -35,7 +35,7 @@ def _make_batch(key, horizon=64):
 
 
 def main():  # noqa: D103
-    key = jax.random.PRNGKey(0)
+    key = jax.random.key(0)
     k1, k2, k_data1, k_data2 = jax.random.split(key, 4)
 
     agent = VanillaPG(
@@ -68,7 +68,7 @@ def main():  # noqa: D103
             opt_state=state.opt_state,
             target_params=state.target_params,
         )
-        updated_state, _metrics = agent.learn(s, train_batch, jax.random.PRNGKey(99))
+        updated_state, _metrics = agent.learn(s, train_batch, jax.random.key(99))
 
         # Outer loss: evaluate the updated params on the eval batch
         updated_agent = eqx.combine(updated_state.params, static)

@@ -129,7 +129,7 @@ class Trainer:
 
         # Auto-detect action shape via a trial act() call.
         if action_shape is None:
-            self.action_shape = self._detect_action_shape(jax.random.PRNGKey(seed))
+            self.action_shape = self._detect_action_shape(jax.random.key(seed))
         else:
             self.action_shape = action_shape
 

@@ -10,7 +10,6 @@ on-policy / off-policy distinction so the protocol never sees ``on_policy``.
 
 from __future__ import annotations
 
-import warnings
 from typing import Any, Protocol
 
 import equinox as eqx
@@ -88,6 +87,30 @@ def collect_batch(
         return batch, buffer
 
 
+def _apply_per_updates_segment(
+    buffer,
+    sample_indices: Array,
+    td_errors: Array,
+    did_learn: Array,
+):
+    """Apply a segment's worth of PER priority updates to the buffer.
+
+    ``sample_indices`` and ``td_errors`` have shape ``(checkpoint_steps,
+    batch_size)``; ``did_learn`` has shape ``(checkpoint_steps,)``. Steps
+    that didn't learn are written back to their existing priorities (a
+    no-op masked by ``did_learn``). Runs entirely in XLA — no device-to-
+    host transfer of per-sample arrays.
+    """
+
+    def per_step(buf, xs):
+        idx, td, learned = xs
+        new_priorities = jnp.where(learned, td, buf.priorities[idx])
+        return buf.replace(priorities=buf.priorities.at[idx].set(new_priorities)), None
+
+    buffer, _ = jax.lax.scan(per_step, buffer, (sample_indices, td_errors, did_learn))
+    return buffer
+
+
 # ---------------------------------------------------------------------------
 # Shape discovery
 # ---------------------------------------------------------------------------
@@ -110,27 +133,38 @@ def _make_dummy_batch(
     )
 
 
-def _discover_metrics_shape(agent: Agent, state: Any, dummy_batch: Any) -> tuple[dict, list[str]]:
+def _discover_metrics_shape(
+    agent: Agent, state: Any, dummy_batch: Any, *, batch_size: int
+) -> tuple[dict, list[str], tuple[int, ...], bool]:
     """Trace ``agent.learn()`` to discover metrics pytree structure.
 
     Uses ``jax.eval_shape`` for zero-cost shape inference — no FLOPs.
-    Returns ``(zero_metrics, scalar_keys)``.
+
+    Returns:
+        ``(zero_metrics, scalar_keys, indices_shape, has_td_errors)``.
+        ``zero_metrics`` contains only the scalar-valued keys (suitable
+        for threading through ``lax.scan``); per-sample arrays like
+        ``td_errors`` are stripped out and surfaced separately via
+        :class:`StepOutput`. ``indices_shape`` is the per-step shape
+        carried by ``StepOutput.td_errors`` and
+        ``StepOutput.sample_indices`` — always ``(batch_size,)`` so
+        the scan carry has fixed shape regardless of whether PER is
+        active. ``has_td_errors`` flags whether the agent emits the
+        key at all; the ScanLoop uses it as a Python-side predicate to
+        decide whether to do the PER segment-boundary update.
     """
     try:
-        _, metrics_shapes = jax.eval_shape(agent.learn, state, dummy_batch, jax.random.PRNGKey(0))
-        zero_metrics = jax.tree.map(lambda s: jnp.zeros(s.shape, s.dtype), metrics_shapes)
-        scalar_keys = [k for k, v in metrics_shapes.items() if v.shape == ()]
+        _, metrics_shapes = jax.eval_shape(agent.learn, state, dummy_batch, jax.random.key(0))
     except Exception as e:
         raise RuntimeError(f"Shape discovery failed: {e}. Check agent.learn() works with zero inputs.") from e
 
-    non_scalar = [k for k, v in metrics_shapes.items() if v.shape != ()]
-    if non_scalar:
-        warnings.warn(
-            f"ScanLoop dropping non-scalar metrics: {non_scalar}. Only scalar metrics are supported inside lax.scan.",
-            stacklevel=3,
-        )
+    scalar_keys = [k for k, v in metrics_shapes.items() if v.shape == ()]
+    zero_metrics = {k: jnp.zeros(metrics_shapes[k].shape, metrics_shapes[k].dtype) for k in scalar_keys}
 
-    return zero_metrics, scalar_keys
+    has_td_errors = "td_errors" in metrics_shapes
+    indices_shape: tuple[int, ...] = (batch_size,)
+
+    return zero_metrics, scalar_keys, indices_shape, has_td_errors
 
 
 # ---------------------------------------------------------------------------
@@ -146,10 +180,17 @@ def _train_step(
     env: Env,
     config: TrainConfig,
     zero_metrics: dict,
+    indices_shape: tuple[int, ...],
 ) -> tuple[TrainCarry, StepOutput]:
     """One step of collect + conditional learn inside ``lax.scan``.
 
     Pure function: no side effects, no Python control flow over traced values.
+
+    Per-sample ``td_errors`` and the sampled buffer ``indices`` are pulled
+    out of the agent's metrics dict and surfaced via :class:`StepOutput`.
+    The ScanLoop / PmapLoop dispatch picks them up at segment boundaries
+    and writes them back into ``buffer.priorities`` — keeping the
+    scan-carry metrics scalar and the priority update Python-side.
     """
     key, k_act, k_step, k_learn = jax.random.split(carry.key, 4)
 
@@ -178,6 +219,12 @@ def _train_step(
     steps_mod = new_step_count % config.collect_size
     learn_flag = (steps_mod == 0) & (new_buffer.size >= config.min_buffer_size)
 
+    # Sentinels for the no-learn branch and for agents that don't emit
+    # per-sample td_errors. Shape and dtype must match the do-learn branch
+    # exactly so lax.cond's two branches return matching pytree shapes.
+    zero_td_errors = jnp.zeros(indices_shape, dtype=jnp.float32)
+    zero_indices = jnp.zeros(indices_shape, dtype=jnp.int32)
+
     def _do_learn(args):
         s, b, k = args
         batch, b_new = collect_batch(
@@ -188,19 +235,24 @@ def _train_step(
             prioritised=config.prioritised,
         )
         s_new, met = agent.learn(s, batch, k)
-        # PER: when the agent emits per-sample td_errors and we sampled with
-        # priorities, route those back into the buffer at the original
-        # indices. The `prioritised` flag is a Python bool resolved at trace
-        # time, so only one branch is traced.
-        if config.prioritised and "td_errors" in met:
-            b_new = buffer_update_priorities(b_new, batch.indices, met["td_errors"])
-        return s_new, b_new, met
+        # Pop td_errors out of the scan-threaded metrics dict; it travels on
+        # StepOutput instead so the scan carry stays scalar-only.
+        td = met.pop("td_errors", zero_td_errors)
+        # Drop any remaining non-scalar keys so the carried metrics pytree
+        # matches `zero_metrics` (scalar-only by construction).
+        scalar_met = {k_: v for k_, v in met.items() if v.shape == ()}
+        # Sample indices: take what the buffer populated. On-policy drain
+        # paths produce the per-slot sentinel zeros; off-policy sample
+        # populates real positions. The shape matches indices_shape
+        # because both buffer paths align with batch_size.
+        sample_idx = batch.indices.astype(jnp.int32)
+        return s_new, b_new, scalar_met, td, sample_idx
 
     def _skip_learn(args):
         s, b, _ = args
-        return s, b, zero_metrics
+        return s, b, zero_metrics, zero_td_errors, zero_indices
 
-    agent_state, new_buffer, metrics = jax.lax.cond(
+    agent_state, new_buffer, metrics, td_errors, sample_indices = jax.lax.cond(
         learn_flag,
         _do_learn,
         _skip_learn,
@@ -221,6 +273,8 @@ def _train_step(
         running_return=new_env_state.running_return,
         metrics=metrics,
         did_learn=learn_flag,
+        td_errors=td_errors,
+        sample_indices=sample_indices,
     )
     return new_carry, step_out
 
@@ -275,6 +329,11 @@ class PythonLoop:
         episode_length = 0
         running_return = 0.0
         steps_since_learn = 0
+        # Multi-env staging: collect (obs, action, reward, next_obs, done)
+        # tuples per step, each of shape (num_envs, ...). Flushed in env-
+        # contiguous order on learn boundaries so on-policy GAE doesn't leak
+        # across env boundaries.
+        pending_per_env_step: list = []
 
         cb_config = {"num_steps": config.num_steps, "seed": config.seed}
         for cb in callbacks:
@@ -313,23 +372,14 @@ class PythonLoop:
                 next_obs, reward, done, _info = env.step(action)
 
                 if obs.ndim > 1:
-                    # Multi-env (num_envs > 1): unroll N batched transitions
-                    # into N sequential buffer adds. Episode statistics are
-                    # aggregated across envs — `reward` and `done` are
-                    # treated as a sum and an any-done respectively. Per-env
-                    # episode tracking would require parallel counters; this
-                    # aggregate view is sufficient for the demo and matches
-                    # the original MDP wrapper's behaviour at num_envs > 1.
+                    # Multi-env (num_envs > 1): accumulate per-env transition
+                    # rows in a Python pending list, then flush in env-
+                    # contiguous order so on-policy GAE per-env reshape inside
+                    # the agent matches the buffer layout. Without this, GAE
+                    # would bootstrap across env boundaries — see commit
+                    # message for the bug history.
                     num_envs = obs.shape[0]
-                    for i in range(num_envs):
-                        per_env_transition = make_transition(
-                            obs=obs[i],
-                            action=action[i],
-                            reward=reward[i],
-                            next_obs=next_obs[i],
-                            done=done[i],
-                        )
-                        buffer = buffer_add(buffer, per_env_transition)
+                    pending_per_env_step.append((obs, action, reward, next_obs, done))
                     steps_since_learn += num_envs
 
                     step_reward = float(jnp.sum(reward))
@@ -374,6 +424,27 @@ class PythonLoop:
 
             # Learn step
             if should_learn(steps_since_learn, int(buffer.size), config.collect_size, config.min_buffer_size):
+                # Multi-env: flush the staged per-step rows into the buffer
+                # in env-contiguous order BEFORE the drain. Each entry of
+                # ``pending_per_env_step`` is a tuple of (obs, action,
+                # reward, next_obs, done) with leading axis num_envs.
+                # We add env 0's full trajectory first, then env 1's, etc.
+                if pending_per_env_step:
+                    pending_num_envs = pending_per_env_step[0][0].shape[0]
+                    for e in range(pending_num_envs):
+                        for obs_b, act_b, rew_b, nobs_b, done_b in pending_per_env_step:
+                            buffer = buffer_add(
+                                buffer,
+                                make_transition(
+                                    obs=obs_b[e],
+                                    action=act_b[e],
+                                    reward=rew_b[e],
+                                    next_obs=nobs_b[e],
+                                    done=done_b[e],
+                                ),
+                            )
+                    pending_per_env_step = []
+
                 batch, buffer = collect_batch(
                     buffer,
                     k_learn,
@@ -433,10 +504,12 @@ class ScanLoop:
         batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
         dummy_batch = _make_dummy_batch(
             obs_shape=env_state.obs.shape,
-            action_shape=agent.act(state, env_state.obs, jax.random.PRNGKey(0)).shape,
+            action_shape=agent.act(state, env_state.obs, jax.random.key(0)).shape,
             batch_size=batch_size,
         )
-        zero_metrics, scalar_keys = _discover_metrics_shape(agent, state, dummy_batch)
+        zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(
+            agent, state, dummy_batch, batch_size=batch_size
+        )
 
         cb_config = {"num_steps": config.num_steps, "seed": config.seed}
         for cb in callbacks:
@@ -454,9 +527,11 @@ class ScanLoop:
                 env=env,
                 config=config,
                 zero_metrics=zero_metrics,
+                indices_shape=indices_shape,
             )
 
         global_step = 0
+        per_active = config.prioritised and has_td_errors
 
         for _seg in range(num_segments):
             carry = TrainCarry(
@@ -472,6 +547,19 @@ class ScanLoop:
             buffer = carry.buffer
             step_count_arr = carry.step_count
             key = carry.key
+
+            # PER priority update — done in-XLA at segment boundary so the
+            # ``td_errors`` per-sample array never has to be lifted off
+            # device. Vectorised over the segment via ``jax.vmap``; the
+            # no-learn steps masked by ``did_learn`` write the existing
+            # priorities back to themselves (no-op).
+            if per_active:
+                buffer = _apply_per_updates_segment(
+                    buffer,
+                    segment_out.sample_indices,
+                    segment_out.td_errors,
+                    segment_out.did_learn,
+                )
 
             # One host transfer per segment — the Python loops below see
             # numpy arrays, so bool()/float()/int() are no-ops rather than
@@ -557,10 +645,12 @@ class PmapLoop:
         batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
         dummy_batch = _make_dummy_batch(
             obs_shape=env_state.obs.shape,
-            action_shape=agent.act(state, env_state.obs, jax.random.PRNGKey(0)).shape,
+            action_shape=agent.act(state, env_state.obs, jax.random.key(0)).shape,
             batch_size=batch_size,
         )
-        zero_metrics, scalar_keys = _discover_metrics_shape(agent, state, dummy_batch)
+        zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(
+            agent, state, dummy_batch, batch_size=batch_size
+        )
 
         cb_config = {"num_steps": config.num_steps, "seed": config.seed}
         for cb in callbacks:
@@ -569,6 +659,7 @@ class PmapLoop:
         num_segments = config.num_steps // config.checkpoint_steps
         num_devices = self.num_devices
         devices = jax.devices()[:num_devices]
+        per_active = config.prioritised and has_td_errors
 
         # Replicate carry across devices
         carry = TrainCarry(
@@ -593,6 +684,7 @@ class PmapLoop:
                     env=env,
                     config=config,
                     zero_metrics=zero_metrics,
+                    indices_shape=indices_shape,
                 )
 
             return jax.lax.scan(scan_body, carry, jnp.arange(config.checkpoint_steps))
@@ -604,6 +696,19 @@ class PmapLoop:
 
         for _seg in range(num_segments):
             carries, segment_out = p_segment(carries, None)
+
+            # PER priority update — per-device, vmapped across the device
+            # axis so each device's buffer ingests its own segment's
+            # td_errors. Same XLA-side pattern as ScanLoop.
+            if per_active:
+                carries = carries.replace(
+                    buffer=jax.vmap(_apply_per_updates_segment)(
+                        carries.buffer,
+                        segment_out.sample_indices,
+                        segment_out.td_errors,
+                        segment_out.did_learn,
+                    )
+                )
 
             # Average metrics across devices at checkpoint boundary
             avg_metrics = jax.tree.map(lambda x: x.mean(axis=0), segment_out.metrics)

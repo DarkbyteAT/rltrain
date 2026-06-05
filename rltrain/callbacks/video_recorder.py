@@ -138,7 +138,7 @@ class VideoRecorderCallback:
             frames: list[np.ndarray] = []
             obs, _info = eval_env.reset()
             terminated, truncated = False, False
-            key = jax.random.PRNGKey(step * 1000 + ep)
+            key = jax.random.key(step * 1000 + ep)
 
             for _t in range(self._max_steps):
                 frame = eval_env.render()
