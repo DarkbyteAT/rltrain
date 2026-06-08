@@ -9,6 +9,11 @@ across checkpoints.
 LunarLander-v3 is a gymnasium env, so the trainer auto-selects the Python
 loop (not lax.scan). The agent itself still jits once; only the env step is
 opaque to JAX.
+
+Requires the Box2D physics backend, which is a demo-only soft requirement
+and not part of rltrain's declared dependencies::
+
+    uv pip install "gymnasium[box2d]"
 """
 
 from __future__ import annotations
