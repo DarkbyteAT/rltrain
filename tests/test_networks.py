@@ -75,32 +75,39 @@ def test_d2rl_mlp_orthogonal_weights(key):
 
 
 @pytest.mark.unit
-def test_d2rl_mlp_obs_reaches_every_hidden_layer(key):
-    """Given two observations differing only in their values, the second-and-later
-    hidden layers' outputs MUST differ — otherwise the dense-skip is not wired."""
-    # Given two D2RLMLPs sharing the same params, applied to two different obs.
-    net = D2RLMLP(in_size=8, out_size=4, width_size=16, depth=3, key=key)
+def test_d2rl_mlp_call_uses_dense_skip_concat(key):
+    """Given a D2RLMLP, ablating the obs-slice columns of hidden layers >= 2
+    must STRICTLY reduce __call__'s sensitivity to obs changes. A __call__ that
+    silently dropped the concat would leave delta unchanged."""
+    # Given
+    width_size = 16
+    net = D2RLMLP(in_size=8, out_size=4, width_size=width_size, depth=4, key=key)
     obs_a = jnp.zeros(8)
     obs_b = jnp.ones(8)
 
-    # When we walk both forward layer-by-layer (replicating __call__ inline so we
-    # can inspect intermediate activations).
-    def hidden_outputs(x):
-        h = jax.nn.relu(net.hidden_layers[0](x))
-        outs = [h]
-        for layer in net.hidden_layers[1:]:
-            h = jax.nn.relu(layer(jnp.concatenate([h, x], axis=-1)))
-            outs.append(h)
-        return outs
+    # When: measure obs-sensitivity of the real network via __call__.
+    delta_full = jnp.linalg.norm(net(obs_b) - net(obs_a))
 
-    outs_a = hidden_outputs(obs_a)
-    outs_b = hidden_outputs(obs_b)
+    # And: ablate obs-slice columns of every hidden layer past the first
+    # (these are the columns dense-skip routes obs through; layer 0 has no concat).
+    def zero_obs_slice(layer):
+        ablated_w = layer.weight.at[:, width_size:].set(0.0)
+        return eqx.tree_at(lambda lin: lin.weight, layer, ablated_w)
 
-    # Then: layer 0 already sees obs (no concat needed), so it should differ.
-    # Layers 1+ should ALSO differ — and crucially, the difference at layer i+1
-    # depends on obs reaching it directly, not just through h_prev.
-    for i, (a, b) in enumerate(zip(outs_a, outs_b, strict=True)):
-        assert not jnp.allclose(a, b), f"hidden layer {i} did not react to obs change"
+    ablated_hidden = (
+        net.hidden_layers[0],
+        *(zero_obs_slice(layer) for layer in net.hidden_layers[1:]),
+    )
+    net_ablated = eqx.tree_at(lambda n: n.hidden_layers, net, ablated_hidden)
+    delta_ablated = jnp.linalg.norm(net_ablated(obs_b) - net_ablated(obs_a))
+
+    # Then: ablating must strictly reduce sensitivity. Otherwise __call__ wasn't
+    # using the concat in the first place.
+    assert delta_ablated < delta_full, (
+        f"Ablating obs-slice columns did not reduce obs-sensitivity "
+        f"(full={delta_full:.4f}, ablated={delta_ablated:.4f}) — "
+        f"__call__ probably bypasses the dense-skip concat."
+    )
 
 
 @pytest.mark.unit
