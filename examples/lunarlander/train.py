@@ -1,9 +1,10 @@
-"""Train PPO with a D2RL dense-residual MLP on LunarLander-v3.
+"""Train SAC with a D2RL dense-residual MLP on LunarLander-v3.
 
-A fun visual demo showcasing rltrain's pluggable network surface: PPO learns
-to land the lander using a D2RL-style dense-residual MLP (Sinha et al. 2020),
-where every hidden layer concatenates the raw observation with the previous
-hidden activation. Periodic video rollouts let you watch the agent improve
+A fun visual demo showcasing rltrain's pluggable network surface: SAC learns
+to land the lander using a D2RL-style dense-residual MLP (Sinha et al. 2020)
+and three principled 3e-4 Adam optimisers (actor, twin critics, auto-tuned
+alpha). Every hidden layer concatenates the raw observation with the previous
+hidden activation; periodic video rollouts let you watch the agent improve
 across checkpoints.
 
 LunarLander-v3 is a gymnasium env, so the trainer auto-selects the Python
@@ -35,7 +36,7 @@ from rltrain.trainer import Trainer
 
 
 EXAMPLES_DIR = Path(__file__).parent
-AGENT_CFG = json.loads((EXAMPLES_DIR / "ppo_d2rl.json").read_text())
+AGENT_CFG = json.loads((EXAMPLES_DIR / "sac_d2rl.json").read_text())
 ENV_CFG = json.loads((EXAMPLES_DIR / "env.json").read_text())
 RUN_DIR = Path("results/lunarlander_d2rl") / datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
 NUM_STEPS = 500_000
@@ -44,7 +45,7 @@ SEED = 42
 
 
 def main() -> None:
-    """Run the LunarLander PPO + D2RL + video-recording demo."""
+    """Run the LunarLander SAC + D2RL + video-recording demo."""
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     key = jax.random.key(SEED)
     k_agent, k_fit = jax.random.split(key)
@@ -58,6 +59,9 @@ def main() -> None:
         num_steps=NUM_STEPS,
         checkpoint_steps=CHECKPOINT_STEPS,
         run_dir=RUN_DIR,
+        batch_size=256,
+        buffer_capacity=100_000,
+        min_buffer_size=1_000,
         callbacks=[
             CSVLoggerCallback(),
             PlotCallback(num_steps=NUM_STEPS),
@@ -71,7 +75,7 @@ def main() -> None:
         seed=SEED,
     )
 
-    print(f"Training PPO + D2RL on {ENV_CFG['id']} for {NUM_STEPS:,} steps...")
+    print(f"Training SAC + D2RL on {ENV_CFG['id']} for {NUM_STEPS:,} steps...")
     print(f"Run directory: {RUN_DIR}")
     print(f"Videos will be saved to {RUN_DIR / 'videos'}/")
     trainer.fit(k_fit)
