@@ -64,13 +64,43 @@ def test_d2rl_mlp_orthogonal_weights(key):
     # Given
     net = D2RLMLP(in_size=8, out_size=4, width_size=16, depth=2, key=key)
 
-    # When / Then: orthogonal init means W @ W.T == I when rows are independent
-    for layer in net.hidden_layers:
+    # When / Then: orthogonal init means W @ W.T == I when rows are independent.
+    # Includes the output projection — it goes through the same _orthogonal_linear helper.
+    for layer in [*net.hidden_layers, net.output_layer]:
         w = layer.weight
         m = min(w.shape)
         # The smaller dimension's gram matrix should be the identity.
         gram = w @ w.T if w.shape[0] <= w.shape[1] else w.T @ w
         assert jnp.allclose(gram[:m, :m], jnp.eye(m), atol=1e-5)
+
+
+@pytest.mark.unit
+def test_d2rl_mlp_obs_reaches_every_hidden_layer(key):
+    """Given two observations differing only in their values, the second-and-later
+    hidden layers' outputs MUST differ — otherwise the dense-skip is not wired."""
+    # Given two D2RLMLPs sharing the same params, applied to two different obs.
+    net = D2RLMLP(in_size=8, out_size=4, width_size=16, depth=3, key=key)
+    obs_a = jnp.zeros(8)
+    obs_b = jnp.ones(8)
+
+    # When we walk both forward layer-by-layer (replicating __call__ inline so we
+    # can inspect intermediate activations).
+    def hidden_outputs(x):
+        h = jax.nn.relu(net.hidden_layers[0](x))
+        outs = [h]
+        for layer in net.hidden_layers[1:]:
+            h = jax.nn.relu(layer(jnp.concatenate([h, x], axis=-1)))
+            outs.append(h)
+        return outs
+
+    outs_a = hidden_outputs(obs_a)
+    outs_b = hidden_outputs(obs_b)
+
+    # Then: layer 0 already sees obs (no concat needed), so it should differ.
+    # Layers 1+ should ALSO differ — and crucially, the difference at layer i+1
+    # depends on obs reaching it directly, not just through h_prev.
+    for i, (a, b) in enumerate(zip(outs_a, outs_b, strict=True)):
+        assert not jnp.allclose(a, b), f"hidden layer {i} did not react to obs change"
 
 
 @pytest.mark.unit

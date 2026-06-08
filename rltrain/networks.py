@@ -8,8 +8,11 @@ from jaxtyping import Array, Float, PRNGKeyArray
 
 def _orthogonal_linear(in_features: int, out_features: int, key: PRNGKeyArray) -> eqx.nn.Linear:
     """Create an `eqx.nn.Linear` and overwrite its weight with an orthogonal sample."""
-    w_key, b_key = jax.random.split(key)
-    linear = eqx.nn.Linear(in_features, out_features, key=b_key)
+    w_key, linear_key = jax.random.split(key)
+    # ``linear_key`` seeds eqx.nn.Linear's default (LeCun-uniform) init for both weight
+    # and bias; the weight is then immediately overwritten with the orthogonal sample,
+    # so only the bias init survives.
+    linear = eqx.nn.Linear(in_features, out_features, key=linear_key)
     initializer = jax.nn.initializers.orthogonal()
     new_weight = initializer(w_key, linear.weight.shape, jnp.float32)
     return eqx.tree_at(lambda lin: lin.weight, linear, new_weight)
