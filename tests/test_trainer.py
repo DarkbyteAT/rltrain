@@ -412,9 +412,9 @@ def test_trainer_python_loop_gymnasium_warm_starts_running_return():
     ep0_episode, ep0_return, _ep0_length, ep0_running = episode_calls[0]
     assert ep0_episode == 0
     assert ep0_running == pytest.approx(ep0_return, rel=1e-5), (
-        f"First episode's running_return ({ep0_running}) must equal its return "
-        f"({ep0_return}) — got {0.1 * ep0_return:.4f} would indicate the "
-        f"cold-start bug."
+        f"First episode's running_return must equal its return ({ep0_return:.4f}); "
+        f"would have been {0.1 * ep0_return:.4f} under the cold-start bug; "
+        f"got {ep0_running:.4f}."
     )
 
     # And: second episode's running_return == 0.1 * ep1_return + 0.9 * ep0_return.

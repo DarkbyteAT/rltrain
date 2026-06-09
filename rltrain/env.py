@@ -60,7 +60,10 @@ class EnvState:
     ``NaN`` as a sentinel for "no completed episode yet"; on the first
     ``done`` the EMA is warm-started to the first episode's return rather
     than EMA-blended with zero (which would underweight the first measurement
-    by a factor of ``reward_run_rate``).
+    by a factor of ``reward_run_rate``). Consumers that read
+    ``running_return`` BEFORE the first episode terminates MUST guard with
+    ``jnp.isnan(...)`` — the built-in callbacks only consume it at
+    ``on_episode_end``, by which point it is always a real number.
     """
 
     internal: Any  # gymnax env-specific state

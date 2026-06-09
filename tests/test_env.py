@@ -12,6 +12,7 @@ def key():
     return jax.random.PRNGKey(0)
 
 
+@pytest.mark.unit
 def test_gymnax_env_reset(key):
     """Given a gymnax env, reset returns a valid EnvState."""
     env = GymnaxEnv("CartPole-v1")
@@ -59,14 +60,18 @@ def test_gymnax_env_running_return_warm_starts_on_first_episode(key):
 def test_gymnax_env_running_return_emas_after_warm_start(key):
     """After the warm-start, running_return must EMA-blend subsequent episodes
     against the prior running_return per ``reward_run_rate``."""
-    # Given a GymnaxEnv with reward_run_rate=0.3 (chosen distinct from defaults
-    # so an off-by-one in the formula would surface).
+    # Given a GymnaxEnv with reward_run_rate=0.3 (chosen asymmetric (≠0.5) so
+    # both swapped weights and swapped operands of the EMA formula surface).
     beta = 0.3
     env = GymnaxEnv("CartPole-v1", reward_run_rate=beta)
     state = env.reset(key)
     rollout_key = jax.random.PRNGKey(7)
 
-    # When we run for two completed episodes.
+    # When we run for two completed episodes. ``pre_step_return`` reconstructs
+    # the pre-reset ``episode_return`` (which env.py:112 computes via
+    # ``state.episode_return + reward`` before clearing on done) — this couples
+    # the test to ``EnvState.reward`` being the immediate-step reward (per
+    # env.py:137); if that semantics ever changed the test would silently break.
     returns = []
     pre_step_return = 0.0
     for _ in range(2000):
