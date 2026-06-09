@@ -56,7 +56,14 @@ class EnvState:
 
     ``running_return`` is an EMA over completed-episode returns, updated only
     when ``done`` fires. Between episodes it carries the previous value so
-    downstream metrics see a stable smoothed signal.
+    downstream metrics see a stable smoothed signal. It is initialised to
+    ``NaN`` as a sentinel for "no completed episode yet"; on the first
+    ``done`` the EMA is warm-started to the first episode's return rather
+    than EMA-blended with zero (which would underweight the first measurement
+    by a factor of ``reward_run_rate``). Consumers that read
+    ``running_return`` BEFORE the first episode terminates MUST guard with
+    ``jnp.isnan(...)`` — the built-in callbacks only consume it at
+    ``on_episode_end``, by which point it is always a real number.
     """
 
     internal: Any  # gymnax env-specific state
@@ -99,7 +106,7 @@ class GymnaxEnv:
             reward=jnp.array(0.0),
             episode_return=jnp.array(0.0),
             episode_length=jnp.array(0, dtype=jnp.int32),
-            running_return=jnp.array(0.0),
+            running_return=jnp.array(jnp.nan, dtype=jnp.float32),
         )
 
     def step(self, state: EnvState, action: chex.Array, key: PRNGKeyArray) -> EnvState:
@@ -117,10 +124,14 @@ class GymnaxEnv:
         new_episode_return = jnp.where(done, 0.0, episode_return)
         new_episode_length = jnp.where(done, 0, episode_length)
 
-        # EMA running_return only updates on episode boundaries
+        # EMA running_return only updates on episode boundaries. On the very
+        # first completed episode the prior ``running_return`` is NaN; warm-
+        # start to the episode return so the first measurement isn't blended
+        # with zero (which would underweight it by ``reward_run_rate``).
         beta = self.reward_run_rate
-        ema_new = beta * episode_return + (1.0 - beta) * state.running_return
-        new_running_return = jnp.where(done, ema_new, state.running_return)
+        ema_blend = beta * episode_return + (1.0 - beta) * state.running_return
+        warm_or_ema = jnp.where(jnp.isnan(state.running_return), episode_return, ema_blend)
+        new_running_return = jnp.where(done, warm_or_ema, state.running_return)
 
         return EnvState(
             internal=new_internal,
