@@ -1,11 +1,20 @@
 """Train SAC with a D2RL dense-residual MLP on LunarLander-v3.
 
 A fun visual demo showcasing rltrain's pluggable network surface: SAC learns
-to land the lander using a D2RL-style dense-residual MLP (Sinha et al. 2020)
-and three principled 3e-4 Adam optimisers (actor, twin critics, auto-tuned
-alpha). Every hidden layer concatenates the raw observation with the previous
-hidden activation; periodic video rollouts let you watch the agent improve
-across checkpoints.
+to land the lander using a D2RL-style dense-residual MLP (Sinha et al. 2020),
+three 3e-4 Adam optimisers (actor, twin critics, auto-tuned alpha), and
+prioritised experience replay. Every hidden layer concatenates the raw
+observation with the previous hidden activation; periodic video rollouts let
+you watch the agent improve across checkpoints.
+
+Hyperparameter notes:
+  - ``target_entropy = 0.693`` (= 0.5 * log(|A|)) — Christodoulou 2019's
+    default of 0.98 * log(|A|) is too close to maximum entropy and collapses
+    the policy toward uniform on LunarLander; 0.5 scaling is the standard
+    follow-up reduction in the discrete-SAC literature.
+  - ``prioritised=True`` — PER lets SAC focus learning capacity on transitions
+    with high TD-error. rltrain's SAC critic loss already honours
+    ``batch.is_weights`` and emits ``td_errors`` for priority updates.
 
 LunarLander-v3 is a gymnasium env, so the trainer auto-selects the Python
 loop (not lax.scan). The agent itself still jits once; only the env step is
@@ -62,6 +71,7 @@ def main() -> None:
         batch_size=256,
         buffer_capacity=100_000,
         min_buffer_size=1_000,
+        prioritised=True,
         callbacks=[
             CSVLoggerCallback(),
             PlotCallback(num_steps=NUM_STEPS),

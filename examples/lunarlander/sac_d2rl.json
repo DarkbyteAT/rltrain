@@ -2,6 +2,7 @@
     "fqn": "rltrain.agents.SAC",
     "gamma": 0.99,
     "tau": 0.005,
+    "target_entropy": 0.693,
     "actor": {
         "fqn": "rltrain.networks.D2RLMLP",
         "in_size": 8,
