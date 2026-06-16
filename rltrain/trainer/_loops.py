@@ -389,7 +389,13 @@ class PythonLoop:
 
                     if step_done:
                         beta = getattr(env, "reward_run_rate", 0.1)
-                        running_return = beta * episode_return + (1.0 - beta) * running_return
+                        # Warm-start the EMA on the first completed episode so the first
+                        # measurement isn't blended with the initial zero (which would
+                        # underweight it by a factor of ``reward_run_rate``).
+                        if episode_count == 0:
+                            running_return = episode_return
+                        else:
+                            running_return = beta * episode_return + (1.0 - beta) * running_return
                         for cb in callbacks:
                             cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
                         episode_count += 1
@@ -412,7 +418,13 @@ class PythonLoop:
 
                     if bool(done):
                         beta = getattr(env, "reward_run_rate", 0.1)
-                        running_return = beta * episode_return + (1.0 - beta) * running_return
+                        # Warm-start the EMA on the first completed episode so the first
+                        # measurement isn't blended with the initial zero (which would
+                        # underweight it by a factor of ``reward_run_rate``).
+                        if episode_count == 0:
+                            running_return = episode_return
+                        else:
+                            running_return = beta * episode_return + (1.0 - beta) * running_return
                         for cb in callbacks:
                             cb.on_episode_end(episode_count, episode_return, episode_length, running_return)
                         episode_count += 1

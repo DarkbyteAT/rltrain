@@ -11,7 +11,7 @@ import pytest
 
 from rltrain.agents.vanilla_dqn import VanillaDQN
 from rltrain.agents.vanilla_pg import VanillaPG
-from rltrain.env import EnvCapabilities, GymnaxEnv
+from rltrain.env import EnvCapabilities, GymnasiumEnv, GymnaxEnv
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
 from rltrain.trainer import Trainer
@@ -372,11 +372,59 @@ def test_scan_episode_return_nonzero():
         assert ep_return > 0.0, f"Episode return should be > 0, got {ep_return}"
 
 
-# NOTE (I2): No test for GymnasiumEnv + _fit_python path.
-# The spike venv does not install gymnasium, so we cannot instantiate a
-# GymnasiumEnv to exercise the Python-loop fallback. This is a known gap;
-# the path is structurally similar to _fit_gymnax_python_loop and will be
-# covered when the spike is integrated into the main repo with gymnasium.
+@pytest.mark.integration
+def test_trainer_python_loop_gymnasium_warm_starts_running_return():
+    """Given a Trainer running over a GymnasiumEnv (PythonLoop, non-pure-step
+    branch), When the first episode completes, Then the ``running_return`` passed
+    to ``on_episode_end`` MUST equal that episode's return — not the cold-start
+    EMA blend with zero (which would underweight by ``reward_run_rate``)."""
+    # Given a DQN agent (gymnasium-friendly via PythonLoop) + a CartPole-v1
+    # gymnasium env (episodes end quickly under random/early policy).
+    key = jax.random.PRNGKey(9)
+    k_agent, k_fit = jax.random.split(key)
+
+    agent = _make_dqn_agent(k_agent)
+    # GymnasiumEnv doesn't accept reward_run_rate (the PythonLoop falls back to
+    # 0.1 via getattr — a separate gap worth a follow-up but not the cold-start
+    # bug this test targets).
+    env = GymnasiumEnv("CartPole-v1")
+
+    recorder = _RecordingCallback()
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=512,  # >= a few CartPole-random episodes
+        checkpoint_steps=256,
+        buffer_capacity=512,
+        batch_size=32,
+        min_buffer_size=32,
+        callbacks=[recorder],
+    )
+    trainer.fit(k_fit)
+
+    # When we extract the on_episode_end call sequence.
+    episode_calls = [args for name, args in recorder.calls if name == "on_episode_end"]
+    assert len(episode_calls) >= 2, (
+        f"Need at least 2 episodes to test warm-start + subsequent EMA, got {len(episode_calls)}"
+    )
+
+    # Then: first episode's running_return == first episode's return (warm-start).
+    ep0_episode, ep0_return, _ep0_length, ep0_running = episode_calls[0]
+    assert ep0_episode == 0
+    assert ep0_running == pytest.approx(ep0_return, rel=1e-5), (
+        f"First episode's running_return must equal its return ({ep0_return:.4f}); "
+        f"would have been {0.1 * ep0_return:.4f} under the cold-start bug; "
+        f"got {ep0_running:.4f}."
+    )
+
+    # And: second episode's running_return == 0.1 * ep1_return + 0.9 * ep0_return.
+    ep1_episode, ep1_return, _ep1_length, ep1_running = episode_calls[1]
+    assert ep1_episode == 1
+    expected_ep1 = 0.1 * ep1_return + 0.9 * ep0_return
+    assert ep1_running == pytest.approx(expected_ep1, rel=1e-5), (
+        f"Second episode's running_return ({ep1_running}) must EMA-blend "
+        f"against the warm-started prior; expected {expected_ep1:.4f}"
+    )
 
 
 @pytest.mark.integration
