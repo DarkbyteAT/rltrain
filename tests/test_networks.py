@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from rltrain.networks import D2RLMLP, MLP
+from rltrain.networks import D2RLMLP, MLP, ConvD2RLMLP
 
 
 @pytest.fixture
@@ -129,3 +129,132 @@ def test_d2rl_mlp_is_eqx_module(key):
     # vmap over a batch of obs should work
     batched = jax.vmap(net)(jnp.zeros((5, 8)))
     assert batched.shape == (5, 4)
+
+
+@pytest.mark.unit
+def test_conv_d2rl_mlp_forward_shape(key):
+    """Given a (10, 10, 4) image obs, ConvD2RLMLP produces an out-sized vector
+    and vmap'd batches preserve the leading axis."""
+    # Given
+    net = ConvD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=5,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+    obs = jnp.zeros((10, 10, 4))
+
+    # When
+    y = net(obs)
+    batched = jax.vmap(net)(jnp.zeros((7, 10, 10, 4)))
+
+    # Then
+    assert y.shape == (5,)
+    assert batched.shape == (7, 5)
+
+
+@pytest.mark.unit
+def test_conv_d2rl_mlp_param_count_topology(key):
+    """Given default Breakout-MinAtar dims, the conv, projection, and D2RL
+    backbone weights satisfy the principled topology: the projection actually
+    projects from the conv flat-dim down to feature_dim, and the D2RL backbone
+    sees feature_dim (not the conv flat-dim) on its first hidden layer."""
+    # Given
+    net = ConvD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=3,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+
+    # When / Then: conv weight is (C_out, C_in, k, k)
+    assert net.conv.weight.shape == (16, 4, 3, 3)
+
+    # Projection takes the flattened conv output (16 * 8 * 8 = 1024) to feature_dim.
+    # H' = 10 - 3 + 1 = 8, W' = 8.
+    assert net.projection.weight.shape == (128, 1024)
+
+    # D2RL backbone's first hidden layer takes feature_dim (128) not flat_dim (1024).
+    # Hidden weight shape is (width, in_size) for the first layer.
+    assert net.d2rl.hidden_layers[0].weight.shape == (256, 128)
+    # And subsequent hidden layers use the [h_prev; z] concat: (256, 256 + 128).
+    for layer in net.d2rl.hidden_layers[1:]:
+        assert layer.weight.shape == (256, 256 + 128)
+    assert net.d2rl.output_layer.weight.shape == (3, 256)
+
+
+@pytest.mark.unit
+def test_conv_d2rl_mlp_orthogonal_weights(key):
+    """Given orthogonal init, conv, projection, and every D2RL Linear satisfy
+    W W^T ~ I on the smaller axis."""
+    # Given
+    net = ConvD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=3,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+
+    def gram_is_identity(w):
+        m = min(w.shape)
+        gram = w @ w.T if w.shape[0] <= w.shape[1] else w.T @ w
+        return jnp.allclose(gram[:m, :m], jnp.eye(m), atol=1e-5)
+
+    # When / Then: reshape conv weight (C_out, C_in, k, k) -> (C_out, C_in * k * k)
+    conv_w = net.conv.weight
+    conv_2d = conv_w.reshape(conv_w.shape[0], -1)
+    assert gram_is_identity(conv_2d), "conv weight is not orthogonal"
+    assert gram_is_identity(net.projection.weight), "projection weight is not orthogonal"
+    for layer in [*net.d2rl.hidden_layers, net.d2rl.output_layer]:
+        assert gram_is_identity(layer.weight), "D2RL backbone Linear is not orthogonal"
+
+
+@pytest.mark.unit
+def test_conv_d2rl_mlp_obs_reaches_d2rl_backbone(key):
+    """Given two different observations, the network produces different outputs.
+    The conv + projection + ReLU chain is not cleanly ablatable (ReLU can zero
+    out signal even when topology is correct), so this is a light end-to-end
+    behavioural probe that the obs influences the output."""
+    # Given
+    net = ConvD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=3,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+    obs_a = jnp.zeros((10, 10, 4))
+    # Non-zero observation: full of ones so every channel and spatial location is excited.
+    obs_b = jnp.ones((10, 10, 4))
+
+    # When
+    y_a = net(obs_a)
+    y_b = net(obs_b)
+
+    # Then
+    assert not jnp.allclose(y_a, y_b), (
+        f"Outputs for distinct observations are equal: {y_a} == {y_b} — the obs is not reaching the D2RL backbone."
+    )
