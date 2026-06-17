@@ -28,5 +28,7 @@ convention = "google"
 # Example scripts are demonstrations, not library code — D rules add noise.
 # F722 covers jaxtyping shape strings ("B H W C") that some example runners use.
 "examples/**" = ["D", "F722"]
+# Scripts are demonstrations / smoke tests, not library code.
+"scripts/**" = ["D", "F841"]
 # jaxtyping annotations are valid but ruff can't parse them
 "rltrain/**" = ["F722"]

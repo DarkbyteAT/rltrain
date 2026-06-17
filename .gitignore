@@ -183,3 +183,4 @@ Thumbs.db
 .claude/worktrees/
 .superpowers/
 .venv-spike/
+.venv-mlx/
