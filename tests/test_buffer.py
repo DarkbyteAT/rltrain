@@ -7,6 +7,7 @@ import pytest
 
 from rltrain.buffer import (
     buffer_add,
+    buffer_add_batch,
     buffer_drain,
     buffer_sample,
     buffer_shuffle_into_minibatches,
@@ -135,3 +136,74 @@ def test_buffer_sample_prioritised(buffer, sample_transition, key):
     batch, indices, is_weights = buffer_sample(buffer, key, batch_size=4, prioritised=True)
     chex.assert_shape(batch.obs, (4, 4))
     chex.assert_shape(is_weights, (4,))
+
+
+# ---------------------------------------------------------------------------
+# buffer_add_batch — multi-env path
+# ---------------------------------------------------------------------------
+
+
+def _batched_transition(n: int, *, base: float = 0.0):
+    """Build a (n, ...) batched transition with distinguishable obs rows."""
+    return make_transition(
+        obs=jnp.arange(n * 4, dtype=jnp.float32).reshape(n, 4) + base,
+        action=jnp.arange(n),
+        reward=jnp.arange(n, dtype=jnp.float32),
+        next_obs=jnp.arange(n * 4, dtype=jnp.float32).reshape(n, 4) + 100 + base,
+        done=jnp.zeros(n, dtype=jnp.bool_),
+    )
+
+
+@pytest.mark.unit
+def test_buffer_add_batch_advances_cursor_by_n():
+    """Given an empty buffer, add_batch with N transitions advances cursor to N and size to N."""
+    buf = make_buffer(capacity=16, obs_shape=(4,), action_shape=())
+    batch = _batched_transition(n=5)
+
+    new_buf = buffer_add_batch(buf, batch)
+
+    assert int(new_buf.write_idx) == 5
+    assert int(new_buf.size) == 5
+
+
+@pytest.mark.unit
+def test_buffer_add_batch_wraps_around():
+    """Given a buffer near capacity, add_batch wraps the write cursor correctly."""
+    buf = make_buffer(capacity=4, obs_shape=(4,), action_shape=())
+    batch = _batched_transition(n=6)
+
+    new_buf = buffer_add_batch(buf, batch)
+
+    # After writing 6 to a capacity-4 buffer: cursor at 6 mod 4 = 2, size clamped to 4.
+    assert int(new_buf.write_idx) == 2
+    assert int(new_buf.size) == 4
+
+
+@pytest.mark.unit
+def test_buffer_add_batch_preserves_data_order():
+    """Sequential rows in the batch land in sequential buffer slots."""
+    buf = make_buffer(capacity=8, obs_shape=(4,), action_shape=())
+    batch = _batched_transition(n=3)
+
+    new_buf = buffer_add_batch(buf, batch)
+
+    chex.assert_trees_all_close(new_buf.data.obs[0], batch.obs[0])
+    chex.assert_trees_all_close(new_buf.data.obs[1], batch.obs[1])
+    chex.assert_trees_all_close(new_buf.data.obs[2], batch.obs[2])
+    chex.assert_trees_all_close(new_buf.data.reward[:3], batch.reward)
+
+
+@pytest.mark.unit
+def test_buffer_add_batch_sequential_calls_accumulate():
+    """Two add_batch calls in sequence advance the cursor cumulatively."""
+    buf = make_buffer(capacity=16, obs_shape=(4,), action_shape=())
+    batch_a = _batched_transition(n=3)
+    batch_b = _batched_transition(n=4, base=1000.0)
+
+    buf = buffer_add_batch(buf, batch_a)
+    buf = buffer_add_batch(buf, batch_b)
+
+    assert int(buf.write_idx) == 7
+    assert int(buf.size) == 7
+    # Slot 3 must be the first row of batch_b (not the first of batch_a).
+    chex.assert_trees_all_close(buf.data.obs[3], batch_b.obs[0])

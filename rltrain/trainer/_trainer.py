@@ -169,9 +169,16 @@ class Trainer:
         if loop is not None:
             self._loop = loop
         elif env.capabilities.scan_rollout:
-            from rltrain.trainer._loops import ScanLoop
+            # ``num_envs > 1`` on a scannable env dispatches to the
+            # vectorised path; otherwise the single-env ScanLoop.
+            if getattr(env, "num_envs", 1) > 1:
+                from rltrain.trainer._loops import VectorisedScanLoop
 
-            self._loop = ScanLoop()
+                self._loop = VectorisedScanLoop()
+            else:
+                from rltrain.trainer._loops import ScanLoop
+
+                self._loop = ScanLoop()
         else:
             from rltrain.trainer._loops import PythonLoop
 
@@ -195,8 +202,11 @@ class Trainer:
                     obs = obs[0]
         else:
             obs = jnp.zeros(self.env.obs_shape)
-        if obs.ndim > 1:
-            # Batched env — strip the leading axis to probe a single-element action shape.
+        # Strip the leading batch dim ONLY if the env reports parallel copies.
+        # Previous heuristic was ``obs.ndim > 1`` — wrong for image envs
+        # (single obs is ndim=3) and silently mutilated the probe shape.
+        num_envs = getattr(self.env, "num_envs", 1)
+        if num_envs > 1:
             action = self.agent.act(state, obs[0], k_act)
         else:
             action = self.agent.act(state, obs, k_act)

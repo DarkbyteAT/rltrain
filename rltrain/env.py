@@ -56,7 +56,14 @@ class EnvState:
 
     ``running_return`` is an EMA over completed-episode returns, updated only
     when ``done`` fires. Between episodes it carries the previous value so
-    downstream metrics see a stable smoothed signal.
+    downstream metrics see a stable smoothed signal. It is initialised to
+    ``NaN`` as a sentinel for "no completed episode yet"; on the first
+    ``done`` the EMA is warm-started to the first episode's return rather
+    than EMA-blended with zero (which would underweight the first measurement
+    by a factor of ``reward_run_rate``). Consumers that read
+    ``running_return`` BEFORE the first episode terminates MUST guard with
+    ``jnp.isnan(...)`` — the built-in callbacks only consume it at
+    ``on_episode_end``, by which point it is always a real number.
     """
 
     internal: Any  # gymnax env-specific state
@@ -72,25 +79,53 @@ class GymnaxEnv:
     """Wrapper around a gymnax environment exposing a pure-function step.
 
     All methods are pure functions suitable for ``jit``, ``vmap``, and ``scan``.
+
+    Vectorisation: pass ``num_envs > 1`` to run ``num_envs`` parallel copies
+    via ``jax.vmap``. ``reset(key)`` and ``step(state, action, key)`` then
+    expect / return state with a leading ``num_envs`` axis on every field.
+    The single-env path (``num_envs=1``) is unchanged — no leading dim added.
     """
 
     capabilities = EnvCapabilities(pure_step=True, vmap_batch=True, scan_rollout=True)
 
-    def __init__(self, env_name: str, *, reward_run_rate: float = 0.1):
+    def __init__(self, env_name: str, *, reward_run_rate: float = 0.1, num_envs: int = 1):
         """Initialise from a gymnax environment name (e.g. ``'CartPole-v1'``).
 
         Args:
             env_name: gymnax environment identifier.
             reward_run_rate: EMA mixing weight for ``running_return`` updates
                 on episode completion. Matches the PyTorch MDP's ``run_beta``.
+            num_envs: Number of parallel env copies to vmap over. ``1`` keeps
+                the single-env semantics (no leading axis).
         """
+        if num_envs < 1:
+            raise ValueError(f"num_envs must be >= 1, got {num_envs}")
         self.env, self.env_params = gymnax.make(env_name)
         self.obs_shape: tuple[int, ...] = self.env.obs_shape
         self.num_actions: int = self.env.num_actions
         self.reward_run_rate: float = reward_run_rate
+        self.num_envs: int = num_envs
 
     def reset(self, key: PRNGKeyArray) -> EnvState:
-        """Reset the environment, returning initial state."""
+        """Reset the environment. Returns a batched ``EnvState`` when ``num_envs > 1``."""
+        if self.num_envs == 1:
+            return self._reset_single(key)
+        keys = jax.random.split(key, self.num_envs)
+        return jax.vmap(self._reset_single)(keys)
+
+    def step(self, state: EnvState, action: chex.Array, key: PRNGKeyArray) -> EnvState:
+        """Step the environment, returning a batched ``EnvState`` when ``num_envs > 1``.
+
+        When ``num_envs > 1``, ``state`` and ``action`` must carry a leading
+        ``num_envs`` axis; the returned ``EnvState`` does too.
+        """
+        if self.num_envs == 1:
+            return self._step_single(state, action, key)
+        keys = jax.random.split(key, self.num_envs)
+        return jax.vmap(self._step_single)(state, action, keys)
+
+    def _reset_single(self, key: PRNGKeyArray) -> EnvState:
+        """Reset a single env copy and return its initial ``EnvState``."""
         obs, internal = self.env.reset(key, self.env_params)
         return EnvState(
             internal=internal,
@@ -99,11 +134,11 @@ class GymnaxEnv:
             reward=jnp.array(0.0),
             episode_return=jnp.array(0.0),
             episode_length=jnp.array(0, dtype=jnp.int32),
-            running_return=jnp.array(0.0),
+            running_return=jnp.array(jnp.nan, dtype=jnp.float32),
         )
 
-    def step(self, state: EnvState, action: chex.Array, key: PRNGKeyArray) -> EnvState:
-        """Take one step, auto-resetting on done."""
+    def _step_single(self, state: EnvState, action: chex.Array, key: PRNGKeyArray) -> EnvState:
+        """Step a single env copy, auto-resetting on done. Pure: jit/vmap-safe."""
         obs, internal, reward, done, info = self.env.step(key, state.internal, action, self.env_params)
         episode_return = state.episode_return + reward
         episode_length = state.episode_length + 1
@@ -117,10 +152,14 @@ class GymnaxEnv:
         new_episode_return = jnp.where(done, 0.0, episode_return)
         new_episode_length = jnp.where(done, 0, episode_length)
 
-        # EMA running_return only updates on episode boundaries
+        # EMA running_return only updates on episode boundaries. On the very
+        # first completed episode the prior ``running_return`` is NaN; warm-
+        # start to the episode return so the first measurement isn't blended
+        # with zero (which would underweight it by ``reward_run_rate``).
         beta = self.reward_run_rate
-        ema_new = beta * episode_return + (1.0 - beta) * state.running_return
-        new_running_return = jnp.where(done, ema_new, state.running_return)
+        ema_blend = beta * episode_return + (1.0 - beta) * state.running_return
+        warm_or_ema = jnp.where(jnp.isnan(state.running_return), episode_return, ema_blend)
+        new_running_return = jnp.where(done, warm_or_ema, state.running_return)
 
         return EnvState(
             internal=new_internal,

@@ -1,0 +1,44 @@
+{
+    "fqn": "rltrain.agents.SAC",
+    "gamma": 0.99,
+    "tau": 0.005,
+    "target_entropy": 0.693,
+    "actor": {
+        "fqn": "rltrain.networks.D2RLMLP",
+        "in_size": 8,
+        "out_size": 256,
+        "width_size": 256,
+        "depth": 4
+    },
+    "critic_1": {
+        "fqn": "rltrain.networks.D2RLMLP",
+        "in_size": 8,
+        "out_size": 4,
+        "width_size": 256,
+        "depth": 4
+    },
+    "critic_2": {
+        "fqn": "rltrain.networks.D2RLMLP",
+        "in_size": 8,
+        "out_size": 4,
+        "width_size": 256,
+        "depth": 4
+    },
+    "action_head": {
+        "fqn": "rltrain.heads.DiscreteHead",
+        "feature_dim": 256,
+        "action_dim": 4
+    },
+    "actor_optimizer": {
+        "fqn": "optax.adam",
+        "learning_rate": 3e-4
+    },
+    "critic_optimizer": {
+        "fqn": "optax.adam",
+        "learning_rate": 3e-4
+    },
+    "alpha_optimizer": {
+        "fqn": "optax.adam",
+        "learning_rate": 3e-4
+    }
+}

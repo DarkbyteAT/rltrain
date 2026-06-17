@@ -167,7 +167,7 @@ def _make_spo(key):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_pg_scan_compiles():
     """Given a VanillaPG agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -183,7 +183,7 @@ def test_vanilla_pg_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_pg_scan_params_change():
     """Given a VanillaPG agent, scanning K steps produces different params from init."""
     # Given
@@ -198,7 +198,7 @@ def test_vanilla_pg_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_pg_scan_metrics_shape():
     """Given a VanillaPG agent, scan metrics have shape (K,) and are all finite."""
     # Given
@@ -219,7 +219,7 @@ def test_vanilla_pg_scan_metrics_shape():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_reinforce_scan_compiles():
     """Given a REINFORCE agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -235,7 +235,7 @@ def test_reinforce_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_reinforce_scan_params_change():
     """Given a REINFORCE agent, scanning K steps produces different params from init."""
     # Given
@@ -250,7 +250,7 @@ def test_reinforce_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_reinforce_scan_metrics_shape():
     """Given a REINFORCE agent, scan metrics have shape (K,) and are all finite."""
     # Given
@@ -271,7 +271,7 @@ def test_reinforce_scan_metrics_shape():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_ac_scan_compiles():
     """Given a VanillaAC agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -287,7 +287,7 @@ def test_vanilla_ac_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_ac_scan_params_change():
     """Given a VanillaAC agent, scanning K steps produces different params from init."""
     # Given
@@ -302,7 +302,7 @@ def test_vanilla_ac_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_ac_scan_metrics_shape():
     """Given a VanillaAC agent, scan metrics have shape (K,) and are all finite."""
     # Given
@@ -323,7 +323,7 @@ def test_vanilla_ac_scan_metrics_shape():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_advantage_ac_scan_compiles():
     """Given an AdvantageAC agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -339,7 +339,7 @@ def test_advantage_ac_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_advantage_ac_scan_params_change():
     """Given an AdvantageAC agent, scanning K steps produces different params from init."""
     # Given
@@ -354,7 +354,7 @@ def test_advantage_ac_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_advantage_ac_scan_metrics_shape():
     """Given an AdvantageAC agent, scan metrics have shape (K,) and are all finite."""
     # Given
@@ -377,7 +377,7 @@ def test_advantage_ac_scan_metrics_shape():
 PPO_BATCH_SIZE = 32  # must be divisible by MINIBATCH (16)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_ppo_scan_compiles():
     """Given a PPO agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -393,7 +393,7 @@ def test_ppo_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_ppo_scan_params_change():
     """Given a PPO agent, scanning K steps produces different params from init."""
     # Given
@@ -408,7 +408,7 @@ def test_ppo_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_ppo_scan_metrics_shape():
     """Given a PPO agent, scan metrics have shape (K,) and are all finite."""
     # Given
@@ -429,7 +429,7 @@ def test_ppo_scan_metrics_shape():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_spo_scan_compiles():
     """Given an SPO agent, lax.scan over K=3 learn steps compiles and runs."""
     # Given
@@ -445,7 +445,7 @@ def test_spo_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_spo_scan_params_change():
     """Given an SPO agent, scanning K steps produces different params from init."""
     # Given
@@ -460,7 +460,7 @@ def test_spo_scan_params_change():
     assert _params_differ(state.params, final_state.params)
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_spo_scan_metrics_shape():
     """Given an SPO agent, scan metrics have shape (K,) and are all finite."""
     # Given

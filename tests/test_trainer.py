@@ -11,7 +11,7 @@ import pytest
 
 from rltrain.agents.vanilla_dqn import VanillaDQN
 from rltrain.agents.vanilla_pg import VanillaPG
-from rltrain.env import EnvCapabilities, GymnaxEnv
+from rltrain.env import EnvCapabilities, GymnasiumEnv, GymnaxEnv
 from rltrain.heads import DiscreteHead
 from rltrain.networks import MLP
 from rltrain.trainer import Trainer
@@ -372,11 +372,59 @@ def test_scan_episode_return_nonzero():
         assert ep_return > 0.0, f"Episode return should be > 0, got {ep_return}"
 
 
-# NOTE (I2): No test for GymnasiumEnv + _fit_python path.
-# The spike venv does not install gymnasium, so we cannot instantiate a
-# GymnasiumEnv to exercise the Python-loop fallback. This is a known gap;
-# the path is structurally similar to _fit_gymnax_python_loop and will be
-# covered when the spike is integrated into the main repo with gymnasium.
+@pytest.mark.integration
+def test_trainer_python_loop_gymnasium_warm_starts_running_return():
+    """Given a Trainer running over a GymnasiumEnv (PythonLoop, non-pure-step
+    branch), When the first episode completes, Then the ``running_return`` passed
+    to ``on_episode_end`` MUST equal that episode's return — not the cold-start
+    EMA blend with zero (which would underweight by ``reward_run_rate``)."""
+    # Given a DQN agent (gymnasium-friendly via PythonLoop) + a CartPole-v1
+    # gymnasium env (episodes end quickly under random/early policy).
+    key = jax.random.PRNGKey(9)
+    k_agent, k_fit = jax.random.split(key)
+
+    agent = _make_dqn_agent(k_agent)
+    # GymnasiumEnv doesn't accept reward_run_rate (the PythonLoop falls back to
+    # 0.1 via getattr — a separate gap worth a follow-up but not the cold-start
+    # bug this test targets).
+    env = GymnasiumEnv("CartPole-v1")
+
+    recorder = _RecordingCallback()
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=512,  # >= a few CartPole-random episodes
+        checkpoint_steps=256,
+        buffer_capacity=512,
+        batch_size=32,
+        min_buffer_size=32,
+        callbacks=[recorder],
+    )
+    trainer.fit(k_fit)
+
+    # When we extract the on_episode_end call sequence.
+    episode_calls = [args for name, args in recorder.calls if name == "on_episode_end"]
+    assert len(episode_calls) >= 2, (
+        f"Need at least 2 episodes to test warm-start + subsequent EMA, got {len(episode_calls)}"
+    )
+
+    # Then: first episode's running_return == first episode's return (warm-start).
+    ep0_episode, ep0_return, _ep0_length, ep0_running = episode_calls[0]
+    assert ep0_episode == 0
+    assert ep0_running == pytest.approx(ep0_return, rel=1e-5), (
+        f"First episode's running_return must equal its return ({ep0_return:.4f}); "
+        f"would have been {0.1 * ep0_return:.4f} under the cold-start bug; "
+        f"got {ep0_running:.4f}."
+    )
+
+    # And: second episode's running_return == 0.1 * ep1_return + 0.9 * ep0_return.
+    ep1_episode, ep1_return, _ep1_length, ep1_running = episode_calls[1]
+    assert ep1_episode == 1
+    expected_ep1 = 0.1 * ep1_return + 0.9 * ep0_return
+    assert ep1_running == pytest.approx(expected_ep1, rel=1e-5), (
+        f"Second episode's running_return ({ep1_running}) must EMA-blend "
+        f"against the warm-started prior; expected {expected_ep1:.4f}"
+    )
 
 
 @pytest.mark.integration
@@ -391,3 +439,281 @@ def test_num_steps_not_divisible_warns():
 
     with pytest.warns(UserWarning, match="not divisible"):
         Trainer(agent, env, num_steps=300, checkpoint_steps=256)
+
+
+# ---------------------------------------------------------------------------
+# Vectorised (num_envs > 1) dispatch + end-to-end
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_trainer_dispatches_to_vectorised_scanloop_when_num_envs_gt_1():
+    """Given a gymnax env with num_envs>1, the trainer picks VectorisedScanLoop."""
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=128,
+        checkpoint_steps=64,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+    )
+
+    assert isinstance(trainer._loop, VectorisedScanLoop)
+
+
+@pytest.mark.unit
+def test_trainer_dispatches_to_scanloop_when_num_envs_1():
+    """Single-env path is preserved — ScanLoop, not VectorisedScanLoop."""
+    from rltrain.trainer._loops import ScanLoop, VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=1)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=128,
+        checkpoint_steps=64,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+    )
+
+    assert isinstance(trainer._loop, ScanLoop)
+    assert not isinstance(trainer._loop, VectorisedScanLoop)
+
+
+@pytest.mark.unit
+def test_vectorised_scanloop_rejects_zero_learn_steps_per_iter():
+    """``VectorisedScanLoop.run`` raises when configured with ``learn_steps_per_iter < 1``."""
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=2)
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=16,
+        checkpoint_steps=8,
+        buffer_capacity=64,
+        batch_size=8,
+        min_buffer_size=8,
+    )
+    carry = trainer.make_initial_state(jax.random.PRNGKey(1))
+    loop = VectorisedScanLoop(learn_steps_per_iter=0)
+    with pytest.raises(ValueError, match="learn_steps_per_iter"):
+        loop.run(agent, env, initial_carry=carry, config=trainer._config, callbacks=[])
+
+
+@pytest.mark.integration
+def test_vectorised_scanloop_utd_multiplier_runs():
+    """A custom ``learn_steps_per_iter > 1`` must thread the inner scan and update params."""
+    import equinox as eqx
+
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(2)
+    k_agent, k_fit = jax.random.split(key)
+    agent = _make_dqn_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1", num_envs=2)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=64,
+        checkpoint_steps=32,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+        loop=VectorisedScanLoop(learn_steps_per_iter=4),
+    )
+    initial_carry = trainer.make_initial_state(k_fit)
+    initial_params = eqx.filter(initial_carry.agent_state.params, eqx.is_array)
+    final_state = trainer.fit(k_fit, carry=initial_carry)
+    final_params = eqx.filter(final_state.params, eqx.is_array)
+
+    diffs = jax.tree.map(
+        lambda a, b: jnp.any(jnp.not_equal(a, b)).item() if a is not None else False,
+        initial_params,
+        final_params,
+    )
+    assert any(jax.tree.leaves(diffs)), "UTD-multiplied vectorised loop produced no parameter change."
+
+
+@pytest.mark.integration
+def test_vectorised_scanloop_per_priorities_get_updated():
+    """A single learn-triggering iter of the inner scan writes td-errors into ``buffer.priorities``.
+
+    Drives ``_train_step_vectorised`` directly with a pre-filled, uniform-priority
+    buffer and confirms at least one slot's priority diverges from the
+    default ``1.0`` after the inner scan runs.
+    """
+    from rltrain.buffer import buffer_add_batch, make_buffer
+    from rltrain.trainer._carry import TrainCarry, TrainConfig
+    from rltrain.trainer._loops import _discover_metrics_shape, _make_dummy_batch, _train_step_vectorised
+    from rltrain.transitions import make_transition
+
+    key = jax.random.PRNGKey(11)
+    k_agent, k_fit = jax.random.split(key)
+    agent = _make_dqn_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1", num_envs=2)
+    num_envs = 2
+    batch_size = 16
+
+    state = agent.init(jax.random.PRNGKey(13))
+    env_state = env.reset(jax.random.PRNGKey(14))
+
+    # Pre-fill the buffer with enough transitions to step over min_buffer_size.
+    buffer = make_buffer(capacity=64, obs_shape=env.obs_shape, action_shape=())
+    fill = make_transition(
+        obs=jnp.zeros((32, OBS_DIM)),
+        action=jnp.zeros(32, dtype=jnp.int32),
+        reward=jnp.ones(32),
+        next_obs=jnp.zeros((32, OBS_DIM)),
+        done=jnp.zeros(32, dtype=jnp.bool_),
+    )
+    buffer = buffer_add_batch(buffer, fill)
+    assert jnp.allclose(buffer.priorities, 1.0), "Seeded buffer must start with uniform priorities."
+
+    # Shape discovery (identical path to VectorisedScanLoop.run).
+    single_obs = jax.tree.map(lambda x: x[0], env_state.obs)
+    dummy_batch = _make_dummy_batch(
+        obs_shape=single_obs.shape,
+        action_shape=agent.act(state, single_obs, jax.random.PRNGKey(15)).shape,
+        batch_size=batch_size,
+    )
+    zero_metrics, _scalar_keys, indices_shape, _has_td = _discover_metrics_shape(
+        agent, state, dummy_batch, batch_size=batch_size
+    )
+
+    cfg = TrainConfig(
+        num_steps=2,
+        checkpoint_steps=2,
+        collect_size=1,
+        min_buffer_size=16,
+        batch_size=batch_size,
+        seed=0,
+        run_dir=None,
+        prioritised=True,
+    )
+    carry = TrainCarry(
+        agent_state=state,
+        env_state=env_state,
+        buffer=buffer,
+        step_count=jnp.array(0, dtype=jnp.int32),
+        key=k_fit,
+    )
+
+    new_carry, _step_out = _train_step_vectorised(
+        carry,
+        jnp.int32(0),
+        agent=agent,
+        env=env,
+        config=cfg,
+        zero_metrics=zero_metrics,
+        indices_shape=indices_shape,
+        num_envs=num_envs,
+        learn_steps_per_iter=2,
+    )
+
+    # At least one slot's priority must have moved off 1.0 after the inner scan
+    # wrote td-errors back into the buffer.
+    assert not jnp.allclose(new_carry.buffer.priorities, 1.0), (
+        "buffer.priorities unchanged after _train_step_vectorised with PER on — "
+        "inner-scan priority writeback didn't fire."
+    )
+
+
+@pytest.mark.integration
+def test_vectorised_scanloop_utd_multiplier_does_more_updates_than_default_1():
+    """At num_envs=2, learn_steps_per_iter=2 fires more gradient updates than =1.
+
+    Compare final params across the same number of env transitions: the
+    UTD=1 path (learn_steps_per_iter=2 at num_envs=2 → 2 updates per scan iter)
+    must produce a measurably larger parameter shift than UTD=1/2 path
+    (learn_steps_per_iter=1).
+    """
+    import equinox as eqx
+
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    def _run(learn_steps_per_iter: int):
+        key = jax.random.PRNGKey(3)
+        k_agent, k_fit = jax.random.split(key)
+        agent = _make_dqn_agent(k_agent)
+        env = GymnaxEnv("CartPole-v1", num_envs=2)
+        trainer = Trainer(
+            agent,
+            env,
+            num_steps=128,
+            checkpoint_steps=64,
+            buffer_capacity=512,
+            batch_size=16,
+            min_buffer_size=16,
+            loop=VectorisedScanLoop(learn_steps_per_iter=learn_steps_per_iter),
+        )
+        carry = trainer.make_initial_state(k_fit)
+        initial = eqx.filter(carry.agent_state.params, eqx.is_array)
+        final_state = trainer.fit(k_fit, carry=carry)
+        final = eqx.filter(final_state.params, eqx.is_array)
+        diff_norm_sq = sum(
+            float(jnp.sum((a - b) ** 2))
+            for a, b in zip(jax.tree.leaves(initial), jax.tree.leaves(final), strict=True)
+            if a is not None
+        )
+        return diff_norm_sq
+
+    delta_utd_1 = _run(learn_steps_per_iter=1)
+    delta_utd_full = _run(learn_steps_per_iter=2)
+
+    # More updates per scan iter must displace params further. Allow a small
+    # noise band but require a clear inequality — UTD=1 should be at least 1.5x
+    # the param-shift magnitude of UTD=1/2 across the same scan budget.
+    assert delta_utd_full > 1.5 * delta_utd_1, (
+        f"learn_steps_per_iter=2 should produce >1.5x param shift vs =1; "
+        f"got UTD=1/2 delta={delta_utd_1:.4g}, UTD=1 delta={delta_utd_full:.4g}"
+    )
+
+
+@pytest.mark.integration
+def test_trainer_fit_end_to_end_num_envs_4_updates_params():
+    """Trainer.fit at num_envs=4 runs the vectorised loop and updates agent params."""
+    import equinox as eqx
+
+    key = jax.random.PRNGKey(0)
+    k_agent, k_fit = jax.random.split(key)
+    agent = _make_dqn_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=256,
+        checkpoint_steps=128,
+        buffer_capacity=1024,
+        batch_size=32,
+        min_buffer_size=32,
+    )
+    initial_carry = trainer.make_initial_state(k_fit)
+    initial_params = eqx.filter(initial_carry.agent_state.params, eqx.is_array)
+
+    final_state = trainer.fit(k_fit, carry=initial_carry)
+
+    final_params = eqx.filter(final_state.params, eqx.is_array)
+    # At least one parameter leaf should differ — any-difference is enough.
+    diffs = jax.tree.map(
+        lambda a, b: jnp.any(jnp.not_equal(a, b)).item() if a is not None else False,
+        initial_params,
+        final_params,
+    )
+    diff_flat = jax.tree.leaves(diffs)
+    assert any(diff_flat), "Trainer.fit at num_envs=4 produced no parameter change."
