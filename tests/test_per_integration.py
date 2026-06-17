@@ -62,7 +62,7 @@ def _make_agent(key):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_per_samples_high_priority_more_often():
     """Given 10% of transitions have 100x priority, they appear disproportionately often."""
     # Given
@@ -90,7 +90,7 @@ def test_per_samples_high_priority_more_often():
     assert fraction > 0.5, f"Expected high-priority transitions > 50% of samples, got {fraction:.1%}"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_is_weights_correct_bias():
     r"""IS weights are larger for rarer (low-probability) samples.
 
@@ -117,7 +117,7 @@ def test_is_weights_correct_bias():
         assert float(jnp.mean(idx0_weights)) < 1.0, "High-priority samples should have IS weight < 1.0"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_is_weights_are_one_for_uniform():
     """With prioritised=False, IS weights should all be exactly 1.0."""
     # Given
@@ -131,7 +131,7 @@ def test_is_weights_are_one_for_uniform():
     assert jnp.allclose(is_weights, jnp.ones(8))
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_beta_one_gives_full_correction():
     r"""With $\beta = 1.0$, IS weights should fully correct the sampling bias.
 
@@ -276,7 +276,7 @@ def test_trainer_prioritised_updates_buffer_priorities():
     assert jnp.all(jnp.isfinite(initial_priorities))
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_scan_loop_per_segment_helper_updates_buffer_priorities():
     """ScanLoop's segment-boundary PER helper writes td_errors to buffer.priorities.
 
@@ -326,7 +326,7 @@ def test_scan_loop_per_segment_helper_updates_buffer_priorities():
     )
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_scan_loop_per_segment_helper_respects_did_learn_mask():
     """No-learn steps in the segment must NOT overwrite buffer.priorities."""
     from rltrain.trainer._loops import _apply_per_updates_segment
@@ -350,7 +350,7 @@ def test_scan_loop_per_segment_helper_respects_did_learn_mask():
         assert jnp.isclose(new_buf.priorities[i], 1.0), f"slot {i} leaked masked td_error"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_on_policy_agent_ignores_extended_transition_fields():
     """On-policy agents (PPO) train normally on a Transition that carries is_weights/indices.
 

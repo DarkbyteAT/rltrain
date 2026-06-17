@@ -1,5 +1,7 @@
 """MLP networks with orthogonal weight initialisation."""
 
+import math
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -258,4 +260,204 @@ class ConvD2RLMLP(eqx.Module):
         x_chw = jnp.transpose(x, (2, 0, 1))
         f = jax.nn.relu(self.conv(x_chw))
         z = jax.nn.relu(self.projection(f.reshape(-1)))
+        return self.d2rl(z)
+
+
+class FourierBottleneck(eqx.Module):
+    r"""(Nearly) parameter-free drop-in projection layer with a frozen Fourier basis.
+
+    Maps ``(in_dim,) -> (out_dim,)`` via a frozen sin/cos Fourier map followed by
+    a learned linear down-projection. Only ``weight`` / ``bias`` (and the
+    LayerNorm scale + shift) receive gradients; the frequency matrix ``B`` is
+    frozen via :func:`jax.lax.stop_gradient` at call time, so the layer adds
+    essentially no trainable parameters beyond the projection a head needed
+    anyway.
+
+    .. math::
+
+        \tilde{x} &= \mathrm{LayerNorm}(x) \\
+        \phi &= [\sin(B \tilde{x});\, \cos(B \tilde{x})] \in \mathbb{R}^{2F} \\
+        y &= W \phi + b
+
+    Rationale (each traceable to a result):
+        - **sin/cos pair (not sin only)**: ``cos`` is the gradient path through
+          ``sin`` (``d/dx sin = cos``), so every frequency keeps a live gradient.
+          (SIREN supplement, sec. 2.)
+        - **LayerNorm before the map**: holds pre-activation std ~1 so ``|Bx|``
+          stays in the regime where the sine doesn't manufacture new high
+          frequencies. (SIREN supplement.)
+        - **Frozen variance-preserving B** (``scale = w0 * sqrt(6/in_dim)``):
+          a structured/fixed basis, not learned -- learned or freshly sampled
+          ``B`` saturates for bounded signals (Benbarka et al. 2021), and the
+          frozen spread of frequencies (incl. high ones) is *structurally
+          present* for the whole run and cannot be silently driven to zero
+          by training. No schedule or decay-on-B needed.
+
+    Note on init convention: ``weight`` uses a variance-preserving uniform init
+    rather than orthogonal (the rltrain convention enforced by
+    :class:`MLP` / :class:`D2RLMLP`). The departure is deliberate -- the
+    downstream ``W`` consumes bounded sin/cos features with ~unit variance,
+    for which fan-in uniform is the appropriate scaling. ``B`` is similarly
+    uniform-scaled per the SIREN derivation; orthogonalising it would defeat
+    the "spread of frequencies" structural guarantee.
+
+    Args:
+        in_dim: Dimension of the flattened input.
+        out_dim: Bottleneck width the downstream head consumes.
+        n_freqs: Number of Fourier frequencies. The feature dim before the
+            learned projection is ``2 * n_freqs``.
+        w0: Frequency scale on ``B`` (SIREN's :math:`\omega_0`). Larger values
+            represent higher frequencies. Default ``1.0`` (low; smooth bias).
+        key: PRNG key seeding ``B`` and ``weight``.
+    """
+
+    weight: Float[Array, "out_dim two_f"]
+    bias: Float[Array, " out_dim"]
+    B: Float[Array, "n_freqs in_dim"]  # frozen via stop_gradient at call time
+    norm: eqx.nn.LayerNorm
+
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        n_freqs: int = 256,
+        *,
+        w0: float = 1.0,
+        key: PRNGKeyArray,
+    ):
+        """Initialise frozen ``B`` and trainable ``W`` / LayerNorm."""
+        k_b, k_w = jax.random.split(key)
+        b_scale = w0 * math.sqrt(6.0 / in_dim)
+        self.B = jax.random.uniform(k_b, (n_freqs, in_dim), minval=-b_scale, maxval=b_scale)
+
+        two_f = 2 * n_freqs
+        w_scale = math.sqrt(6.0 / two_f)
+        self.weight = jax.random.uniform(k_w, (out_dim, two_f), minval=-w_scale, maxval=w_scale)
+        self.bias = jnp.zeros((out_dim,))
+        self.norm = eqx.nn.LayerNorm(in_dim)
+
+    def __call__(self, x: Float[Array, " in_dim"]) -> Float[Array, " out_dim"]:
+        """LayerNorm -> frozen Fourier map -> learned down-projection."""
+        x = self.norm(x)
+        proj = jax.lax.stop_gradient(self.B) @ x
+        feats = jnp.concatenate([jnp.sin(proj), jnp.cos(proj)])
+        return self.weight @ feats + self.bias
+
+
+def fourier_feature_effective_rank(feats: Float[Array, "batch two_f"]) -> Array:
+    """``exp`` of spectral entropy of centred features.
+
+    A collapsing effective rank over training is the signature of plasticity
+    loss. With a frozen Fourier basis this should stay high; tracking it tells
+    you whether the structure is doing its job. Pass a batch of bottleneck
+    feature vectors (post sin/cos concat, pre linear).
+    """
+    feats = feats - feats.mean(axis=0, keepdims=True)
+    s = jnp.linalg.svd(feats, compute_uv=False)
+    p = s / (s.sum() + 1e-12)
+    return jnp.exp(-jnp.sum(p * jnp.log(p + 1e-12)))
+
+
+def fourier_feature_sign_entropy(feats: Float[Array, "batch two_f"]) -> Array:
+    """Mean per-unit sign entropy in ``[0, 1]`` (Lewandowski metric).
+
+    For each feature unit, sign entropy is maximal (=1) when the unit is
+    positive on ~half of inputs. Low values indicate saturation / linearisation
+    of that unit -- lost capacity. Pass a batch of bottleneck feature vectors.
+    """
+    p = jnp.clip(jnp.mean((feats > 0).astype(jnp.float32), axis=0), 1e-6, 1 - 1e-6)
+    return jnp.mean(-(p * jnp.log2(p) + (1 - p) * jnp.log2(1 - p)))
+
+
+class ConvFourierD2RLMLP(eqx.Module):
+    r"""Conv + :class:`FourierBottleneck` + :class:`D2RLMLP` over image observations.
+
+    A drop-in sibling of :class:`ConvD2RLMLP` that swaps the learned
+    ``Linear(flat -> feature_dim) + ReLU`` projection for a
+    :class:`FourierBottleneck`. The D2RL backbone is unchanged; only the
+    way conv features are projected into the dense-skip MLP changes.
+
+    Motivation: the linear bottleneck can lose representational diversity over
+    long training (plasticity loss); the frozen Fourier basis keeps a structured
+    spread of frequencies available throughout training. Comparing
+    :class:`ConvD2RLMLP` against :class:`ConvFourierD2RLMLP` with the
+    diagnostics :func:`fourier_feature_effective_rank` and
+    :func:`fourier_feature_sign_entropy` provides direct evidence of whether
+    plasticity-loss is a bottleneck at the training horizon under test.
+
+    Args mirror :class:`ConvD2RLMLP` plus ``n_freqs`` and ``w0`` controlling the
+    Fourier basis.
+    """
+
+    conv: eqx.nn.Conv2d
+    bottleneck: FourierBottleneck
+    d2rl: D2RLMLP
+    height: int = eqx.field(static=True)
+    width: int = eqx.field(static=True)
+    in_channels: int = eqx.field(static=True)
+
+    def __init__(
+        self,
+        height: int,
+        width: int,
+        in_channels: int,
+        out_size: int,
+        *,
+        conv_channels: int = 16,
+        conv_kernel: int = 3,
+        feature_dim: int = 128,
+        n_freqs: int = 256,
+        w0: float = 1.0,
+        mlp_width: int = 256,
+        mlp_depth: int = 4,
+        key: PRNGKeyArray,
+    ):
+        """Initialise Conv -> FourierBottleneck -> D2RLMLP."""
+        conv_key, fourier_key, mlp_key = jax.random.split(key, 3)
+
+        conv = eqx.nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=conv_channels,
+            kernel_size=conv_kernel,
+            stride=1,
+            padding=0,
+            key=conv_key,
+        )
+        # Orthogonal-init the conv weight via a flat 2D orthogonal matrix
+        # reshaped to the conv's 4D shape — same trick as ConvD2RLMLP.
+        ortho_init = jax.nn.initializers.orthogonal()
+        flat_in = in_channels * conv_kernel * conv_kernel
+        ortho_mat = ortho_init(conv_key, (conv_channels, flat_in), jnp.float32)
+        new_conv_weight = ortho_mat.reshape(conv_channels, in_channels, conv_kernel, conv_kernel)
+        self.conv = eqx.tree_at(lambda c: c.weight, conv, new_conv_weight)
+
+        conv_out_h = height - conv_kernel + 1
+        conv_out_w = width - conv_kernel + 1
+        flat_dim = conv_channels * conv_out_h * conv_out_w
+
+        self.bottleneck = FourierBottleneck(
+            in_dim=flat_dim,
+            out_dim=feature_dim,
+            n_freqs=n_freqs,
+            w0=w0,
+            key=fourier_key,
+        )
+
+        self.d2rl = D2RLMLP(
+            in_size=feature_dim,
+            out_size=out_size,
+            width_size=mlp_width,
+            depth=mlp_depth,
+            key=mlp_key,
+        )
+
+        self.height = height
+        self.width = width
+        self.in_channels = in_channels
+
+    def __call__(self, x: Float[Array, "H W C"]) -> Float[Array, " out"]:
+        """Forward pass: HWC->CHW transpose, conv, Fourier bottleneck, D2RL MLP."""
+        x_chw = jnp.transpose(x, (2, 0, 1))
+        f = jax.nn.relu(self.conv(x_chw))
+        z = self.bottleneck(f.reshape(-1))
         return self.d2rl(z)

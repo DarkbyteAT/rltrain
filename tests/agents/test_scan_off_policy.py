@@ -195,7 +195,7 @@ def _run_sac_scan(agent, continuous):
 # ===========================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_dqn_scan_compiles():
     """lax.scan over VanillaDQN.learn compiles and runs without error."""
     # Given
@@ -209,7 +209,7 @@ def test_vanilla_dqn_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_dqn_scan_params_change():
     """VanillaDQN params differ from initial state after K scan steps."""
     # Given
@@ -225,7 +225,7 @@ def test_vanilla_dqn_scan_params_change():
     assert any_changed, "params should change after K learn steps"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_vanilla_dqn_scan_metrics_shape():
     """VanillaDQN metrics from scan have shape (K,) and are finite."""
     # Given
@@ -244,7 +244,7 @@ def test_vanilla_dqn_scan_metrics_shape():
 # ===========================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_double_dqn_scan_compiles():
     """lax.scan over DoubleDQN.learn compiles and runs without error."""
     # Given
@@ -258,7 +258,7 @@ def test_double_dqn_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_double_dqn_scan_params_change():
     """DoubleDQN params differ from initial state after K scan steps."""
     # Given
@@ -274,7 +274,7 @@ def test_double_dqn_scan_params_change():
     assert any_changed, "params should change after K learn steps"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_double_dqn_scan_metrics_shape():
     """DoubleDQN metrics from scan have shape (K,) and are finite."""
     # Given
@@ -293,7 +293,7 @@ def test_double_dqn_scan_metrics_shape():
 # ===========================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_distributional_dqn_scan_compiles():
     """lax.scan over DistributionalDQN.learn compiles and runs without error."""
     # Given
@@ -307,7 +307,7 @@ def test_distributional_dqn_scan_compiles():
     assert "loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_distributional_dqn_scan_params_change():
     """DistributionalDQN params differ from initial state after K scan steps."""
     # Given
@@ -323,7 +323,7 @@ def test_distributional_dqn_scan_params_change():
     assert any_changed, "params should change after K learn steps"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_distributional_dqn_scan_metrics_shape():
     """DistributionalDQN metrics from scan have shape (K,) and are finite."""
     # Given
@@ -342,7 +342,7 @@ def test_distributional_dqn_scan_metrics_shape():
 # ===========================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_continuous_scan_compiles():
     """lax.scan over continuous SAC.learn compiles and runs without error."""
     # Given
@@ -358,7 +358,7 @@ def test_sac_continuous_scan_compiles():
     assert "alpha_loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_continuous_scan_params_change():
     """Continuous SAC actor and critic params differ after K scan steps."""
     # Given
@@ -380,7 +380,7 @@ def test_sac_continuous_scan_params_change():
     assert critic_changed, "critic params should change after K learn steps"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_continuous_scan_metrics_shape():
     """Continuous SAC metrics from scan have shape (K,) and are finite."""
     # Given
@@ -400,7 +400,7 @@ def test_sac_continuous_scan_metrics_shape():
 # ===========================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_discrete_scan_compiles():
     """lax.scan over discrete SAC.learn compiles and runs without error."""
     # Given
@@ -416,7 +416,7 @@ def test_sac_discrete_scan_compiles():
     assert "alpha_loss" in all_metrics
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_discrete_scan_params_change():
     """Discrete SAC actor and critic params differ after K scan steps."""
     # Given
@@ -438,7 +438,7 @@ def test_sac_discrete_scan_params_change():
     assert critic_changed, "critic params should change after K learn steps"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_sac_discrete_scan_metrics_shape():
     """Discrete SAC metrics from scan have shape (K,) and are finite."""
     # Given

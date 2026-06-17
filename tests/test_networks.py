@@ -5,7 +5,15 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from rltrain.networks import D2RLMLP, MLP, ConvD2RLMLP
+from rltrain.networks import (
+    D2RLMLP,
+    MLP,
+    ConvD2RLMLP,
+    ConvFourierD2RLMLP,
+    FourierBottleneck,
+    fourier_feature_effective_rank,
+    fourier_feature_sign_entropy,
+)
 
 
 @pytest.fixture
@@ -258,3 +266,208 @@ def test_conv_d2rl_mlp_obs_reaches_d2rl_backbone(key):
     assert not jnp.allclose(y_a, y_b), (
         f"Outputs for distinct observations are equal: {y_a} == {y_b} — the obs is not reaching the D2RL backbone."
     )
+
+
+# ----- FourierBottleneck -----------------------------------------------------
+
+
+@pytest.mark.unit
+def test_fourier_bottleneck_forward_shape(key):
+    """Given a (1024,) input, FourierBottleneck produces a (128,) output."""
+    # Given
+    layer = FourierBottleneck(in_dim=1024, out_dim=128, n_freqs=256, key=key)
+    x = jnp.zeros(1024)
+
+    # When
+    y = layer(x)
+
+    # Then
+    assert y.shape == (128,)
+
+
+@pytest.mark.unit
+def test_fourier_bottleneck_param_shapes(key):
+    """Verify B is (n_freqs, in_dim) and weight is (out_dim, 2*n_freqs).
+
+    The 2*n_freqs factor confirms the sin/cos pair widens the post-Fourier
+    feature dim before the learned projection — a swapped n_freqs/2*n_freqs
+    would be silent without this check.
+    """
+    # Given
+    layer = FourierBottleneck(in_dim=1024, out_dim=128, n_freqs=64, key=key)
+
+    # Then
+    assert layer.B.shape == (64, 1024), f"B shape mismatch: {layer.B.shape}"
+    assert layer.weight.shape == (128, 128), f"weight shape mismatch: {layer.weight.shape}"
+    assert layer.bias.shape == (128,)
+
+
+@pytest.mark.unit
+def test_fourier_bottleneck_frequency_matrix_is_frozen(key):
+    """Given a scalar loss on the layer's output, the gradient w.r.t. B is exactly zero.
+
+    This is the load-bearing claim — if stop_gradient ever gets dropped, the
+    layer silently becomes "learned Fourier features" and the plasticity-
+    preservation rationale collapses.
+    """
+    # Given
+    layer = FourierBottleneck(in_dim=64, out_dim=8, n_freqs=16, key=key)
+    x = jax.random.normal(jax.random.key(1), (4, 64))
+
+    # When we differentiate a mean-squared output through the layer.
+    def loss_fn(m, batch):
+        return jnp.mean(jax.vmap(m)(batch) ** 2)
+
+    grads = eqx.filter_grad(loss_fn)(layer, x)
+
+    # Then: gradient on B is exactly zero (stop_gradient cuts the path).
+    # Gradients on weight/bias must be nonzero (otherwise the layer doesn't learn at all).
+    assert jnp.all(grads.B == 0.0), f"B received non-zero gradient (max |g|={float(jnp.max(jnp.abs(grads.B))):.2e})"
+    assert float(jnp.max(jnp.abs(grads.weight))) > 0.0, "weight got zero gradient — layer can't learn"
+
+
+@pytest.mark.unit
+def test_fourier_bottleneck_vmap_batched(key):
+    """The layer composes cleanly under jax.vmap over a batch dim."""
+    # Given
+    layer = FourierBottleneck(in_dim=32, out_dim=16, n_freqs=8, key=key)
+    batch = jnp.zeros((5, 32))
+
+    # When
+    y = jax.vmap(layer)(batch)
+
+    # Then
+    assert y.shape == (5, 16)
+
+
+@pytest.mark.unit
+def test_fourier_feature_effective_rank_full_for_random(key):
+    """Random unit-variance features have near-maximal effective rank.
+
+    Sanity: the probe should treat orthogonal/full-rank features as "diverse"
+    (effective rank close to feature dim, not collapsed to 1).
+    """
+    # Given a batch of random features with no internal collapse.
+    feats = jax.random.normal(key, (64, 32))
+
+    # When
+    rank = fourier_feature_effective_rank(feats)
+
+    # Then: effective rank should be a meaningful fraction of feature dim.
+    # With 64 samples and 32 features, full-rank random gives rank > 20.
+    assert float(rank) > 20.0, f"random features should have rank >>1, got {float(rank):.2f}"
+
+
+@pytest.mark.unit
+def test_fourier_feature_effective_rank_collapses_for_rank_one(key):
+    """Rank-1 features (every row equals the same vector) collapse to rank ~= 1."""
+    # Given a batch of identical rows — rank-1 by construction.
+    v = jax.random.normal(key, (32,))
+    feats = jnp.broadcast_to(v, (64, 32))
+
+    # When
+    rank = fourier_feature_effective_rank(feats)
+
+    # Then: after centring, the matrix is exactly zero; the probe should report
+    # effective rank close to 1 (exp(0) when entropy is over a degenerate
+    # spectrum). Concretely: with eps=1e-12 and all singular values ~0,
+    # all probabilities normalise to ~1/n giving exp(log(n)) = n — but the
+    # *centred* matrix is rank zero, so this tests the "no spread" floor.
+    # We just check it's NOT the random-features high-rank case.
+    assert float(rank) < 5.0, f"degenerate features should collapse to low rank, got {float(rank):.2f}"
+
+
+@pytest.mark.unit
+def test_fourier_feature_sign_entropy_full_for_balanced(key):
+    """Symmetric-around-zero features have near-maximal mean sign entropy."""
+    # Given a balanced (mean 0, symmetric) batch of features.
+    feats = jax.random.normal(key, (64, 32))
+
+    # When
+    ent = fourier_feature_sign_entropy(feats)
+
+    # Then: with ~50/50 sign split per unit, mean entropy is close to 1.
+    assert 0.85 < float(ent) <= 1.0, f"balanced features should have sign entropy ~1, got {float(ent):.3f}"
+
+
+@pytest.mark.unit
+def test_fourier_feature_sign_entropy_zero_for_constant_sign(key):
+    """All-positive features have sign entropy ~= 0 (saturated)."""
+    # Given features that are always positive (e.g. ReLU'd random or exp'd).
+    feats = jnp.abs(jax.random.normal(key, (64, 32))) + 0.1
+
+    # When
+    ent = fourier_feature_sign_entropy(feats)
+
+    # Then: with all units positive on every input, entropy → 0.
+    assert float(ent) < 0.05, f"constant-sign features should have entropy ~0, got {float(ent):.4f}"
+
+
+# ----- ConvFourierD2RLMLP ----------------------------------------------------
+
+
+@pytest.mark.unit
+def test_conv_fourier_d2rl_mlp_forward_shape(key):
+    """Given a (10,10,4) image, ConvFourierD2RLMLP produces an out-sized vector."""
+    # Given
+    net = ConvFourierD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=3,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        n_freqs=64,  # smaller for test speed
+        mlp_width=128,
+        mlp_depth=2,
+        key=key,
+    )
+    obs = jnp.zeros((10, 10, 4))
+
+    # When
+    y = net(obs)
+
+    # Then
+    assert y.shape == (3,)
+
+
+@pytest.mark.unit
+def test_conv_fourier_d2rl_mlp_bottleneck_is_fourier(key):
+    """The bottleneck inside ConvFourierD2RLMLP is a FourierBottleneck instance
+    (not a plain Linear). Distinguishes this class from ConvD2RLMLP at the
+    structural level — accidental swap-back would silently regress the
+    plasticity-preservation guarantee."""
+    # Given
+    net = ConvFourierD2RLMLP(height=10, width=10, in_channels=4, out_size=3, n_freqs=8, mlp_depth=2, key=key)
+
+    # Then
+    assert isinstance(net.bottleneck, FourierBottleneck)
+
+
+@pytest.mark.unit
+def test_conv_fourier_d2rl_mlp_obs_reaches_output(key):
+    """Distinct observations produce distinct outputs (light end-to-end probe)."""
+    # Given
+    net = ConvFourierD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=3,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=128,
+        n_freqs=64,
+        mlp_width=128,
+        mlp_depth=2,
+        key=key,
+    )
+    obs_a = jnp.zeros((10, 10, 4))
+    obs_b = jnp.ones((10, 10, 4))
+
+    # When
+    y_a = net(obs_a)
+    y_b = net(obs_b)
+
+    # Then
+    assert not jnp.allclose(y_a, y_b)
