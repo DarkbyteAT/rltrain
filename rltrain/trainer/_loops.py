@@ -626,22 +626,29 @@ def _train_step_vectorised(
     zero_metrics: dict,
     indices_shape: tuple[int, ...],
     num_envs: int,
+    learn_steps_per_iter: int,
 ) -> tuple[TrainCarry, StepOutput]:
     """Vectorised counterpart of :func:`_train_step`.
 
     Each scan iteration advances ``num_envs`` parallel env copies by one step
     (so ``num_envs`` transitions land in the buffer per iteration), then runs
-    at most one SAC/PPO/DQN learn step on a single replay batch as before.
-    The buffer batch size and PER td_errors shape are unchanged — the replay
-    batch is still drawn at ``batch_size`` from the now-faster-filling buffer.
+    ``learn_steps_per_iter`` SAC/PPO/DQN learn steps. Setting
+    ``learn_steps_per_iter == num_envs`` restores UTD=1 per env transition;
+    setting it to 1 reproduces the original UTD=1/num_envs throughput-only
+    behaviour. Each inner step samples a fresh PER mini-batch from the buffer
+    and (if the buffer carries priority weights) the inner step writes its own
+    td-error updates back into the buffer in-XLA, before the next inner step
+    samples. That ordering is what makes PER fair under N parallel SAC updates
+    per env transition: every learn step sees the freshest priorities.
 
-    Trade-off: UTD (update-to-data) ratio drops from 1 to 1/num_envs vs
-    single-env, but wall-clock to ``K`` env transitions improves by close
-    to ``num_envs``-fold on jit-compiled gymnax + ScanLoop. For most discrete-
-    control problems this is the right knob to turn — sample efficiency per
-    env step degrades sub-linearly while throughput scales linearly.
+    Scalar metrics are mean-aggregated across the inner steps so the StepOutput
+    structure on the outer scan stays identical to the single-env case. PER
+    bookkeeping is handled entirely inside the inner scan, so ``td_errors`` and
+    ``sample_indices`` on the surfaced StepOutput are zero-sentinel; the outer
+    segment-boundary :func:`_apply_per_updates_segment` correctly no-ops on
+    them since ``did_learn`` carries through as the per-iter flag.
     """
-    key, k_act, k_step, k_learn = jax.random.split(carry.key, 4)
+    key, k_act, k_step, k_inner = jax.random.split(carry.key, 4)
 
     # 1. Act — vmap over the num_envs leading dim of obs. The agent module
     #    itself is shared (no leading dim); only obs and per-env keys differ.
@@ -670,27 +677,43 @@ def _train_step_vectorised(
     # collect_size / learn cadence is independent of num_envs.
     new_step_count = carry.step_count + 1
 
-    # 5. Conditional learn — identical structure to single-env _train_step.
+    # 5. Conditional learn — N inner SAC/PPO/DQN updates per outer scan iter.
     steps_mod = new_step_count % config.collect_size
     learn_flag = (steps_mod == 0) & (new_buffer.size >= config.min_buffer_size)
 
     zero_td_errors = jnp.zeros(indices_shape, dtype=jnp.float32)
     zero_indices = jnp.zeros(indices_shape, dtype=jnp.int32)
 
-    def _do_learn(args):
-        s, b, k = args
-        batch, b_new = collect_batch(
+    def _inner_learn_step(carry_inner, k_step_inner):
+        s, b = carry_inner
+        batch, b_after_sample = collect_batch(
             b,
-            k,
+            k_step_inner,
             collect_size=config.collect_size,
             batch_size=config.batch_size,
             prioritised=config.prioritised,
         )
-        s_new, met = agent.learn(s, batch, k)
+        s_new, met = agent.learn(s, batch, k_step_inner)
         td = met.pop("td_errors", zero_td_errors)
         scalar_met = {k_: v for k_, v in met.items() if v.shape == ()}
         sample_idx = batch.indices.astype(jnp.int32)
-        return s_new, b_new, scalar_met, td, sample_idx
+        # PER write-back happens inside the inner scan so the next inner step
+        # samples from up-to-date priorities. When PER is off the path
+        # collapses to a no-op (uniform sampling ignores priorities).
+        if config.prioritised:
+            b_after_per = buffer_update_priorities(b_after_sample, sample_idx, td)
+        else:
+            b_after_per = b_after_sample
+        return (s_new, b_after_per), scalar_met
+
+    def _do_learn(args):
+        s, b, k = args
+        keys_inner = jax.random.split(k, learn_steps_per_iter)
+        (s_final, b_final), per_step_metrics = jax.lax.scan(_inner_learn_step, (s, b), keys_inner)
+        # Mean-aggregate the scalar metrics across inner steps so the outer
+        # scan sees a shape-stable scalar dict matching ``zero_metrics``.
+        mean_metrics = jax.tree.map(lambda x: x.mean(axis=0), per_step_metrics)
+        return s_final, b_final, mean_metrics, zero_td_errors, zero_indices
 
     def _skip_learn(args):
         s, b, _ = args
@@ -700,7 +723,7 @@ def _train_step_vectorised(
         learn_flag,
         _do_learn,
         _skip_learn,
-        (carry.agent_state, new_buffer, k_learn),
+        (carry.agent_state, new_buffer, k_inner),
     )
 
     new_carry = TrainCarry(
@@ -716,8 +739,8 @@ def _train_step_vectorised(
         episode_length=terminal_length,  # (num_envs,)
         running_return=new_env_state.running_return,  # (num_envs,)
         metrics=metrics,
-        did_learn=learn_flag,  # scalar — one learn step per scan iter regardless of num_envs
-        td_errors=td_errors,
+        did_learn=learn_flag,  # scalar — per-iter, regardless of inner-step count
+        td_errors=td_errors,  # sentinel zeros; PER write-back already happened in-XLA
         sample_indices=sample_indices,
     )
     return new_carry, step_out
@@ -729,14 +752,27 @@ class VectorisedScanLoop:
     Cloned from :class:`ScanLoop` but threads a leading ``num_envs`` axis
     through obs / action / reward / done / episode_return / episode_length /
     running_return. Each scan iteration runs ``num_envs`` parallel env steps
-    plus (at most) one shared SAC/PPO/DQN learn step. The host-side
-    callback fan-out iterates over ``(checkpoint_steps, num_envs)`` so per-
-    env episode boundaries fire ``on_episode_end`` independently.
+    plus ``learn_steps_per_iter`` SAC/PPO/DQN learn updates. By default
+    ``learn_steps_per_iter == num_envs`` so the loop preserves UTD=1 per env
+    transition; set it explicitly to 1 to recover the throughput-only
+    behaviour (UTD=1/num_envs) that ships with the original ScanLoop. The
+    host-side callback fan-out iterates over ``(checkpoint_steps, num_envs)``
+    so per-env episode boundaries fire ``on_episode_end`` independently.
 
     Auto-selected by the Trainer when ``env.num_envs > 1`` and the env's
     capabilities permit scan rollout. The existing single-env :class:`ScanLoop`
     is untouched.
     """
+
+    def __init__(self, *, learn_steps_per_iter: int | None = None) -> None:
+        """Configure the inner-loop learn-step multiplier.
+
+        Args:
+            learn_steps_per_iter: Number of learn steps per env-step scan
+                iteration. ``None`` defaults to ``env.num_envs`` at run time
+                so that UTD=1 per env transition is preserved by default.
+        """
+        self.learn_steps_per_iter = learn_steps_per_iter
 
     def run(
         self, agent: Agent, env: Env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list[Callback]
@@ -747,6 +783,9 @@ class VectorisedScanLoop:
             raise ValueError(
                 f"VectorisedScanLoop requires env.num_envs >= 2, got {num_envs}. Use ScanLoop for single-env runs."
             )
+        learn_steps_per_iter = self.learn_steps_per_iter if self.learn_steps_per_iter is not None else num_envs
+        if learn_steps_per_iter < 1:
+            raise ValueError(f"learn_steps_per_iter must be >= 1, got {learn_steps_per_iter}.")
 
         state = initial_carry.agent_state
         env_state = initial_carry.env_state
@@ -784,10 +823,16 @@ class VectorisedScanLoop:
                 zero_metrics=zero_metrics,
                 indices_shape=indices_shape,
                 num_envs=num_envs,
+                learn_steps_per_iter=learn_steps_per_iter,
             )
 
         global_step = 0  # scan-iteration count (NOT env-transition count)
-        per_active = config.prioritised and has_td_errors
+        # The inner scan applies PER priority updates in-XLA, so the segment-
+        # boundary handler should always see zero-sentinel td_errors with
+        # ``did_learn`` still meaningful — but the priority writeback is a
+        # no-op against the up-to-date buffer. Keep per_active False here.
+        per_active = False
+        _ = has_td_errors  # retained for parity with ScanLoop; not used at segment boundary.
 
         for _seg in range(num_segments):
             carry = TrainCarry(

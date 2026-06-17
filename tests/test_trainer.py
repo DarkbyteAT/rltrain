@@ -491,6 +491,64 @@ def test_trainer_dispatches_to_scanloop_when_num_envs_1():
     assert not isinstance(trainer._loop, VectorisedScanLoop)
 
 
+@pytest.mark.unit
+def test_vectorised_scanloop_rejects_zero_learn_steps_per_iter():
+    """``VectorisedScanLoop.run`` raises when configured with ``learn_steps_per_iter < 1``."""
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=2)
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=16,
+        checkpoint_steps=8,
+        buffer_capacity=64,
+        batch_size=8,
+        min_buffer_size=8,
+    )
+    carry = trainer.make_initial_state(jax.random.PRNGKey(1))
+    loop = VectorisedScanLoop(learn_steps_per_iter=0)
+    with pytest.raises(ValueError, match="learn_steps_per_iter"):
+        loop.run(agent, env, initial_carry=carry, config=trainer._config, callbacks=[])
+
+
+@pytest.mark.integration
+def test_vectorised_scanloop_utd_multiplier_runs():
+    """A custom ``learn_steps_per_iter > 1`` must thread the inner scan and update params."""
+    import equinox as eqx
+
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(2)
+    k_agent, k_fit = jax.random.split(key)
+    agent = _make_dqn_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1", num_envs=2)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=64,
+        checkpoint_steps=32,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+        loop=VectorisedScanLoop(learn_steps_per_iter=4),
+    )
+    initial_carry = trainer.make_initial_state(k_fit)
+    initial_params = eqx.filter(initial_carry.agent_state.params, eqx.is_array)
+    final_state = trainer.fit(k_fit, carry=initial_carry)
+    final_params = eqx.filter(final_state.params, eqx.is_array)
+
+    diffs = jax.tree.map(
+        lambda a, b: jnp.any(jnp.not_equal(a, b)).item() if a is not None else False,
+        initial_params,
+        final_params,
+    )
+    assert any(jax.tree.leaves(diffs)), "UTD-multiplied vectorised loop produced no parameter change."
+
+
 @pytest.mark.integration
 def test_trainer_fit_end_to_end_num_envs_4_updates_params():
     """Trainer.fit at num_envs=4 runs the vectorised loop and updates agent params."""
