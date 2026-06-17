@@ -26,6 +26,7 @@ convention = "google"
 # descriptive test names; D rules don't add value here.
 "tests/**" = ["D"]
 # Example scripts are demonstrations, not library code — D rules add noise.
-"examples/**" = ["D"]
+# F722 covers jaxtyping shape strings ("B H W C") that some example runners use.
+"examples/**" = ["D", "F722"]
 # jaxtyping annotations are valid but ruff can't parse them
 "rltrain/**" = ["F722"]
