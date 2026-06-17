@@ -175,3 +175,68 @@ def test_gymnasium_env_capabilities():
     assert env.capabilities.pure_step is False
     assert env.capabilities.vmap_batch is False
     assert env.capabilities.scan_rollout is False
+
+
+@pytest.mark.unit
+def test_gymnax_env_num_envs_reset_shapes_correctly(key):
+    """Given num_envs=4, reset returns EnvState with leading num_envs axis on every field."""
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+    state = env.reset(key)
+
+    assert state.obs.shape == (4, 4), state.obs.shape
+    assert state.done.shape == (4,), state.done.shape
+    assert state.reward.shape == (4,), state.reward.shape
+    assert state.episode_return.shape == (4,), state.episode_return.shape
+    assert state.episode_length.shape == (4,), state.episode_length.shape
+    assert state.running_return.shape == (4,), state.running_return.shape
+
+
+@pytest.mark.unit
+def test_gymnax_env_num_envs_step_shapes_correctly(key):
+    """Given num_envs=4, step returns EnvState with leading num_envs axis on every field."""
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+    state = env.reset(key)
+    actions = jnp.zeros((4,), dtype=jnp.int32)
+
+    new_state = env.step(state, actions, jax.random.PRNGKey(1))
+
+    assert new_state.obs.shape == (4, 4)
+    assert new_state.done.shape == (4,)
+    assert new_state.reward.shape == (4,)
+    assert new_state.episode_return.shape == (4,)
+    assert new_state.episode_length.shape == (4,)
+    assert new_state.running_return.shape == (4,)
+
+
+@pytest.mark.unit
+def test_gymnax_env_num_envs_1_unchanged(key):
+    """num_envs=1 preserves single-env semantics — no leading axis added."""
+    env = GymnaxEnv("CartPole-v1", num_envs=1)
+    state = env.reset(key)
+
+    assert state.obs.shape == (4,)
+    assert state.done.shape == ()
+    assert state.reward.shape == ()
+    assert state.episode_return.shape == ()
+    assert state.episode_length.shape == ()
+
+
+@pytest.mark.unit
+def test_gymnax_env_rejects_num_envs_zero():
+    """num_envs < 1 must raise — invalid vectorisation factor."""
+    with pytest.raises(ValueError, match="num_envs"):
+        GymnaxEnv("CartPole-v1", num_envs=0)
+    with pytest.raises(ValueError, match="num_envs"):
+        GymnaxEnv("CartPole-v1", num_envs=-1)
+
+
+@pytest.mark.unit
+def test_gymnax_env_num_envs_breakout_image_obs(key):
+    """Image-obs gymnax envs (MinAtar) get the same leading-axis treatment."""
+    env = GymnaxEnv("Breakout-MinAtar", num_envs=4)
+    state = env.reset(key)
+
+    assert state.obs.shape == (4, 10, 10, 4)
+    actions = jnp.zeros((4,), dtype=jnp.int32)
+    new_state = env.step(state, actions, jax.random.PRNGKey(1))
+    assert new_state.obs.shape == (4, 10, 10, 4)

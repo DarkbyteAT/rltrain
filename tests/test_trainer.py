@@ -439,3 +439,88 @@ def test_num_steps_not_divisible_warns():
 
     with pytest.warns(UserWarning, match="not divisible"):
         Trainer(agent, env, num_steps=300, checkpoint_steps=256)
+
+
+# ---------------------------------------------------------------------------
+# Vectorised (num_envs > 1) dispatch + end-to-end
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_trainer_dispatches_to_vectorised_scanloop_when_num_envs_gt_1():
+    """Given a gymnax env with num_envs>1, the trainer picks VectorisedScanLoop."""
+    from rltrain.trainer._loops import VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=128,
+        checkpoint_steps=64,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+    )
+
+    assert isinstance(trainer._loop, VectorisedScanLoop)
+
+
+@pytest.mark.unit
+def test_trainer_dispatches_to_scanloop_when_num_envs_1():
+    """Single-env path is preserved — ScanLoop, not VectorisedScanLoop."""
+    from rltrain.trainer._loops import ScanLoop, VectorisedScanLoop
+
+    key = jax.random.PRNGKey(0)
+    agent = _make_dqn_agent(key)
+    env = GymnaxEnv("CartPole-v1", num_envs=1)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=128,
+        checkpoint_steps=64,
+        buffer_capacity=256,
+        batch_size=16,
+        min_buffer_size=16,
+    )
+
+    assert isinstance(trainer._loop, ScanLoop)
+    assert not isinstance(trainer._loop, VectorisedScanLoop)
+
+
+@pytest.mark.integration
+def test_trainer_fit_end_to_end_num_envs_4_updates_params():
+    """Trainer.fit at num_envs=4 runs the vectorised loop and updates agent params."""
+    import equinox as eqx
+
+    key = jax.random.PRNGKey(0)
+    k_agent, k_fit = jax.random.split(key)
+    agent = _make_dqn_agent(k_agent)
+    env = GymnaxEnv("CartPole-v1", num_envs=4)
+
+    trainer = Trainer(
+        agent,
+        env,
+        num_steps=256,
+        checkpoint_steps=128,
+        buffer_capacity=1024,
+        batch_size=32,
+        min_buffer_size=32,
+    )
+    initial_carry = trainer.make_initial_state(k_fit)
+    initial_params = eqx.filter(initial_carry.agent_state.params, eqx.is_array)
+
+    final_state = trainer.fit(k_fit, carry=initial_carry)
+
+    final_params = eqx.filter(final_state.params, eqx.is_array)
+    # At least one parameter leaf should differ — any-difference is enough.
+    diffs = jax.tree.map(
+        lambda a, b: jnp.any(jnp.not_equal(a, b)).item() if a is not None else False,
+        initial_params,
+        final_params,
+    )
+    diff_flat = jax.tree.leaves(diffs)
+    assert any(diff_flat), "Trainer.fit at num_envs=4 produced no parameter change."
