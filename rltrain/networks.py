@@ -262,6 +262,19 @@ class ConvD2RLMLP(eqx.Module):
         z = jax.nn.relu(self.projection(f.reshape(-1)))
         return self.d2rl(z)
 
+    def bottleneck_features(self, x: Float[Array, "H W C"]) -> Float[Array, " feature_dim"]:
+        """Single-sample post-projection features fed into the D2RL MLP.
+
+        Returns the ``feature_dim``-sized activation immediately after the
+        Conv -> ReLU -> Linear -> ReLU bottleneck. Probe site for the
+        plasticity diagnostics (effective rank, sign entropy). Same shape
+        space as :meth:`ConvFourierD2RLMLP.bottleneck_features` for a fair
+        cross-arch comparison.
+        """
+        x_chw = jnp.transpose(x, (2, 0, 1))
+        f = jax.nn.relu(self.conv(x_chw))
+        return jax.nn.relu(self.projection(f.reshape(-1)))
+
 
 class FourierBottleneck(eqx.Module):
     r"""(Nearly) parameter-free drop-in projection layer with a frozen Fourier basis.
@@ -461,3 +474,16 @@ class ConvFourierD2RLMLP(eqx.Module):
         f = jax.nn.relu(self.conv(x_chw))
         z = self.bottleneck(f.reshape(-1))
         return self.d2rl(z)
+
+    def bottleneck_features(self, x: Float[Array, "H W C"]) -> Float[Array, " feature_dim"]:
+        """Single-sample post-Fourier-bottleneck features fed into the D2RL MLP.
+
+        Returns the ``feature_dim``-sized activation immediately after the
+        Conv -> ReLU -> FourierBottleneck stack. Probe site for the
+        plasticity diagnostics; same shape space as
+        :meth:`ConvD2RLMLP.bottleneck_features` so a single caller can
+        consume both architectures without branching on type.
+        """
+        x_chw = jnp.transpose(x, (2, 0, 1))
+        f = jax.nn.relu(self.conv(x_chw))
+        return self.bottleneck(f.reshape(-1))

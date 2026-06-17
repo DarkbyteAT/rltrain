@@ -268,6 +268,71 @@ def test_conv_d2rl_mlp_obs_reaches_d2rl_backbone(key):
     )
 
 
+@pytest.mark.unit
+def test_conv_d2rl_mlp_bottleneck_features_shape(key):
+    """Given a (10, 10, 4) image obs, bottleneck_features returns a
+    feature_dim-sized vector, and a batched call returns ``(B, feature_dim)``.
+
+    The plasticity probe callback relies on this shape contract being
+    identical to :class:`ConvFourierD2RLMLP`'s so a single caller can vmap
+    over both architectures without branching on type.
+    """
+    # Given
+    feature_dim = 128
+    net = ConvD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=5,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=feature_dim,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+    obs = jnp.zeros((10, 10, 4))
+
+    # When
+    feats = net.bottleneck_features(obs)
+    batched = jax.vmap(net.bottleneck_features)(jnp.zeros((7, 10, 10, 4)))
+
+    # Then
+    assert feats.shape == (feature_dim,)
+    assert batched.shape == (7, feature_dim)
+
+
+@pytest.mark.unit
+def test_conv_fourier_d2rl_mlp_bottleneck_features_shape(key):
+    """Given a (10, 10, 4) image obs, bottleneck_features returns a
+    feature_dim-sized vector matching the ConvD2RLMLP contract exactly."""
+    # Given
+    feature_dim = 128
+    net = ConvFourierD2RLMLP(
+        height=10,
+        width=10,
+        in_channels=4,
+        out_size=5,
+        conv_channels=16,
+        conv_kernel=3,
+        feature_dim=feature_dim,
+        n_freqs=64,
+        w0=1.0,
+        mlp_width=256,
+        mlp_depth=4,
+        key=key,
+    )
+    obs = jnp.zeros((10, 10, 4))
+
+    # When
+    feats = net.bottleneck_features(obs)
+    batched = jax.vmap(net.bottleneck_features)(jnp.ones((7, 10, 10, 4)))
+
+    # Then
+    assert feats.shape == (feature_dim,)
+    assert batched.shape == (7, feature_dim)
+
+
 # ----- FourierBottleneck -----------------------------------------------------
 
 

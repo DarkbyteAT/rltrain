@@ -1,0 +1,13 @@
+{
+    "fqn": "rltrain.agents.SAC",
+    "gamma": 0.99,
+    "tau": 0.01,
+    "target_entropy": 1.0768,
+    "actor":    {"fqn": "rltrain.networks.ConvD2RLMLP", "height": 10, "width": 10, "in_channels": 4, "out_size": 128, "conv_channels": 16, "conv_kernel": 3, "feature_dim": 128, "mlp_width": 256, "mlp_depth": 4},
+    "critic_1": {"fqn": "rltrain.networks.ConvD2RLMLP", "height": 10, "width": 10, "in_channels": 4, "out_size": 3,   "conv_channels": 16, "conv_kernel": 3, "feature_dim": 128, "mlp_width": 256, "mlp_depth": 4},
+    "critic_2": {"fqn": "rltrain.networks.ConvD2RLMLP", "height": 10, "width": 10, "in_channels": 4, "out_size": 3,   "conv_channels": 16, "conv_kernel": 3, "feature_dim": 128, "mlp_width": 256, "mlp_depth": 4},
+    "action_head":      {"fqn": "rltrain.heads.DiscreteHead", "feature_dim": 128, "action_dim": 3},
+    "actor_optimizer":  {"fqn": "optax.adam", "learning_rate": 3e-4},
+    "critic_optimizer": {"fqn": "optax.adam", "learning_rate": 3e-4},
+    "alpha_optimizer":  {"fqn": "optax.adam", "learning_rate": 1e-4}
+}
