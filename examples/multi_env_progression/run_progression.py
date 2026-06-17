@@ -70,16 +70,28 @@ ENVS: dict[str, tuple[Path, Path, str]] = {
         EXAMPLES_DIR / "breakout_minatar" / "env.json",
         "Breakout-MinAtar",
     ),
+    "breakout_fourier": (
+        EXAMPLES_DIR / "breakout_minatar_fourier" / "sac_convfourier_d2rl.json",
+        EXAMPLES_DIR / "breakout_minatar_fourier" / "env.json",
+        "Breakout-MinAtar (Fourier)",
+    ),
     "spaceinvaders": (
         EXAMPLES_DIR / "spaceinvaders_minatar" / "sac_convd2rl.json",
         EXAMPLES_DIR / "spaceinvaders_minatar" / "env.json",
         "SpaceInvaders-MinAtar",
     ),
+    "spaceinvaders_fourier": (
+        EXAMPLES_DIR / "spaceinvaders_minatar_fourier" / "sac_convfourier_d2rl.json",
+        EXAMPLES_DIR / "spaceinvaders_minatar_fourier" / "env.json",
+        "SpaceInvaders-MinAtar (Fourier)",
+    ),
 }
 ENV_SHORT_NAMES: dict[str, str] = {
     "cartpole": "cartpole",
     "breakout": "breakout_minatar",
+    "breakout_fourier": "breakout_minatar_fourier",
     "spaceinvaders": "spaceinvaders_minatar",
+    "spaceinvaders_fourier": "spaceinvaders_minatar_fourier",
 }
 
 DEFAULT_NUM_STEPS = 100_000
@@ -157,14 +169,21 @@ def _read_metrics_csv(metrics_path: Path) -> list[dict[str, float]]:
 def run_env(
     env_key: str,
     *,
-    num_steps: int,
+    num_steps: int | None,
+    env_steps: int | None,
     checkpoint_steps: int,
     seed: int,
     timestamp: str,
     progression_index: int,
     progression_total: int,
 ) -> dict[str, Any]:
-    """Train SAC+D2RL on one env, returning a summary dict for the final table."""
+    """Train SAC+D2RL on one env, returning a summary dict for the final table.
+
+    Exactly one of ``num_steps`` (scan iterations) or ``env_steps`` (env
+    transitions) must be supplied. When ``env_steps`` is given the runner
+    divides by the env's ``num_envs`` so each vectorised path runs roughly
+    the same number of env transitions regardless of vectorisation factor.
+    """
     agent_cfg_path, env_cfg_path, env_id = ENVS[env_key]
     agent_cfg = json.loads(agent_cfg_path.read_text())
     env_cfg = json.loads(env_cfg_path.read_text())
@@ -178,11 +197,25 @@ def run_env(
     agent = build_agent(**agent_cfg, key=k_agent)
     env = build_env(**env_cfg)
 
+    # Resolve scan-iteration count: env_steps takes priority and is divided by
+    # num_envs so the env-transition budget stays constant.
+    num_envs = getattr(env, "num_envs", 1)
+    if env_steps is not None:
+        scan_iters = max(env_steps // num_envs, checkpoint_steps)
+        # Round down to a multiple of checkpoint_steps so the trainer doesn't warn.
+        scan_iters = (scan_iters // checkpoint_steps) * checkpoint_steps
+        if scan_iters < checkpoint_steps:
+            scan_iters = checkpoint_steps
+    else:
+        assert num_steps is not None
+        scan_iters = num_steps
+
     obs_shape = env.obs_shape
     num_actions = env.num_actions
     banner = (
         f"=== ENV {progression_index}/{progression_total}: {env_id} "
-        f"· obs {tuple(obs_shape)} · actions {num_actions} ==="
+        f"· obs {tuple(obs_shape)} · actions {num_actions} "
+        f"· num_envs={num_envs} · scan_iters={scan_iters} (env_steps={scan_iters * num_envs}) ==="
     )
     print(banner)
     print(f"Run directory: {run_dir}")
@@ -190,7 +223,7 @@ def run_env(
     trainer = Trainer(
         agent,
         env,
-        num_steps=num_steps,
+        num_steps=scan_iters,
         checkpoint_steps=checkpoint_steps,
         run_dir=run_dir,
         batch_size=256,
@@ -199,7 +232,7 @@ def run_env(
         prioritised=True,
         callbacks=[
             FlushingCSVLogger(),
-            PlotCallback(num_steps=num_steps),
+            PlotCallback(num_steps=scan_iters),
             CheckpointCallback(),
         ],
         seed=seed,
@@ -263,14 +296,27 @@ def main() -> None:
     parser.add_argument(
         "--num-steps",
         type=int,
-        default=DEFAULT_NUM_STEPS,
-        help=f"Env steps per env (default {DEFAULT_NUM_STEPS}).",
+        default=None,
+        help=(
+            "Scan-iteration count per env (raw Trainer.num_steps). With "
+            "num_envs>1 each iter yields num_envs transitions. Use "
+            "--env-steps to specify a transition budget instead."
+        ),
+    )
+    parser.add_argument(
+        "--env-steps",
+        type=int,
+        default=None,
+        help=(
+            "Env transition budget per env. Divided by num_envs to compute "
+            "scan iterations. Mutually exclusive with --num-steps."
+        ),
     )
     parser.add_argument(
         "--checkpoint-steps",
         type=int,
         default=DEFAULT_CHECKPOINT_STEPS,
-        help=f"Steps between checkpoints (default {DEFAULT_CHECKPOINT_STEPS}).",
+        help=f"Scan iterations between checkpoints (default {DEFAULT_CHECKPOINT_STEPS}).",
     )
     parser.add_argument(
         "--seed",
@@ -280,12 +326,19 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.num_steps is not None and args.env_steps is not None:
+        raise SystemExit("Specify at most one of --num-steps and --env-steps.")
+    if args.num_steps is None and args.env_steps is None:
+        # Backward compat: treat the default as raw scan iterations.
+        args.num_steps = DEFAULT_NUM_STEPS
+
     timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
     summaries: list[dict[str, Any]] = []
     for i, env_key in enumerate(args.envs, start=1):
         summary = run_env(
             env_key,
             num_steps=args.num_steps,
+            env_steps=args.env_steps,
             checkpoint_steps=args.checkpoint_steps,
             seed=args.seed,
             timestamp=timestamp,
