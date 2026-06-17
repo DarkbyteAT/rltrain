@@ -18,7 +18,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, PRNGKeyArray
 
 from rltrain.agents.agent import Agent
-from rltrain.buffer import buffer_add, buffer_drain, buffer_sample, buffer_update_priorities
+from rltrain.buffer import buffer_add, buffer_add_batch, buffer_drain, buffer_sample, buffer_update_priorities
 from rltrain.callbacks import Callback
 from rltrain.env import Env
 from rltrain.trainer._carry import StepOutput, TrainCarry, TrainConfig
@@ -592,6 +592,244 @@ class ScanLoop:
                     episode_count += 1
 
             # Fire on_step for learn steps — extract scalar metrics only
+            for i in range(config.checkpoint_steps):
+                if bool(host_out.did_learn[i]):
+                    py_metrics = {}
+                    for k in scalar_keys:
+                        py_metrics[k] = float(host_out.metrics[k][i])
+                    for cb in callbacks:
+                        cb.on_step(global_step + i, py_metrics)
+
+            global_step += config.checkpoint_steps
+
+            for cb in callbacks:
+                cb.on_checkpoint(global_step, state, config.run_dir)
+
+        for cb in callbacks:
+            cb.on_train_end(state, config.run_dir)
+
+        return state
+
+
+# ---------------------------------------------------------------------------
+# Vectorised ScanLoop — num_envs > 1
+# ---------------------------------------------------------------------------
+
+
+def _train_step_vectorised(
+    carry: TrainCarry,
+    _step_idx: Array,
+    *,
+    agent: Agent,
+    env: Env,
+    config: TrainConfig,
+    zero_metrics: dict,
+    indices_shape: tuple[int, ...],
+    num_envs: int,
+) -> tuple[TrainCarry, StepOutput]:
+    """Vectorised counterpart of :func:`_train_step`.
+
+    Each scan iteration advances ``num_envs`` parallel env copies by one step
+    (so ``num_envs`` transitions land in the buffer per iteration), then runs
+    at most one SAC/PPO/DQN learn step on a single replay batch as before.
+    The buffer batch size and PER td_errors shape are unchanged — the replay
+    batch is still drawn at ``batch_size`` from the now-faster-filling buffer.
+
+    Trade-off: UTD (update-to-data) ratio drops from 1 to 1/num_envs vs
+    single-env, but wall-clock to ``K`` env transitions improves by close
+    to ``num_envs``-fold on jit-compiled gymnax + ScanLoop. For most discrete-
+    control problems this is the right knob to turn — sample efficiency per
+    env step degrades sub-linearly while throughput scales linearly.
+    """
+    key, k_act, k_step, k_learn = jax.random.split(carry.key, 4)
+
+    # 1. Act — vmap over the num_envs leading dim of obs. The agent module
+    #    itself is shared (no leading dim); only obs and per-env keys differ.
+    k_act_per_env = jax.random.split(k_act, num_envs)
+    actions = jax.vmap(agent.act, in_axes=(None, 0, 0))(carry.agent_state, carry.env_state.obs, k_act_per_env)
+
+    # 2. Env step — GymnaxEnv with num_envs>1 vmaps internally on the leading axis.
+    new_env_state = env.step(carry.env_state, actions, k_step)
+
+    # 3. Capture per-env terminal returns / lengths before the env's auto-reset
+    #    zeroes them. Shape (num_envs,).
+    terminal_return = carry.env_state.episode_return + new_env_state.reward
+    terminal_length = carry.env_state.episode_length + 1
+
+    # 4. Build a batched transition (leading num_envs dim) and add ``num_envs``
+    #    transitions to the replay buffer.
+    transition = make_transition(
+        obs=carry.env_state.obs,
+        action=actions,
+        reward=new_env_state.reward,
+        next_obs=new_env_state.obs,
+        done=new_env_state.done,
+    )
+    new_buffer = buffer_add_batch(carry.buffer, transition)
+    # step_count tracks scan iterations (not env transitions) so the
+    # collect_size / learn cadence is independent of num_envs.
+    new_step_count = carry.step_count + 1
+
+    # 5. Conditional learn — identical structure to single-env _train_step.
+    steps_mod = new_step_count % config.collect_size
+    learn_flag = (steps_mod == 0) & (new_buffer.size >= config.min_buffer_size)
+
+    zero_td_errors = jnp.zeros(indices_shape, dtype=jnp.float32)
+    zero_indices = jnp.zeros(indices_shape, dtype=jnp.int32)
+
+    def _do_learn(args):
+        s, b, k = args
+        batch, b_new = collect_batch(
+            b,
+            k,
+            collect_size=config.collect_size,
+            batch_size=config.batch_size,
+            prioritised=config.prioritised,
+        )
+        s_new, met = agent.learn(s, batch, k)
+        td = met.pop("td_errors", zero_td_errors)
+        scalar_met = {k_: v for k_, v in met.items() if v.shape == ()}
+        sample_idx = batch.indices.astype(jnp.int32)
+        return s_new, b_new, scalar_met, td, sample_idx
+
+    def _skip_learn(args):
+        s, b, _ = args
+        return s, b, zero_metrics, zero_td_errors, zero_indices
+
+    agent_state, new_buffer, metrics, td_errors, sample_indices = jax.lax.cond(
+        learn_flag,
+        _do_learn,
+        _skip_learn,
+        (carry.agent_state, new_buffer, k_learn),
+    )
+
+    new_carry = TrainCarry(
+        agent_state=agent_state,
+        env_state=new_env_state,
+        buffer=new_buffer,
+        step_count=new_step_count,
+        key=key,
+    )
+    step_out = StepOutput(
+        done=new_env_state.done,  # (num_envs,) bool
+        episode_return=terminal_return,  # (num_envs,)
+        episode_length=terminal_length,  # (num_envs,)
+        running_return=new_env_state.running_return,  # (num_envs,)
+        metrics=metrics,
+        did_learn=learn_flag,  # scalar — one learn step per scan iter regardless of num_envs
+        td_errors=td_errors,
+        sample_indices=sample_indices,
+    )
+    return new_carry, step_out
+
+
+class VectorisedScanLoop:
+    """``lax.scan`` inner loop over ``num_envs`` parallel gymnax env copies.
+
+    Cloned from :class:`ScanLoop` but threads a leading ``num_envs`` axis
+    through obs / action / reward / done / episode_return / episode_length /
+    running_return. Each scan iteration runs ``num_envs`` parallel env steps
+    plus (at most) one shared SAC/PPO/DQN learn step. The host-side
+    callback fan-out iterates over ``(checkpoint_steps, num_envs)`` so per-
+    env episode boundaries fire ``on_episode_end`` independently.
+
+    Auto-selected by the Trainer when ``env.num_envs > 1`` and the env's
+    capabilities permit scan rollout. The existing single-env :class:`ScanLoop`
+    is untouched.
+    """
+
+    def run(
+        self, agent: Agent, env: Env, *, initial_carry: TrainCarry, config: TrainConfig, callbacks: list[Callback]
+    ) -> Any:
+        """Execute the vectorised scan-based training loop."""
+        num_envs = getattr(env, "num_envs", 1)
+        if num_envs < 2:
+            raise ValueError(
+                f"VectorisedScanLoop requires env.num_envs >= 2, got {num_envs}. Use ScanLoop for single-env runs."
+            )
+
+        state = initial_carry.agent_state
+        env_state = initial_carry.env_state
+        buffer = initial_carry.buffer
+        key = initial_carry.key
+
+        # Shape discovery: act needs a single obs slice; we peel the leading
+        # num_envs axis to give the agent one example to trace through.
+        single_obs = jax.tree.map(lambda x: x[0], env_state.obs)
+        batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
+        dummy_batch = _make_dummy_batch(
+            obs_shape=single_obs.shape,
+            action_shape=agent.act(state, single_obs, jax.random.key(0)).shape,
+            batch_size=batch_size,
+        )
+        zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(
+            agent, state, dummy_batch, batch_size=batch_size
+        )
+
+        cb_config = {"num_steps": config.num_steps, "seed": config.seed, "num_envs": num_envs}
+        for cb in callbacks:
+            cb.on_train_start(cb_config, config.run_dir)
+
+        num_segments = config.num_steps // config.checkpoint_steps
+        episode_count = 0
+        step_count_arr = initial_carry.step_count
+
+        def scan_body(carry, step_idx):
+            return _train_step_vectorised(
+                carry,
+                step_idx,
+                agent=agent,
+                env=env,
+                config=config,
+                zero_metrics=zero_metrics,
+                indices_shape=indices_shape,
+                num_envs=num_envs,
+            )
+
+        global_step = 0  # scan-iteration count (NOT env-transition count)
+        per_active = config.prioritised and has_td_errors
+
+        for _seg in range(num_segments):
+            carry = TrainCarry(
+                agent_state=state,
+                env_state=env_state,
+                buffer=buffer,
+                step_count=step_count_arr,
+                key=key,
+            )
+            carry, segment_out = jax.lax.scan(scan_body, carry, jnp.arange(config.checkpoint_steps))
+            state = carry.agent_state
+            env_state = carry.env_state
+            buffer = carry.buffer
+            step_count_arr = carry.step_count
+            key = carry.key
+
+            if per_active:
+                buffer = _apply_per_updates_segment(
+                    buffer,
+                    segment_out.sample_indices,
+                    segment_out.td_errors,
+                    segment_out.did_learn,
+                )
+
+            host_out = jax.device_get(segment_out)
+
+            # Fire episode callbacks per (scan_iteration, env). Each env's
+            # done axis is independent — interleave callbacks across envs in
+            # iteration order so the episode counter advances monotonically.
+            for i in range(config.checkpoint_steps):
+                for e in range(num_envs):
+                    if bool(host_out.done[i, e]):
+                        for cb in callbacks:
+                            cb.on_episode_end(
+                                episode_count,
+                                float(host_out.episode_return[i, e]),
+                                int(host_out.episode_length[i, e]),
+                                float(host_out.running_return[i, e]),
+                            )
+                        episode_count += 1
+
+            # on_step is per scan iteration (one learn step per iter), not per env.
             for i in range(config.checkpoint_steps):
                 if bool(host_out.did_learn[i]):
                     py_metrics = {}

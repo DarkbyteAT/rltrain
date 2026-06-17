@@ -75,6 +75,39 @@ def buffer_add(buffer: ExperienceBuffer, transition: Transition) -> ExperienceBu
     )
 
 
+def buffer_add_batch(buffer: ExperienceBuffer, batched_transition: Transition) -> ExperienceBuffer:
+    """Write ``N`` sequential transitions where ``N`` is the leading batch dim.
+
+    The cursor advances by ``N`` (mod capacity) and the size grows by at most ``N``.
+
+    Implementation: ``jax.lax.scan`` over the env axis. Each step is a single
+    ``buffer_add`` call, so the buffer's write_idx / size / priorities all
+    stay coherent through wrap-around. Slow only if you naively pythonise it;
+    inside jit/scan this fuses into a single XLA kernel.
+
+    ``Transition`` carries zero-dim sentinel leaves (``log_prob``, ``value``,
+    ``is_weights``, ``indices``) when the caller didn't supply them — ``lax.scan``
+    can't slice a scalar along axis 0. Infer ``N`` from a leaf with leading dim
+    (``obs``) and broadcast the scalar leaves up to ``(N, ...)`` so every leaf
+    has a consistent scan axis.
+    """
+    n = batched_transition.obs.shape[0]
+
+    def _ensure_batched(x):
+        if x.ndim == 0:
+            return jnp.broadcast_to(x, (n,))
+        # Already batched (leading dim == n) — leave untouched.
+        return x
+
+    aligned = jax.tree.map(_ensure_batched, batched_transition)
+
+    def add_one(buf: ExperienceBuffer, single_trans: Transition) -> tuple[ExperienceBuffer, None]:
+        return buffer_add(buf, single_trans), None
+
+    final_buf, _ = jax.lax.scan(add_one, buffer, aligned)
+    return final_buf
+
+
 def buffer_sample(
     buffer: ExperienceBuffer,
     key: chex.PRNGKey,
