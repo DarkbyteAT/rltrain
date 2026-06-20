@@ -101,9 +101,9 @@ class SPO(OnPolicyAgent):
         rewards_per_env = batch.reward.reshape(self.num_envs, per_env_T)
         dones_per_env = batch.done.reshape(self.num_envs, per_env_T).astype(jnp.float32)
 
-        advantages_per_env, returns_per_env = jax.vmap(
-            lambda v, r, d: gae(v, r, d, self.gamma, self.lambda_gae)
-        )(values_t_plus_1, rewards_per_env, dones_per_env)
+        advantages_per_env, returns_per_env = jax.vmap(lambda v, r, d: gae(v, r, d, self.gamma, self.lambda_gae))(
+            values_t_plus_1, rewards_per_env, dones_per_env
+        )
 
         advantages = advantages_per_env.reshape(horizon_size)
         returns = returns_per_env.reshape(horizon_size)
