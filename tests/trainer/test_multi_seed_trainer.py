@@ -230,6 +230,66 @@ def test_fit_returns_seed_indexed_state_map():
 
 
 # ---------------------------------------------------------------------------
+# Unit: action-shape probe handles multi-dim single-env observations
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_action_shape_probe_handles_multi_dim_single_env_obs():
+    """Construction must not strip the leading axis off an unbatched multi-dim obs.
+
+    Regression: ``_detect_action_shape`` previously called
+    ``probe.act(state, obs[0], k)`` whenever ``obs.ndim > 1`` — which is
+    correct for vector envs (``num_envs > 1``) but wrong for gymnax envs
+    with spatially-structured observations (e.g. MinAtar ``(10, 10, 4)``).
+    The strip fed a shape-``(10, 4)`` tensor to encoders expecting the
+    flattened ``(400,)`` single-env obs, crashing inside ``jnp.dot``.
+    """
+    # Given: a gymnax env with multi-dim obs and an agent whose encoder
+    # expects the full flattened observation (so an obs[0] slice would crash).
+    env = GymnaxEnv("Breakout-MinAtar")
+    obs_size = int(jnp.prod(jnp.array(env.obs_shape)))
+    n_actions = int(env.num_actions)
+    hidden = 16
+
+    class _RavelMLP(eqx.Module):
+        """Tiny encoder that ravels obs and feeds it through an MLP."""
+
+        mlp: MLP
+
+        def __init__(self, obs_size: int, hidden: int, *, key: jax.Array):
+            self.mlp = MLP(obs_size, hidden, width_size=hidden, depth=1, key=key)
+
+        def __call__(self, obs):
+            return self.mlp(obs.reshape(-1))
+
+    def factory(key: jax.Array) -> VanillaPG:
+        k1, k2 = jax.random.split(key)
+        return VanillaPG(
+            actor=_RavelMLP(obs_size, hidden, key=k1),
+            action_head=DiscreteHead(hidden, n_actions, key=k2),
+            optimizer=optax.adam(1e-3),
+            gamma=0.99,
+            tau=0.01,
+            normalise=True,
+        )
+
+    # When: we construct the trainer (this drives the probe under test)
+    trainer = MultiSeedTrainer(
+        factory,
+        env,
+        num_steps=256,
+        n_seeds=2,
+        checkpoint_steps=256,
+        batch_size=32,
+    )
+
+    # Then: construction succeeded and the detected action shape is scalar
+    # (gymnax MinAtar action is a scalar discrete index).
+    assert trainer.action_shape == ()
+
+
+# ---------------------------------------------------------------------------
 # Integration: two seeds train and differ
 # ---------------------------------------------------------------------------
 

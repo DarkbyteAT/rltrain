@@ -214,12 +214,21 @@ class MultiSeedTrainer:
     # ------------------------------------------------------------------
 
     def _detect_action_shape(self, probe_agent: Agent, key: PRNGKeyArray) -> tuple[int, ...]:
-        """Probe the agent's ``act`` to discover the buffer's action shape."""
+        """Probe the agent's ``act`` to discover the buffer's action shape.
+
+        Strips the leading axis from ``obs`` only when the env is a real
+        vector env (``num_envs > 1``). Plain ``obs.ndim > 1`` would
+        misidentify gymnax envs with spatially-structured observations
+        (e.g. MinAtar ``(10, 10, 4)``) as batched and call ``act`` with
+        ``obs[0]`` — feeding a shape-``(10, 4)`` tensor to an encoder
+        expecting the flattened single-env obs.
+        """
         k_init, k_act, k_env = jax.random.split(key, 3)
         state = probe_agent.init(k_init)
         env_state = self.env.reset(k_env)
         obs = env_state.obs
-        if obs.ndim > 1:
+        num_envs = getattr(self.env, "num_envs", 1)
+        if num_envs > 1:
             action = probe_agent.act(state, obs[0], k_act)
         else:
             action = probe_agent.act(state, obs, k_act)
