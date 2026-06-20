@@ -188,6 +188,16 @@ class MultiSeedTrainer:
         else:
             self.min_buffer_size = min_buffer_size
 
+        if self.checkpoint_steps > num_steps:
+            # The loop runs `num_steps // checkpoint_steps` segments; if
+            # checkpoint_steps > num_steps the integer division floors to
+            # zero, the segment loop never enters, and `fit` would silently
+            # return the initial state. Fail fast instead.
+            raise ValueError(
+                f"checkpoint_steps ({self.checkpoint_steps}) must be <= "
+                f"num_steps ({num_steps}); otherwise no training segments "
+                f"would run and `fit` would return the initial state."
+            )
         if num_steps % self.checkpoint_steps != 0:
             warnings.warn(
                 f"num_steps ({num_steps}) is not divisible by checkpoint_steps "

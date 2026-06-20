@@ -230,6 +230,30 @@ def test_fit_returns_seed_indexed_state_map():
 
 
 # ---------------------------------------------------------------------------
+# Unit: input validation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_checkpoint_steps_greater_than_num_steps_raises():
+    """``checkpoint_steps > num_steps`` should fail fast in ``__init__``.
+
+    Otherwise ``num_steps // checkpoint_steps`` floors to 0, the segment
+    loop never runs, and ``fit`` silently returns the initial state.
+    """
+    env = GymnaxEnv("CartPole-v1")
+    with pytest.raises(ValueError, match="checkpoint_steps.*must be <=.*num_steps"):
+        MultiSeedTrainer(
+            _make_pg_factory(),
+            env,
+            num_steps=128,
+            n_seeds=2,
+            checkpoint_steps=256,  # > num_steps
+            batch_size=32,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Unit: action-shape probe handles multi-dim single-env observations
 # ---------------------------------------------------------------------------
 

@@ -962,14 +962,19 @@ def _unstack_seed(stacked: Any, seed_idx: int) -> Any:
 
     Uses ``eqx.partition`` to separate array from static leaves so the
     slice operation only touches arrays — non-array leaves (callables,
-    Python primitives, ``optax`` transforms) pass through untouched. The
-    ``None``-guard inside the ``tree.map`` is belt-and-braces against
-    pytrees that materialise ``None`` as a *leaf* rather than a structural
-    sentinel (some custom ``optax`` states do this); slicing ``None[i]``
-    would otherwise raise ``TypeError``.
+    Python primitives, ``optax`` transforms) pass through untouched. Two
+    guards on the slice itself: ``None`` handles pytrees that materialise
+    ``None`` as a *leaf* rather than a structural sentinel (some custom
+    ``optax`` states), and ``ndim > 0`` skips any 0-d (scalar) array leaf —
+    vmap normally adds a leading axis so 0-d leaves shouldn't survive, but
+    the guard prevents an ``IndexError`` if a future agent emits one that
+    bypasses vmap.
     """
     arrays, static = eqx.partition(stacked, eqx.is_array)
-    sliced_arrays = jax.tree.map(lambda x: x[seed_idx] if x is not None else None, arrays)
+    sliced_arrays = jax.tree.map(
+        lambda x: x[seed_idx] if (x is not None and getattr(x, "ndim", 0) > 0) else x,
+        arrays,
+    )
     return eqx.combine(sliced_arrays, static)
 
 
