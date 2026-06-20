@@ -1,15 +1,20 @@
-"""Training loop implementations — PythonLoop, ScanLoop, PmapLoop.
+"""Training loop implementations — PythonLoop, ScanLoop, PmapLoop, MultiSeedScanLoop.
 
-Three strategies behind a common ``TrainingLoop`` protocol. The Trainer
+Four strategies behind a common ``TrainingLoop`` protocol. The Trainer
 auto-selects based on env capabilities, or the user overrides via the
 ``loop=`` kwarg.
 
 Shared predicates (``should_learn``, ``collect_batch``) encapsulate the
 on-policy / off-policy distinction so the protocol never sees ``on_policy``.
+
+The parallelisation axes are orthogonal: ``ScanLoop`` runs one agent in one
+env; ``PmapLoop`` shards across devices; ``MultiSeedScanLoop`` vmaps a stack
+of agents (each with its own init seed) over a single env on one device.
 """
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Protocol
 
 import equinox as eqx
@@ -756,3 +761,225 @@ class PmapLoop:
             cb.on_train_end(first_state, config.run_dir)
 
         return jax.tree.map(lambda x: x[0], carries.agent_state)
+
+
+# ---------------------------------------------------------------------------
+# MultiSeedScanLoop
+# ---------------------------------------------------------------------------
+
+
+class MultiSeedScanLoop:
+    """``lax.scan`` inner loop ``eqx.filter_vmap``-ped over a seed axis.
+
+    Sibling of :class:`ScanLoop` that runs ``n_seeds`` independently-initialised
+    agents in parallel on a single device. The agent module and its
+    ``TrainCarry`` arrive pre-stacked along a leading seed axis (the
+    :class:`MultiSeedTrainer` orchestrates the stacking); this loop owns the
+    vmap, the scan, the per-segment dispatch back to host, and the per-seed
+    callback fan-out.
+
+    Compared with :class:`PmapLoop` (which shards independent runs across
+    devices), this strategy fits a single device by sharing the XLA graph
+    across the seed axis — one compile covers all seeds, and FLOPs are
+    batched into wider matmuls. Callbacks fire ``n_seeds`` times per segment
+    boundary on the Python side, once per seed, with that seed's ``run_dir``
+    of ``cfg.run_dir / f"seed_{i}"`` so artefacts don't collide.
+    """
+
+    def __init__(self, n_seeds: int) -> None:
+        """Configure the loop with the size of the seed axis.
+
+        Args:
+            n_seeds: Length of the leading seed axis on all stacked inputs.
+                Must match the leading axis of ``initial_carry.agent_state``,
+                ``initial_carry.env_state``, ``initial_carry.buffer``,
+                ``initial_carry.key``, and the ``agent`` module's array
+                leaves. Each value of ``i`` in ``range(n_seeds)`` corresponds
+                to one independent run.
+        """
+        if n_seeds < 1:
+            raise ValueError(f"n_seeds must be >= 1, got {n_seeds}")
+        self.n_seeds = n_seeds
+
+    def run(
+        self,
+        agent: Agent,
+        env: Env,
+        *,
+        initial_carry: TrainCarry,
+        config: TrainConfig,
+        callbacks: list[Callback],
+    ) -> Any:
+        """Execute the vmap-over-seeds training loop.
+
+        Args:
+            agent: Stack of ``n_seeds`` agents. Array leaves must carry a
+                leading seed axis; static fields (hyperparameters) are
+                broadcast by ``eqx.filter_vmap``.
+            env: Single environment. Replicated implicitly across seeds via
+                the vmap of ``env.step`` inside ``_train_step``.
+            initial_carry: Stacked carry — every array leaf has leading
+                axis ``n_seeds``. The buffer pytree is similarly stacked
+                so each seed owns its own replay state.
+            config: Frozen training config. ``run_dir`` is interpreted as
+                the parent directory; per-seed subdirectories
+                ``seed_{i}`` are passed to callbacks at segment boundaries.
+            callbacks: Iterable of :class:`Callback`-shaped objects. Fired
+                ``n_seeds`` times per segment boundary, once per seed, in
+                seed order ``0, 1, ..., n_seeds - 1``.
+
+        Returns:
+            The final stacked agent state — leading axis ``n_seeds``.
+            :class:`MultiSeedTrainer` unstacks this into a
+            ``{seed_idx: TrainState}`` map.
+        """
+        n_seeds = self.n_seeds
+
+        # Shape discovery — unstack one seed for the trial trace. The
+        # per-seed agent + state pair must satisfy the same shape contract
+        # ScanLoop sees, so we lift them via ``jax.tree.map`` (array leaves
+        # only) and pass the first slice into the existing helpers.
+        single_agent = _unstack_seed(agent, 0)
+        single_state = _unstack_seed(initial_carry.agent_state, 0)
+        single_env_state = _unstack_seed(initial_carry.env_state, 0)
+
+        batch_size = config.batch_size if config.collect_size <= 1 else config.collect_size
+        dummy_batch = _make_dummy_batch(
+            obs_shape=single_env_state.obs.shape,
+            action_shape=single_agent.act(single_state, single_env_state.obs, jax.random.key(0)).shape,
+            batch_size=batch_size,
+        )
+        zero_metrics, scalar_keys, indices_shape, has_td_errors = _discover_metrics_shape(
+            single_agent, single_state, dummy_batch, batch_size=batch_size
+        )
+
+        cb_config = {"num_steps": config.num_steps, "seed": config.seed, "n_seeds": n_seeds}
+        seed_run_dirs = _seed_run_dirs(config.run_dir, n_seeds)
+        # Per-seed dirs aren't created by the trainer; create them here so
+        # callbacks that open files in ``on_train_start`` (CSVLogger,
+        # Checkpoint) don't blow up on ``FileNotFoundError``. Mirrors the
+        # behaviour of the CLI for the single-seed Trainer.
+        for d in seed_run_dirs:
+            if d is not None:
+                d.mkdir(parents=True, exist_ok=True)
+        # Built-in callbacks carry per-run state (open file handles,
+        # accumulator lists). Sharing one instance across seeds would
+        # clobber state on every ``on_train_start``. Deep-copy the list per
+        # seed so the Callback protocol stays unchanged and each seed sees
+        # an independent, stateful collaborator.
+        per_seed_callbacks: list[list[Callback]] = [[copy.deepcopy(cb) for cb in callbacks] for _ in range(n_seeds)]
+        for s in range(n_seeds):
+            for cb in per_seed_callbacks[s]:
+                cb.on_train_start(cb_config, seed_run_dirs[s])
+
+        num_segments = config.num_steps // config.checkpoint_steps
+        per_active = config.prioritised and has_td_errors
+
+        def _per_seed_segment(seed_agent, seed_carry):
+            def scan_body(carry, step_idx):
+                return _train_step(
+                    carry,
+                    step_idx,
+                    agent=seed_agent,
+                    env=env,
+                    config=config,
+                    zero_metrics=zero_metrics,
+                    indices_shape=indices_shape,
+                )
+
+            carry, segment_out = jax.lax.scan(scan_body, seed_carry, jnp.arange(config.checkpoint_steps))
+            if per_active:
+                carry = carry.replace(
+                    buffer=_apply_per_updates_segment(
+                        carry.buffer,
+                        segment_out.sample_indices,
+                        segment_out.td_errors,
+                        segment_out.did_learn,
+                    )
+                )
+            return carry, segment_out
+
+        # filter_vmap handles static fields on the agent module; filter_jit
+        # caches the compiled graph across segments. One compile covers all
+        # n_seeds; subsequent segments reuse it.
+        per_seed_segment_jit = eqx.filter_jit(eqx.filter_vmap(_per_seed_segment))
+
+        carry = initial_carry
+        episode_counts = [0] * n_seeds
+        global_step = 0
+
+        for _seg in range(num_segments):
+            carry, segment_out = per_seed_segment_jit(agent, carry)
+
+            # One host transfer per segment — segment_out leaves have shape
+            # ``(n_seeds, checkpoint_steps, ...)``. Per-seed slicing below
+            # touches numpy arrays so the inner loops don't sync per-index.
+            host_out = jax.device_get(segment_out)
+
+            for s in range(n_seeds):
+                # Fire episode callbacks for completed episodes (this seed).
+                for i in range(config.checkpoint_steps):
+                    if bool(host_out.done[s, i]):
+                        for cb in per_seed_callbacks[s]:
+                            cb.on_episode_end(
+                                episode_counts[s],
+                                float(host_out.episode_return[s, i]),
+                                int(host_out.episode_length[s, i]),
+                                float(host_out.running_return[s, i]),
+                            )
+                        episode_counts[s] += 1
+
+                # Fire on_step for learn steps — scalar metrics only.
+                for i in range(config.checkpoint_steps):
+                    if bool(host_out.did_learn[s, i]):
+                        py_metrics = {k: float(host_out.metrics[k][s, i]) for k in scalar_keys}
+                        for cb in per_seed_callbacks[s]:
+                            cb.on_step(global_step + i, py_metrics)
+
+            global_step += config.checkpoint_steps
+
+            # Per-seed checkpoint with that seed's slice of the carry. Lift
+            # the stacked agent state to host once before the n_seeds slice
+            # loop so we pay one device→host transfer per segment, not N.
+            host_agent_state = jax.device_get(carry.agent_state)
+            for s in range(n_seeds):
+                seed_state = _unstack_seed(host_agent_state, s)
+                for cb in per_seed_callbacks[s]:
+                    cb.on_checkpoint(global_step, seed_state, seed_run_dirs[s])
+
+        # Final per-seed train_end dispatch — same one-transfer pattern.
+        host_agent_state = jax.device_get(carry.agent_state)
+        for s in range(n_seeds):
+            seed_state = _unstack_seed(host_agent_state, s)
+            for cb in per_seed_callbacks[s]:
+                cb.on_train_end(seed_state, seed_run_dirs[s])
+
+        return carry.agent_state
+
+
+def _unstack_seed(stacked: Any, seed_idx: int) -> Any:
+    """Slice the leading seed axis off every array leaf of a pytree.
+
+    Uses ``eqx.partition`` to separate array from static leaves so the
+    slice operation only touches arrays — non-array leaves (callables,
+    Python primitives, ``optax`` transforms) pass through untouched. Two
+    guards on the slice itself: ``None`` handles pytrees that materialise
+    ``None`` as a *leaf* rather than a structural sentinel (some custom
+    ``optax`` states), and ``ndim > 0`` skips any 0-d (scalar) array leaf —
+    vmap normally adds a leading axis so 0-d leaves shouldn't survive, but
+    the guard prevents an ``IndexError`` if a future agent emits one that
+    bypasses vmap.
+    """
+    arrays, static = eqx.partition(stacked, eqx.is_array)
+    sliced_arrays = jax.tree.map(
+        lambda x: x[seed_idx] if (x is not None and getattr(x, "ndim", 0) > 0) else x,
+        arrays,
+    )
+    return eqx.combine(sliced_arrays, static)
+
+
+def _seed_run_dirs(run_dir, n_seeds: int):
+    """Compute per-seed run_dir subpaths. ``None`` parent ⇒ all ``None``."""
+    if run_dir is None:
+        return [None] * n_seeds
+    return [run_dir / f"seed_{i}" for i in range(n_seeds)]

@@ -29,6 +29,7 @@ graph LR
         TR -.-> PL["PythonLoop"]
         TR -.-> SL["ScanLoop"]
         TR -.-> PM["PmapLoop"]
+        TR -.-> MS["MultiSeedScanLoop"]
     end
 ```
 
@@ -92,6 +93,36 @@ trainer = Trainer(
 )
 trainer.fit(jax.random.key(42))
 ```
+
+### Training N Seeds in Parallel
+
+`MultiSeedTrainer` runs `n_seeds` differently-initialised agents in parallel on
+one device by `jax.vmap`-ing the scan body over a seed axis. One JIT compile
+covers all seeds; per-seed wall-clock drops because matmuls run wider. Pass an
+`agent_factory` instead of a single agent, and a parent `run_dir`:
+
+```python
+from rltrain.trainer import MultiSeedTrainer
+
+def make_agent(key):
+    return PPO(actor=..., critic=..., action_head=..., ...)
+
+trainer = MultiSeedTrainer(
+    make_agent, env,
+    num_steps=200_000,
+    n_seeds=5,
+    checkpoint_steps=2_500,
+    run_dir="results/sweep/cartpole/ppo",
+    callbacks=[CSVLoggerCallback(), PlotCallback(), CheckpointCallback()],
+)
+states = trainer.fit(jax.random.key(42))  # {0: TrainState, 1: TrainState, ...}
+```
+
+Artefacts land under `run_dir/seed_{i}/` per seed. Callbacks fire `n_seeds`
+times at each segment boundary, once per seed; they're deep-copied internally
+so stateful built-ins (file handles, accumulators) stay independent. Requires a
+`scan_rollout`-capable env (e.g. `GymnaxEnv`); multi-device sharding (a future
+`MultiSeedPmapLoop`) is out of scope for this release.
 
 ### Loading a Trained Agent
 
