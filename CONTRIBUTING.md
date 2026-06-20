@@ -127,13 +127,26 @@ Hooks fire **Python-side at segment boundaries** — `ScanLoop` collects `StepOu
 
 ### Loop Strategies
 
-The `TrainingLoop` `Protocol` has three implementations:
+The `TrainingLoop` `Protocol` has four implementations:
 
 - `PythonLoop` — Python `while` loop; works for both gymnasium and gymnax envs
 - `ScanLoop` — `lax.scan` segments; auto-selected when `env.capabilities.scan_rollout` is True
 - `PmapLoop` — multi-device via `jax.pmap`; falls back to ScanLoop on single device
+- `MultiSeedScanLoop` — `eqx.filter_vmap` over a seed axis; the parallel axis is independent agent inits on one device. Dispatched by `MultiSeedTrainer`, not `Trainer`.
 
-`Trainer` selects the right loop from `env.capabilities` unless one is supplied explicitly.
+`Trainer` selects between the first three from `env.capabilities`. `MultiSeedTrainer` always uses `MultiSeedScanLoop` and requires `scan_rollout=True`.
+
+### Multi-seed parallelism
+
+`MultiSeedTrainer` takes an `agent_factory: Callable[[PRNGKeyArray], Agent]` and `n_seeds: int` in place of the single `agent` arg. Under the hood:
+
+1. The master key splits deterministically into `(build_keys, env_keys, fit_keys)` — one sub-key per seed per stream.
+2. `eqx.filter_vmap(factory, ...)` traces the factory body once with vectorised key tracers; static fields (hyperparameters) broadcast, array leaves stack along the leading seed axis.
+3. `MultiSeedScanLoop` wraps `_train_step` in a `lax.scan` and `eqx.filter_vmap`s it over the seed axis — one JIT compile, all seeds in parallel.
+4. Callbacks are `copy.deepcopy`-ed per seed at `on_train_start`, then fired `n_seeds` times per segment boundary with per-seed `run_dir / seed_{i}` paths. Stateful built-ins (CSVLogger, CheckpointCallback) stay independent across seeds.
+5. `fit` returns `{seed_idx: TrainState}` — the stacked output is unstacked along the seed axis Python-side.
+
+Multi-device sharding of multi-seed runs (`MultiSeedPmapLoop`) is a future strategy and out of scope for the initial release; the two axes (seeds, devices) compose orthogonally.
 
 ## References
 
