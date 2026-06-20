@@ -44,7 +44,7 @@ from rltrain.buffer import make_buffer
 from rltrain.callbacks import Callback
 from rltrain.env import Env
 from rltrain.trainer._carry import TrainCarry, TrainConfig
-from rltrain.trainer._loops import MultiSeedScanLoop
+from rltrain.trainer._loops import MultiSeedScanLoop, _unstack_seed
 
 
 class _NoOpCallback:
@@ -315,6 +315,8 @@ class MultiSeedTrainer:
             config=self._config,
             callbacks=self.callbacks,
         )
-        # ``TrainState`` is a chex.dataclass — all leaves are arrays, so
-        # plain ``jax.tree.map`` slicing is safe here (no static leaves).
-        return {i: jax.tree.map(lambda x, i=i: x[i], stacked_final_state) for i in range(self.n_seeds)}
+        # Delegate per-seed slicing to ``_unstack_seed`` so custom agent
+        # states with non-array leaves (e.g. optax states carrying Python
+        # primitives or callables) survive unstacking — plain ``jax.tree.map``
+        # slicing would crash on those.
+        return {i: _unstack_seed(stacked_final_state, i) for i in range(self.n_seeds)}

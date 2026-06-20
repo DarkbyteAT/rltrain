@@ -938,15 +938,19 @@ class MultiSeedScanLoop:
 
             global_step += config.checkpoint_steps
 
-            # Per-seed checkpoint with that seed's slice of the carry.
+            # Per-seed checkpoint with that seed's slice of the carry. Lift
+            # the stacked agent state to host once before the n_seeds slice
+            # loop so we pay one device→host transfer per segment, not N.
+            host_agent_state = jax.device_get(carry.agent_state)
             for s in range(n_seeds):
-                seed_state = _unstack_seed(carry.agent_state, s)
+                seed_state = _unstack_seed(host_agent_state, s)
                 for cb in per_seed_callbacks[s]:
                     cb.on_checkpoint(global_step, seed_state, seed_run_dirs[s])
 
-        # Final per-seed train_end dispatch.
+        # Final per-seed train_end dispatch — same one-transfer pattern.
+        host_agent_state = jax.device_get(carry.agent_state)
         for s in range(n_seeds):
-            seed_state = _unstack_seed(carry.agent_state, s)
+            seed_state = _unstack_seed(host_agent_state, s)
             for cb in per_seed_callbacks[s]:
                 cb.on_train_end(seed_state, seed_run_dirs[s])
 
@@ -958,10 +962,14 @@ def _unstack_seed(stacked: Any, seed_idx: int) -> Any:
 
     Uses ``eqx.partition`` to separate array from static leaves so the
     slice operation only touches arrays — non-array leaves (callables,
-    Python primitives, ``optax`` transforms) pass through untouched.
+    Python primitives, ``optax`` transforms) pass through untouched. The
+    ``None``-guard inside the ``tree.map`` is belt-and-braces against
+    pytrees that materialise ``None`` as a *leaf* rather than a structural
+    sentinel (some custom ``optax`` states do this); slicing ``None[i]``
+    would otherwise raise ``TypeError``.
     """
     arrays, static = eqx.partition(stacked, eqx.is_array)
-    sliced_arrays = jax.tree.map(lambda x: x[seed_idx], arrays)
+    sliced_arrays = jax.tree.map(lambda x: x[seed_idx] if x is not None else None, arrays)
     return eqx.combine(sliced_arrays, static)
 
 
